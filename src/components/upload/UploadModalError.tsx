@@ -1,25 +1,24 @@
-"use client";
-
-import { RefreshCw, HelpCircle, X, Wifi, Server, Shield, FileX, MessageSquare, Info, AlertCircle } from "lucide-react";
+import {
+  RefreshCw,
+  X,
+  Wifi,
+  Server,
+  Shield,
+  FileX,
+  MessageSquare,
+  AlertTriangle,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "../ui/button";
-import { useState } from "react";
-import {
-  TypeDetailUploadErrorField,
-  TypeUploadError,
-  TypeUploadModalErrorProps,
-} from "@/types/TypeUpload";
-import {
-  getUploadErrorColorClasses,
-  getUploadErrorTitle,
-} from "@/utils/upload-utils";
-import {
-  UploadErrorDetailFields,
-  UploadErrorHelpConfig,
-} from "@/constants/UploadErrorConfig";
+import { TypeUploadError, TypeUploadModalErrorProps } from "@/types/TypeUpload";
+import { getUploadErrorTitle } from "@/utils/upload-utils";
+import { Badge } from "../ui/badge";
+import { Alert, AlertDescription } from "../ui/alert";
+import { cn } from "@/utils/cn";
 
 /**
- * Enhanced error component that provides contextual error messages, icons, and actions
- * based on the type of error that occurred during upload.
+ * A modern, warm, and shadcn-compliant error modal for upload failures.
+ * Features friendly messaging and proper theming support.
  */
 const UploadModalError: React.FC<TypeUploadModalErrorProps> = ({
   error,
@@ -30,29 +29,79 @@ const UploadModalError: React.FC<TypeUploadModalErrorProps> = ({
   onContactSupport,
   onDismiss,
 }) => {
-  const [showDetails, setShowDetails] = useState(false);
   const MaxRetries = 3;
 
   const getUploadErrorIcon = (type: string) => {
-  switch (type) {
-    case "network":
-      return <Wifi className="text-red-500 h-5 w-5 mr-2" />;
-    case "server":
-      return <Server className="text-red-500 h-5 w-5 mr-2" />;
-    case "auth":
-      return <Shield className="text-red-500 h-5 w-5 mr-2" />;
-    case "file_processing":
-      return <FileX className="text-red-500 h-5 w-5 mr-2" />;
-    case "chat_creation":
-      return <MessageSquare className="text-red-500 h-5 w-5 mr-2" />;
-    case "validation":
-      return <Info className="text-amber-500 h-5 w-5 mr-2" />;
-    default:
-      return <AlertCircle className="text-red-500 h-5 w-5 mr-2" />;
-  }
-};
+    const iconClass = "h-4 w-4";
 
-  // Parse error object or string
+    switch (type) {
+      case "network":
+        return <Wifi className={iconClass} />;
+      case "server":
+        return <Server className={iconClass} />;
+      case "auth":
+        return <Shield className={iconClass} />;
+      case "file_processing":
+        return <FileX className={iconClass} />;
+      case "chat_creation":
+        return <MessageSquare className={iconClass} />;
+      case "validation":
+        return <AlertTriangle className={iconClass} />;
+      default:
+        return <AlertTriangle className={iconClass} />;
+    }
+  };
+
+  const getErrorVariant = (type: string): "default" | "destructive" => {
+    switch (type) {
+      case "validation":
+        return "default"; // Use default for warnings
+      case "network":
+        return "default";
+      default:
+        return "destructive";
+    }
+  };
+
+  const getWarmErrorMessage = (type: string): string => {
+    const warmMessages = {
+      validation:
+        "Oops! There's a small issue with your file that we need to fix before proceeding.",
+      network:
+        "We're having trouble connecting right now. This usually resolves quickly!",
+      server:
+        "We encountered a temporary hiccup on our end. Our team has been notified.",
+      auth: "It looks like your session expired. A quick refresh should get you back on track!",
+      file_processing:
+        "We had some trouble processing your file. Let's try a different approach!",
+      chat_creation:
+        "Something went wrong while setting up your chat. Let's give it another go!",
+      unknown:
+        "Something unexpected happened, but don't worry - we'll help you get this sorted out!",
+    };
+
+    return (
+      warmMessages[type as keyof typeof warmMessages] || warmMessages.unknown
+    );
+  };
+
+  const getHelpfulSuggestion = (type: string): string | null => {
+    const suggestions = {
+      validation:
+        "Please check that your file meets the requirements below and try uploading again.",
+      network: "Check your internet connection and try again in a moment.",
+      server:
+        "Please wait a moment and try again. If this persists, we're here to help!",
+      auth: "Simply refresh the page and log back in to continue.",
+      file_processing:
+        "Try a different file format or ensure your file isn't corrupted.",
+      chat_creation:
+        "This is usually temporary - clicking retry should do the trick!",
+    };
+
+    return suggestions[type as keyof typeof suggestions] || null;
+  };
+
   const errorObj: TypeUploadError | null = (() => {
     if (!error) return null;
     if (typeof error === "string") {
@@ -65,219 +114,133 @@ const UploadModalError: React.FC<TypeUploadModalErrorProps> = ({
     return error;
   })();
 
-  // Helper function to safely convert unknown error to string
-  const getErrorText = (error: unknown): string => {
-    if (error instanceof Error) return error.message;
-    if (typeof error === "string") return error;
-    if (error === null || error === undefined)
-      return "No additional details available";
-
-    try {
-      return JSON.stringify(error, null, 2);
-    } catch {
-      return String(error);
-    }
-  };
-
-  // Render contextual help message
-  const renderHelpMessage = (type: keyof typeof UploadErrorHelpConfig) => {
-    const config = UploadErrorHelpConfig[type];
-    if (!config) return null;
-
-    return (
-      <div
-        className={`mt-4 p-3 ${config.bgColor} border ${config.borderColor} rounded-md`}
-      >
-        <p className={`text-xs ${config.textColor}`}>
-          {config.icon} {config.message}
-        </p>
-      </div>
-    );
-  };
-
-  // Render detail field
-  const renderDetailField = (
-    field: TypeDetailUploadErrorField,
-    errorObj: TypeUploadError,
-    retryCount: number,
-  ) => {
-    if (field.condition && !field.condition(errorObj, retryCount)) return null;
-
-    const value = field.getValue(errorObj, retryCount);
-    if (value === undefined || value === null) return null;
-
-    return (
-      <div key={field.key}>
-        <span className="font-medium text-gray-700">{field.label}:</span>
-        {field.isCodeBlock ? (
-          <pre className="ml-2 text-gray-600 font-mono text-xs whitespace-pre-wrap break-words mt-1 p-2 bg-gray-200 rounded">
-            {getErrorText(value)}
-          </pre>
-        ) : (
-          <span className={`ml-2 text-gray-600 ${field.className || ""}`}>
-            {String(value)}
-          </span>
-        )}
-      </div>
-    );
-  };
-
   if (!errorObj) return null;
 
-  const colorClasses = getUploadErrorColorClasses(errorObj.type);
+  const variant = getErrorVariant(errorObj.type);
   const shouldShowRetry = canRetry && errorObj.retryable !== false;
-  const shouldShowDetails =
-    errorObj.originalError || errorObj.type !== "validation";
   const shouldShowSupport =
     (retryCount >= MaxRetries || errorObj.type === "server") &&
     onContactSupport;
+  const warmMessage = getWarmErrorMessage(errorObj.type);
+  const helpfulSuggestion = getHelpfulSuggestion(errorObj.type);
 
   return (
-    <div
-      className={`relative border border-dashed ${colorClasses.border} ${colorClasses.bg} rounded-lg p-6 text-center mb-4`}
-    >
-      {/* Dismiss Button */}
+    <Alert variant={variant} className="relative">
+      {/* Close Button */}
       {onDismiss && (
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onDismiss}
-          className="absolute top-2 right-2 h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-          aria-label="Dismiss error"
+          className="absolute top-2 right-2 h-6 w-6"
         >
           <X className="h-4 w-4" />
+          <span className="sr-only">Dismiss</span>
         </Button>
       )}
 
-      {/* Error Header */}
-      <div className="flex items-center justify-center mb-3">
-        {getUploadErrorIcon(errorObj.type)}
-        <p className={`text-sm ${colorClasses.titleText} font-medium`}>
-          {getUploadErrorTitle(errorObj.type)}
-        </p>
-      </div>
+      {/* Error Icon */}
+      {getUploadErrorIcon(errorObj.type)}
 
-      {/* Error Message */}
-      <div className="mb-4">
-        <p className={`text-sm ${colorClasses.messageText} mb-2`}>
-          {errorObj.message}
-        </p>
+      {/* Content */}
+      <div className="ml-2 space-y-3 pr-8">
+        {/* Header */}
+        <div className="space-y-1">
+          <h4 className="font-medium leading-none tracking-tight">
+            {getUploadErrorTitle(errorObj.type)}
+          </h4>
+          <AlertDescription className="text-sm leading-relaxed">
+            {warmMessage}
+          </AlertDescription>
 
-        {/* User Action Guidance */}
-        {errorObj.userAction && (
-          <p
-            className={`text-xs ${colorClasses.messageText} opacity-80 italic`}
-          >
-            💡 {errorObj.userAction}
-          </p>
-        )}
-      </div>
+          {helpfulSuggestion && (
+            <AlertDescription className="text-sm text-muted-foreground mt-2">
+              💡 {helpfulSuggestion}
+            </AlertDescription>
+          )}
 
-      {/* Retry Information */}
-      {retryCount > 0 && (
-        <div className="mb-3">
-          <p className="text-xs text-gray-500">
-            Attempt {retryCount + 1} of {MaxRetries + 1}
-          </p>
+          {/* Show original technical message in a subtle way */}
+          {errorObj.message !== warmMessage && (
+            <details className="mt-2">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                Technical details
+              </summary>
+              <p className="text-xs text-muted-foreground mt-1 pl-2 border-l-2 border-muted">
+                {errorObj.message}
+              </p>
+            </details>
+          )}
         </div>
-      )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
-        {/* Retry Button */}
-        {shouldShowRetry && (
-          <Button
-            variant="outline"
-            onClick={handleRetry}
-            disabled={isRetrying || retryCount >= MaxRetries}
-            className="min-w-[100px]"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${isRetrying ? "animate-spin" : ""}`}
-            />
-            {isRetrying
-              ? "Retrying..."
-              : retryCount > 0
-                ? "Try Again"
-                : "Retry"}
-          </Button>
-        )}
-
-        {/* Details Toggle */}
-        {shouldShowDetails && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDetails(!showDetails)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <HelpCircle className="h-4 w-4 mr-1" />
-            {showDetails ? "Hide" : "Show"} Details
-          </Button>
-        )}
-
-        {/* Contact Support */}
-        {shouldShowSupport && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onContactSupport}
-            className="text-blue-500 hover:text-blue-700"
-          >
-            Contact Support
-          </Button>
-        )}
-
-        {/* Dismiss Button (alternative placement) */}
-        {onDismiss && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDismiss}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            Dismiss
-          </Button>
-        )}
-      </div>
-
-      {/* Error Details (Collapsible) */}
-      {showDetails && (
-        <div className="mt-4 p-3 bg-gray-100 rounded-md border text-left">
-          <div className="text-xs space-y-2">
-            {UploadErrorDetailFields.map((field) =>
-              renderDetailField(field, errorObj, retryCount),
-            )}
-
-            <div className="pt-2 border-t border-gray-300">
-              <span className="font-medium text-gray-700">Timestamp:</span>
-              <span className="ml-2 text-gray-600">
-                {new Date().toLocaleString()}
-              </span>
-            </div>
+        {/* Retry Counter */}
+        {retryCount > 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              Attempt {retryCount + 1} of {MaxRetries + 1}
+            </Badge>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Contextual Help Messages */}
-      {(
-        Object.keys(UploadErrorHelpConfig) as Array<
-          keyof typeof UploadErrorHelpConfig
-        >
-      )
-        .filter((type) => type === errorObj.type)
-        .map((type) => renderHelpMessage(type))}
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {shouldShowRetry && (
+            <Button
+              onClick={handleRetry}
+              disabled={isRetrying || retryCount >= MaxRetries}
+              size="sm"
+              className="h-8"
+            >
+              <RefreshCw
+                className={cn("h-3 w-3 mr-2", isRetrying && "animate-spin")}
+              />
+              {isRetrying
+                ? "Trying again..."
+                : retryCount > 0
+                ? "Try again"
+                : "Retry"}
+            </Button>
+          )}
 
-      {/* Max Retries Reached Message */}
-      {retryCount >= MaxRetries && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-xs text-red-700">
-            ⚠️ Maximum retry attempts reached. If the problem persists, please
-            try a different file or contact support.
-          </p>
+          {shouldShowSupport && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onContactSupport}
+              className="h-8"
+            >
+              <HelpCircle className="h-3 w-3 mr-2" />
+              Get help
+            </Button>
+          )}
+
+          {onDismiss && !shouldShowRetry && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDismiss}
+              className="h-8"
+            >
+              Dismiss
+            </Button>
+          )}
         </div>
-      )}
-    </div>
+
+        {/* Max Retries Warning */}
+        {retryCount >= MaxRetries && (
+          <Alert variant="destructive" className="mt-3">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              We&apos;ve tried several times but keep running into the same
+              issue.
+              <br />
+              <span className="font-medium">What you can do:</span> Try a
+              different file, check your internet connection, or reach out to us
+              for help.
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+    </Alert>
   );
 };
 

@@ -23,7 +23,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="relative flex min-h-screen w-full text-foreground">
       <div className="absolute inset-0 -z-10">
         <Dither waveColor={brandViolet} waveAmplitude={0.1} />
-        <div className="absolute inset-0 bg-background/80 dark:bg-background/60 backdrop-blur-lg" />
+        <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
       </div>
 
       <DashboardDesktopSidebar />

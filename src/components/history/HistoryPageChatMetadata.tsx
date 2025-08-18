@@ -1,30 +1,62 @@
-// src/components/history/HistoryPageChatMetadata.tsx
-
 import { Badge } from "@/components/ui/badge";
 import { formatFileSize, formatTimeAgo } from "@/utils/history-page-utils";
 import { TypeHistoryPageChatMetadataProps } from "@/types/TypeUi";
 
 /**
- * Displays themed and responsive metadata for a single chat item.
+ * Displays responsive and themed metadata for a single chat item with improved mobile layout.
  */
 export const HistoryPageChatMetadata = ({ chat, file }: TypeHistoryPageChatMetadataProps) => {
   const title = chat.title || file?.name || "Untitled Chat";
   const fileType = file?.type?.toUpperCase() || "FILE";
 
   return (
-    <div className="flex w-full items-center justify-between gap-4">
-      {/* Left side: Title and Type Badge */}
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <h3 className="truncate font-medium text-foreground">{title}</h3>
-        <Badge variant="secondary" className="hidden sm:inline-block">{fileType}</Badge>
+    <div className="w-full">
+      {/* Mobile Layout: Stack everything vertically */}
+      <div className="block sm:hidden space-y-3">
+        {/* Title on its own line */}
+        <div className="w-full">
+          <h3 className="font-medium text-foreground text-base leading-relaxed break-words">
+            {title}
+          </h3>
+        </div>
+        
+        {/* Badge and metadata in a row */}
+        <div className="flex items-center justify-between">
+          <Badge 
+            variant="secondary" 
+            className="text-xs px-2.5 py-1 bg-secondary/60 text-secondary-foreground rounded-full"
+          >
+            {fileType}
+          </Badge>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {file?.size && (
+              <span className="font-mono">{formatFileSize(file.size)}</span>
+            )}
+            <span className="font-mono">{formatTimeAgo(chat.created_at)}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Right side: File Size and Time */}
-      <div className="flex flex-shrink-0 items-center gap-4 text-xs text-muted-foreground sm:gap-6">
-        {file?.size && (
-          <span className="hidden md:inline">{formatFileSize(file.size)}</span>
-        )}
-        <span>{formatTimeAgo(chat.created_at)}</span>
+      {/* Desktop Layout: Single row */}
+      <div className="hidden sm:flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <h3 className="truncate font-medium text-foreground text-base">
+            {title}
+          </h3>
+          <Badge 
+            variant="secondary" 
+            className="shrink-0 text-xs px-2.5 py-1 bg-secondary/60 text-secondary-foreground rounded-full"
+          >
+            {fileType}
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-muted-foreground shrink-0">
+          {file?.size && (
+            <span className="font-mono">{formatFileSize(file.size)}</span>
+          )}
+          <span className="font-mono">{formatTimeAgo(chat.created_at)}</span>
+        </div>
       </div>
     </div>
   );

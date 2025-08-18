@@ -1,106 +1,176 @@
-// src/app/settings/page.tsx
-
 "use client";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import PricingDialog from "@/components/dashboard/PricingDialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LogoutDialog from "@/components/dashboard/LogoutDialog";
 import { useUser } from "@/hooks/useUser";
 import { SettingsLoadingSkeleton } from "@/components/settings/SettingsLoadingSkeleton";
 import { MobileSettingsSections } from "@/constants/SettingsData";
-import Image from "next/image";
+import { User, Crown, Shield, LogOut } from "lucide-react";
 import avatarImage from "@/assets/images/avatar.svg";
+import { getUserInitials } from "@/utils/dashboard-utils";
+import PricingDialog from "@/components/dashboard/PricingDialog";
 
 /**
- * A beautiful and responsive page for managing user account settings.
- * This page is now designed to work perfectly on both mobile and desktop.
+ * Renders the user account settings page.
+ *
+ * This page displays user information, account details, and subscription
+ * status in a responsive grid layout. It includes actions for upgrading the
+ * plan and logging out. A loading skeleton is shown while user data is being
+ * fetched.
+ *
+ * @returns {JSX.Element} The rendered settings page.
  */
 const SettingsPage = () => {
   const { user, isLoading } = useUser();
 
   if (isLoading) {
-    // A simple, centered loader is better for this page than a full skeleton
     return <SettingsLoadingSkeleton isMobile={false} />;
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-12">
-      {/* Page Header */}
-      <div className="text-center">
-        <h1 className="text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-neutral-50 to-neutral-300 md:text-6xl">
+    <div className="container mx-auto max-w-6xl space-y-8 p-6">
+      {/* Header Section */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent md:text-5xl">
           Account Settings
         </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-neutral-300">
-          Manage your profile, subscription, and account details all in one place.
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          Manage your profile, subscription, and account preferences in one place.
         </p>
       </div>
 
-      {/* Main Content Grid - Responsive */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Column: User Profile & Details */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* User Profile Card */}
-          <Card className="border-white/10 bg-black/20 backdrop-blur-md">
-            <CardHeader className="flex-row items-center gap-4">
-              <Image src={avatarImage} alt="User Avatar" width={64} height={64} className="rounded-full border-2 border-primary/50" />
-              <div>
-                <CardTitle>{user?.name || "Anonymous User"}</CardTitle>
-                <CardDescription>{user?.email}</CardDescription>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Profile & Account Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Profile Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={avatarImage} alt="User Avatar" />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+                    {getUserInitials(user)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                  <CardTitle className="text-xl">
+                    {user?.name || "Anonymous User"}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {user?.email}
+                  </CardDescription>
+                </div>
               </div>
             </CardHeader>
           </Card>
 
           {/* Account Details Card */}
-          <Card className="border-white/10 bg-black/20 backdrop-blur-md">
+          <Card>
             <CardHeader>
-              <CardTitle>Account Details</CardTitle>
-              <CardDescription>Your personal information.</CardDescription>
+              <div className="flex items-center space-x-2">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Account Information</CardTitle>
+              </div>
+              <CardDescription>
+                Your personal account details and information.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {MobileSettingsSections.map((section) => (
-                <div key={section.id} className="flex items-baseline justify-between border-b border-white/10 pb-2">
-                  <p className="text-muted-foreground">{section.label}</p>
-                  <p className="font-medium text-foreground">{section.getUserValue(user)}</p>
-                </div>
-              ))}
+            <CardContent>
+              <div className="space-y-4">
+                {MobileSettingsSections.map((section, index) => (
+                  <div key={section.id}>
+                    <div className="flex items-center justify-between py-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {section.label}
+                        </p>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {section.getUserValue(user)}
+                      </div>
+                    </div>
+                    {index < MobileSettingsSections.length - 1 && (
+                      <Separator />
+                    )}
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Subscription & Logout */}
-        <div className="lg:col-span-1 space-y-8">
+        {/* Right Column - Subscription & Actions */}
+        <div className="space-y-6">
           {/* Subscription Card */}
-          <Card className="border-white/10 bg-black/20 backdrop-blur-md">
+          <Card>
             <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-              <CardDescription>Your current plan details.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 p-4">
-                <div>
-                  <p className="font-semibold text-foreground">Free Plan</p>
-                </div>
-                <Badge variant="secondary">ACTIVE</Badge>
+              <div className="flex items-center space-x-2">
+                <Crown className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Subscription</CardTitle>
               </div>
+              <CardDescription>
+                Manage your current plan and billing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Free Plan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Full access during beta
+                  </p>
+                </div>
+                <Badge variant="secondary" className="font-medium">
+                  Active
+                </Badge>
+              </div>
+              
               <PricingDialog
-                trigger={<Button className="w-full">Upgrade to Pro</Button>}
+                trigger={
+                  <Button variant="outline" className="w-full cursor-pointer" size="lg">
+                    <Crown className="mr-2 h-4 w-4" />
+                    View Plan Details
+                  </Button>
+                }
               />
             </CardContent>
           </Card>
-          
-          {/* Danger Zone Card */}
-          <Card className="border-destructive/30 bg-destructive/10 backdrop-blur-md">
-             <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription className="text-destructive/80">Manage critical account actions.</CardDescription>
-             </CardHeader>
-             <CardContent>
-                <LogoutDialog
-                    trigger={<Button variant="destructive" className="w-full">Log Out</Button>}
-                />
-             </CardContent>
+
+          {/* Account Actions Card */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-destructive" />
+                <CardTitle className="text-destructive">Account Actions</CardTitle>
+              </div>
+              <CardDescription>
+                Critical account management options.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LogoutDialog
+                trigger={
+                  <Button 
+                    variant="destructive" 
+                    className="w-full cursor-pointer" 
+                    size="lg"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                }
+              />
+            </CardContent>
           </Card>
         </div>
       </div>

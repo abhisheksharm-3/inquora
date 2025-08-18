@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import ButtonCta from "./ButtonCta";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Moon, Sun, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CtaButtons, PublicNavbarRoutes } from "@/constants/NavItems";
 import { cn } from "@/utils/cn";
 import { ModeToggle } from "@/components/shared/mode-toggle";
+import { useTheme } from "next-themes";
 
 /**
  * Renders the main responsive navigation bar.
@@ -21,6 +22,48 @@ const Navbar = () => {
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
+
+  /**
+   * Mobile theme selector that matches the style of other menu items
+   */
+  const MobileThemeSelector = () => {
+    const { setTheme, theme } = useTheme();
+    
+    return (
+      <div className="space-y-4 pt-4 border-t border-border/20">
+        <p className="text-center text-sm font-medium text-muted-foreground">Theme</p>
+        <div className="flex justify-center gap-4">
+          <Button
+            variant={theme === "light" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTheme("light")}
+            className="flex items-center gap-2"
+          >
+            <Sun className="h-4 w-4" />
+            Light
+          </Button>
+          <Button
+            variant={theme === "dark" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTheme("dark")}
+            className="flex items-center gap-2"
+          >
+            <Moon className="h-4 w-4" />
+            Dark
+          </Button>
+          <Button
+            variant={theme === "system" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTheme("system")}
+            className="flex items-center gap-2"
+          >
+            <Laptop className="h-4 w-4" />
+            System
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -162,9 +205,9 @@ const Navbar = () => {
                 <nav>
                   <NavigationList isMobile onItemClick={closeMenu} />
                 </nav>
-                <div className="flex flex-col items-center gap-4 w-full">
-                  <ModeToggle />
+                <div className="flex flex-col items-center w-full">
                   <CTAButtons isMobile />
+                  <MobileThemeSelector />
                 </div>
               </div>
             </div>

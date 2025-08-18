@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronsLeft, Loader2 } from "lucide-react";
+import { ChevronsLeft, Loader2, Moon, Sun, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PricingDialog from "@/components/dashboard/PricingDialog";
 import { MobileNavItems } from "@/constants/NavItems";
@@ -12,6 +12,7 @@ import avatarImage from "@/assets/images/avatar.svg";
 import { useSidebarState } from "@/hooks/useMobileSidebarState";
 import { usePathname } from "next/navigation";
 import { Badge } from "../ui/badge";
+import { useTheme } from "next-themes";
 
 /**
  * Renders the main navigation links within the mobile sidebar.
@@ -108,6 +109,48 @@ const UserProfile = ({
 };
 
 /**
+ * Theme selector component for the mobile sidebar
+ */
+const ThemeSelector = () => {
+  const { setTheme, theme } = useTheme();
+  
+  return (
+    <div className="px-4 py-3 border-t border-border">
+      <p className="text-sm font-medium text-foreground mb-3">Theme</p>
+      <div className="grid grid-cols-3 gap-2">
+        <Button
+          variant={theme === "light" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTheme("light")}
+          className="flex flex-col items-center gap-1 h-auto py-2"
+        >
+          <Sun className="h-4 w-4" />
+          <span className="text-xs">Light</span>
+        </Button>
+        <Button
+          variant={theme === "dark" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTheme("dark")}
+          className="flex flex-col items-center gap-1 h-auto py-2"
+        >
+          <Moon className="h-4 w-4" />
+          <span className="text-xs">Dark</span>
+        </Button>
+        <Button
+          variant={theme === "system" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTheme("system")}
+          className="flex flex-col items-center gap-1 h-auto py-2"
+        >
+          <Laptop className="h-4 w-4" />
+          <span className="text-xs">System</span>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Renders the slide-out sidebar for mobile and tablet views.
  *
  * This component includes the main navigation, user profile, and is controlled
@@ -154,6 +197,7 @@ export const DashboardMobileSidebar = () => {
           </Button>
         </div>
         <MobileNavigation onItemClick={closeSidebar} />
+        <ThemeSelector />
         <div className="mt-auto p-4 border-t border-border">
           <UserProfile user={user} isLoading={isLoading} />
         </div>

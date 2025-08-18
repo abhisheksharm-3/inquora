@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,13 +63,7 @@ export const DashboardMobileHeader = () => {
         <PanelLeft className="h-5 w-5" />
         <span className="sr-only">Open Sidebar</span>
       </Button>
-      <Link href="/dashboard">
-        <Image src="/logo.png" alt="Logo" width={28} height={28} priority />
-      </Link>
-      <div className="flex items-center gap-2">
-        <ModeToggle />
-        <PricingDialog trigger={<Button size="sm" className="cursor-pointer">Upgrade</Button>} />
-      </div>
+      <PricingDialog trigger={<Button size="sm" className="cursor-pointer">Upgrade</Button>} />
     </header>
   );
 };
@@ -92,10 +85,10 @@ export const DashboardDesktopHeader = () => {
   const { data: file } = useFileById(chat?.file_id || "");
 
   return (
-    <header className="hidden h-16 shrink-0 items-center justify-between px-6 backdrop-blur-md md:flex">
+    <header className="hidden h-16 shrink-0 items-center justify-between px-6 md:flex">
       <div className="flex items-center gap-2">
         {!isHistoryPage && <ActiveTab chat={chat ?? null} file={file || null} />}
-        <AddTabButton />
+        {!isHistoryPage && <AddTabButton />}
       </div>
       <div className="flex items-center gap-3">
         <ModeToggle />

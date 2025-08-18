@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,97 +9,75 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 
-import { PricingData } from "@/constants/PricingData";
 import { TypeDialogProps } from "@/types/TypeUi";
 
-type BillingCycle = "annual" | "lifetime";
-type PricingTier = "free" | "personal" | "pro";
+/**
+ * @description A list of features included in the free beta plan.
+ */
+const featuresIncluded = [
+  "AI-powered conversations",
+  "Support for all document formats",
+  "Unlimited uploads & queries",
+  "Secure cloud storage",
+  "Real-time collaboration",
+];
 
 /**
- * A redesigned pricing dialog with a corrected layout to prevent overflow.
+ * A simplified pricing dialog for the beta phase showing only free access.
  */
 const PricingDialog = ({ trigger }: TypeDialogProps) => {
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("annual");
-  const [selectedTier, setSelectedTier] = useState<PricingTier>("personal");
-
-  const currentPricingData = PricingData[billingCycle];
-  const selectedTierData = currentPricingData[selectedTier];
-  const tiers: PricingTier[] = ["free", "personal", "pro"];
-
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      {/* FIX: DialogContent is now a flex column with a max height to contain its children */}
-      <DialogContent className="flex h-full max-h-[90vh] w-full max-w-4xl flex-col p-0">
-        <DialogHeader className="shrink-0 p-6 pb-4">
-          <DialogTitle>Upgrade Your Plan</DialogTitle>
-          <DialogDescription>
-            Choose the plan that best fits your needs.
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-hidden">
+        <DialogHeader className="space-y-3">
+          <div className="flex justify-center">
+            <Badge
+              variant="outline"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1"
+            >
+              <div className="h-2 w-2 animate-pulse rounded-full bg-primary/80" />
+              <span className="text-xs font-medium">Pricing</span>
+            </Badge>
+          </div>
+          <DialogTitle className="text-center text-xl sm:text-2xl">
+            Free While We&apos;re in Beta
+          </DialogTitle>
+          <DialogDescription className="text-center text-sm">
+            Enjoy full access to all features during our beta phase.
           </DialogDescription>
         </DialogHeader>
 
-        {/* FIX: This new wrapper allows the central content to scroll */}
-        <div className="flex-1 overflow-y-auto px-6">
-          {/* Billing Cycle Switch */}
-          <div className="flex items-center justify-center space-x-3 py-4">
-            <Label htmlFor="billing-cycle" className={`font-medium ${billingCycle === 'annual' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Annual
-            </Label>
-            <Switch
-              id="billing-cycle"
-              checked={billingCycle === "lifetime"}
-              onCheckedChange={(checked) => setBillingCycle(checked ? "lifetime" : "annual")}
-            />
-            <Label htmlFor="billing-cycle" className={`font-medium ${billingCycle === 'lifetime' ? 'text-foreground' : 'text-muted-foreground'}`}>
-              Lifetime
-            </Label>
-          </div>
-
-          {/* Main Glass Card */}
-          <Card className="my-4 overflow-hidden border-white/10 bg-black/20 backdrop-blur-md py-0">
-            {/* Tier Selector */}
-            <div className="flex items-stretch border-b border-white/10 bg-black/20">
-              {tiers.map((tier) => (
-                <button
-                  key={tier}
-                  onClick={() => setSelectedTier(tier)}
-                  className={`flex-1 p-3 text-center text-sm font-medium transition-colors sm:p-4 ${
-                    selectedTier === tier
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-white/5"
-                  }`}
-                >
-                  {currentPricingData[tier].title}
-                </button>
-              ))}
-            </div>
-
-            {/* Two-Column Content */}
-            <CardContent className="p-6 md:p-8">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12">
+        <div className="flex-1 overflow-y-auto py-4">
+          <Card className="border bg-card/50">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
                 {/* Left Column: Price */}
-                <div className="text-center md:text-left">
-                  <p className="text-sm font-medium text-primary">PLAN</p>
-                  <p className="mt-2 text-6xl font-bold tracking-tighter text-neutral-50 md:text-7xl">
-                    {selectedTierData.price}
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-xs font-medium text-primary mb-2">PLAN</p>
+                  <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter">
+                    Free
                   </p>
-                  <p className="text-neutral-400">{selectedTierData.subtitle}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    During our Beta phase
+                  </p>
                 </div>
 
                 {/* Right Column: Features */}
-                <div className="border-t border-white/10 pt-8 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                  <p className="mb-4 font-semibold text-neutral-200">
+                <div className="flex-1 border-t border-border pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                  <p className="text-sm font-semibold mb-4">
                     Includes full access to:
                   </p>
-                  <ul className="space-y-3">
-                    {selectedTierData.features.map((feature: string) => (
-                      <li key={feature} className="flex items-start gap-3">
-                        <Check className="h-5 w-5 flex-shrink-0 text-primary" />
-                        <span className="text-neutral-300">{feature}</span>
+                  <ul className="space-y-2">
+                    {featuresIncluded.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <Check className="h-4 w-4 flex-shrink-0 text-primary mt-0.5" />
+                        <span className="text-sm text-muted-foreground">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -112,10 +87,13 @@ const PricingDialog = ({ trigger }: TypeDialogProps) => {
           </Card>
         </div>
 
-        <DialogFooter className="shrink-0 border-t border-border p-6">
-          <Button size="lg" className="w-full" disabled={selectedTier === 'free'}>
-            {selectedTier === 'free' ? 'Your Current Plan' : `Subscribe to ${selectedTierData.title}`}
+        <DialogFooter className="flex flex-col items-center space-y-2 sm:flex-col sm:justify-center">
+          <Button size="lg" className="w-full max-w-xs font-semibold">
+            Continue with Free Plan
           </Button>
+          <p className="text-center text-xs text-muted-foreground/70">
+            No credit card required.
+          </p>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,14 +6,17 @@ import {
   DialogContent,
   DialogTrigger,
   DialogTitle,
+  DialogHeader,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, CircleAlert, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X, CircleAlert, Lock, Clock } from "lucide-react";
 import { useUploadLogic } from "@/hooks/useUpload";
 import { getFileTypeConfig } from "@/constants/FileTypes";
 import { useUser } from "@/hooks/useUser";
 
-// Components
 import UploadModalArea from "./UploadModalArea";
 import UploadModalProgress from "./UploadModalProgress";
 import UploadModalSuccess from "./UploadModalSuccess";
@@ -22,21 +25,16 @@ import UploadModalUrlInput from "./UploadModalUrlInput";
 import { TypeUploadModalProps } from "@/types/TypeUpload";
 
 /**
- * A comprehensive modal dialog for handling various file and URL uploads.
+ * A modal dialog for handling file and URL uploads.
  *
- * This client component acts as a state machine for the upload process. It orchestrates
- * the UI by rendering different child components based on the current upload status
- * (e.g., idle, uploading, success, error). The core business logic is encapsulated
- * in the `useUploadLogic` custom hook.
+ * This component manages the entire upload lifecycle, rendering different UI
+ * states (idle, uploading, success, error) based on the `useUploadLogic` hook.
+ * It also includes guards for authentication and "coming soon" features.
  *
- * It also includes render guards to handle states like unauthenticated users or
- * features that are marked as "coming soon".
- *
- * @component
- * @param {TypeUploadModalProps} props - The properties for the component.
+ * @param {TypeUploadModalProps} props - The component props.
  * @param {React.ReactNode} props.trigger - The UI element that opens the modal.
  * @param {boolean} [props.defaultOpen=false] - If true, the modal opens on initial render.
- * @param {string} props.fileType - A key specifying the type of upload (e.g., 'pdf', 'youtube'), used to get configuration.
+ * @param {string} props.fileType - Specifies the type of upload (e.g., 'pdf', 'youtube').
  * @returns {JSX.Element} The rendered upload modal component.
  */
 const UploadModal: React.FC<TypeUploadModalProps> = ({
@@ -44,23 +42,16 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
   defaultOpen = false,
   fileType,
 }) => {
-  // State
   const [open, setOpen] = useState(defaultOpen);
-
-  // Hooks
   const { isAuthenticated } = useUser();
   const fileTypeConfig = getFileTypeConfig(fileType);
   const isComingSoon = fileTypeConfig.comingSoon === true;
   const isUrlOnly = fileTypeConfig.urlOnly === true;
 
-  /**
-   * Closes the dialog and resets the internal state of the upload logic.
-   */
   const handleClose = () => {
     setOpen(false);
   };
 
-  // Upload logic hook
   const {
     uploadStatus,
     fileName,
@@ -80,107 +71,96 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     onClose: handleClose,
   });
 
-  /**
-   * Handles dismissing the error and resetting to idle state
-   */
   const handleDismissError = () => {
     if (resetState) {
-      resetState(); // Reset to idle state
+      resetState();
     }
   };
 
-  // Render guards for authentication and feature availability
+  // Authentication guard
   if (!isAuthenticated) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-        <DialogContent
-          className="bg-[#121212] border border-[#333] max-w-md p-0 rounded-xl"
-          showCloseButton={false}
-        >
-          <DialogTitle className="sr-only">Authentication Required</DialogTitle>
-          <div className="p-6 flex flex-col items-center justify-center">
-            <AlertCircle className="text-red-500 h-12 w-12 mb-4" />
-            <h2 className="text-lg font-medium mb-2">
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader className="text-center space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Lock className="h-6 w-6 text-destructive" />
+            </div>
+            <DialogTitle className="text-xl font-semibold">
               Authentication Required
-            </h2>
-            <p className="text-sm text-gray-400 text-center mb-4">
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
               You need to be logged in to upload files and start chats.
             </p>
-            <Button
-              onClick={handleClose}
-              className="w-full py-2 text-center text-white rounded-lg cursor-pointer"
-            >
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleClose} className="w-full cursor-pointer">
               Close
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 
+  // Coming soon guard
   if (isComingSoon) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-        <DialogContent
-          className="bg-[#121212] border border-[#333] max-w-md p-0 rounded-xl"
-          showCloseButton={false}
-        >
-          <DialogTitle className="sr-only">Coming Soon</DialogTitle>
-          <div className="p-6 flex flex-col items-center justify-center">
-            <CircleAlert className="text-amber-500 h-12 w-12 mb-4" />
-            <h2 className="text-lg font-medium mb-2">Coming Soon</h2>
-            <p className="text-sm text-gray-400 text-center mb-4">
-              {fileTypeConfig.name} uploads are coming soon. We&apos;re working
-              hard to bring this feature to you!
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader className="text-center space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-amber-500" />
+            </div>
+            <DialogTitle className="text-xl font-semibold">
+              Coming Soon
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {fileTypeConfig.name} uploads are coming soon. We&apos;re working hard
+              to bring this feature to you!
             </p>
-            <Button
-              onClick={handleClose}
-              className="w-full py-2 text-center text-white rounded-lg cursor-pointer"
-            >
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleClose} className="w-full cursor-pointer">
               Close
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Main render
+  // Main upload modal
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent
-        className="bg-[#121212] border border-[#333] max-w-md p-0 rounded-xl"
-        showCloseButton={false}
-      >
-        <DialogTitle className="sr-only">
-          Upload {fileTypeConfig.name}
-        </DialogTitle>
-
-        {/* Header */}
-        <div className="p-4 flex justify-between items-start border-b border-[#333]">
-          <div>
-            <h2 className="text-base font-medium">
-              Upload {fileTypeConfig.name}
-            </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Upload and chat with your {fileTypeConfig.name.toLowerCase()}.
-            </p>
+      <DialogContent className="sm:max-w-lg p-0 gap-0" showCloseButton={false}>
+        <DialogHeader className="p-6 pb-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <DialogTitle className="text-lg font-semibold">
+                Upload {fileTypeConfig.name}
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                Upload and chat with your {fileTypeConfig.name.toLowerCase()}.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="h-8 w-8 rounded-full cursor-pointer"
+              aria-label="Close dialog"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-white cursor-pointer"
-            aria-label="Close dialog"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        </DialogHeader>
 
-        {/* Content */}
-        <div className="p-6">
-          {/* File upload area */}
+        <div className="px-6 pb-6 space-y-6">
+          {/* File upload area - only show if not URL-only */}
           {!isUrlOnly && uploadStatus === "idle" && (
             <UploadModalArea
               fileTypeConfig={fileTypeConfig}
@@ -189,14 +169,18 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             />
           )}
 
-          {/* Upload states */}
+          {/* Upload progress */}
           {uploadStatus === "uploading" && <UploadModalProgress />}
+          
+          {/* Upload success */}
           {uploadStatus === "uploaded" && (
             <UploadModalSuccess
               fileName={fileName}
               handleRemoveFile={handleRemoveFile}
             />
           )}
+          
+          {/* Upload error */}
           {uploadStatus === "error" && (
             <UploadModalError
               error={error}
@@ -205,52 +189,70 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             />
           )}
 
-          {/* OR divider */}
+          {/* Separator between file upload and URL input - only show if not URL-only */}
           {!isUrlOnly && (
-            <div className="flex items-center justify-center my-4">
-              <div className="flex-grow h-px bg-[#333]"></div>
-              <div className="mx-4 text-sm text-gray-400">OR</div>
-              <div className="flex-grow h-px bg-[#333]"></div>
+            <div className="relative">
+              <Separator />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="bg-background px-3 text-xs text-muted-foreground font-medium">
+                  OR
+                </span>
+              </div>
             </div>
           )}
 
-          {/* URL input */}
-          <UploadModalUrlInput
-            url={url}
-            fileTypeConfig={fileTypeConfig}
-            isUrlOnly={isUrlOnly}
-            handleUrlChange={handleUrlChange}
-            handleUrlSubmit={handleSubmit}
-            handleKeyDown={handleKeyDown}
-            isUploading={isUploading}
-          />
+          {/* URL input section */}
+          <div className="space-y-4">
+            <UploadModalUrlInput
+              url={url}
+              fileTypeConfig={fileTypeConfig}
+              isUrlOnly={isUrlOnly}
+              handleUrlChange={handleUrlChange}
+              handleUrlSubmit={handleSubmit}
+              handleKeyDown={handleKeyDown}
+              isUploading={isUploading}
+            />
 
-          {/* Info message */}
-          <div className="flex items-center mb-2 gap-2 bg-[#181818] p-3 rounded-xl">
-            <CircleAlert size={16} className="text-primary" />
-            <p className="text-sm font-medium text-primary">
-              Please make sure the link can be accessed directly
-            </p>
+            {/* Access warning alert */}
+            <Alert className="border-primary/20 bg-primary/5">
+              <CircleAlert className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm font-medium text-primary">
+                Please make sure the link can be accessed directly
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex border-t border-[#333] p-4">
-          <Button
-            onClick={handleClose}
-            className="flex-1 py-2 text-center bg-transparent hover:bg-[#1a1a1a] text-gray-400 rounded-lg mr-2 cursor-pointer"
-            variant="outline"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="flex-1 py-2 text-center text-white rounded-lg cursor-pointer"
-            disabled={isUploading || uploadStatus === "uploaded"}
-          >
-            {isUploading ? "Uploading..." : "Upload"}
-          </Button>
-        </div>
+        <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
+          <div className="flex w-full gap-3">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1 cursor-pointer"
+              disabled={isUploading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="flex-1 cursor-pointer"
+              disabled={
+                isUploading || 
+                uploadStatus === "uploaded" || 
+                (!selectedFile && !url?.trim())
+              }
+            >
+              {isUploading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Uploading...
+                </div>
+              ) : (
+                "Upload"
+              )}
+            </Button>
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
