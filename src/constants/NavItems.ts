@@ -42,7 +42,6 @@ export const MobileNavItems = [
 export const PublicNavbarRoutes = [
   { label: "Pricing", url: "/#pricing" },
   { label: "FAQ", url: "/#faq" },
-  { label: "Contact Us", url: "/#contact-us" },
 ];
 
 /**

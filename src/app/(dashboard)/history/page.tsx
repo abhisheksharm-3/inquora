@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useChats } from "@/hooks/useChats";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, AlertCircle, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { HistoryChatlistSkeletonItem } from "@/components/history/HistoryPageSkeletonLoader";
 import { HistoryPageChatItem } from "@/components/history/HistoryPageChatItem";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { VirtualizedChatList } from "@/components/history/VirtualizedChatList";
 
 /**
  * Renders the user's chat history page with improved responsive design and cohesive UI.
@@ -16,12 +18,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const HistoryPage = () => {
   const { chats, isLoading, isError, error, refetch } = useChats();
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Debounce search query to reduce filtering frequency
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const filteredChats = (Array.isArray(chats) ? chats : []).filter(
-    (chat) =>
-      chat?.title &&
-      chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Memoize filtered chats to prevent recalculation on every render
+  const filteredChats = useMemo(() => {
+    if (!Array.isArray(chats)) return [];
+    if (!debouncedSearchQuery.trim()) return chats;
+    
+    const query = debouncedSearchQuery.toLowerCase().trim();
+    return chats.filter((chat) => 
+      chat?.title?.toLowerCase().includes(query)
+    );
+  }, [chats, debouncedSearchQuery]);
+
+  // Debounced search handler to reduce filtering frequency
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   const renderContent = () => {
     if (isError) {
@@ -81,44 +96,56 @@ const HistoryPage = () => {
     }
     return (
       <div className="space-y-4">
-        {filteredChats.map((chat) =>
-          chat?.id ? <HistoryPageChatItem key={chat.id} chat={chat} /> : null
+        {/* Use virtualization for large lists (>20 items) */}
+        {filteredChats.length > 20 ? (
+          <VirtualizedChatList chats={filteredChats} />
+        ) : (
+          filteredChats.map((chat) =>
+            chat?.id ? <HistoryPageChatItem key={chat.id} chat={chat} /> : null
+          )
         )}
       </div>
     );
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-4 md:px-6 md:py-6">
-      {/* Header */}
-      <div className="mb-6 md:mb-8 text-center">
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-3">
-            Chat History
-          </h1>
-          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
-            Review, search, and manage your past conversations.
-          </p>
+    <div className="flex flex-col h-[calc(100vh-8rem)]"> {/* Adjust height to account for header and padding */}
+      {/* Fixed Header Section */}
+      <div className="flex-shrink-0 mx-auto w-full max-w-4xl px-4 py-4 md:px-6 md:py-6 border-b border-border/20 fixed-header">
+        {/* Header */}
+        <div className="mb-6 md:mb-8 text-center search-container">
+          <div className="mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-3 chat-title">
+              Chat History
+            </h1>
+            <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2">
+              Review, search, and manage your past conversations.
+            </p>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative mx-auto max-w-md lg:max-w-lg">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+            <Input
+              type="text"
+              placeholder="Search by chat title..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="h-12 w-full pl-10 pr-4 text-sm md:text-base backdrop-blur-sm bg-background/60 border-border/60 focus:bg-background/80 focus:border-primary/60 transition-all rounded-xl"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mx-auto mb-6 md:mb-8 max-w-md lg:max-w-lg">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
-          <Input
-            type="text"
-            placeholder="Search by chat title..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-12 w-full pl-10 pr-4 text-sm md:text-base backdrop-blur-sm bg-background/60 border-border/60 focus:bg-background/80 focus:border-primary/60 transition-all rounded-xl"
-          />
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto px-4 py-4 md:px-6 md:py-6 chat-list-scroll smooth-scroll">
+          <div className="mx-auto w-full max-w-4xl">
+            {renderContent()}
+          </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="w-full space-y-4">
-        {renderContent()}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { TypeChat } from "@/types/TypeSupabase";
+import { TypeChat, TypeChatWithFile } from "@/types/TypeSupabase";
 import { useUser } from "./useUser";
 import { createChat as createChatWithFile } from "@/utils/gemini/actions";
 import { useState, useCallback } from "react";
@@ -28,15 +28,28 @@ export const useChats = (chatId?: string) => {
     queryKey: CHATS_QUERY_KEY,
     queryFn: async () => {
       if (!userId) return [];
+      // Fetch chats with their associated files to avoid N+1 queries
       const { data, error } = await supabase
         .from("chats")
-        .select("*, files(*)")
+        .select(`
+          *,
+          files (
+            id,
+            name,
+            type,
+            size,
+            url,
+            uploaded_at
+          )
+        `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as TypeChat[];
+      return data as TypeChatWithFile[];
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   /** Query to fetch a single chat by its ID. */
@@ -65,7 +78,7 @@ export const useChats = (chatId?: string) => {
       return createChatWithFile(fileId, userId);
     },
     onSuccess: (newChat) => {
-      queryClient.setQueryData<TypeChat[]>(CHATS_QUERY_KEY, (old = []) => [newChat, ...old]);
+      queryClient.setQueryData<TypeChatWithFile[]>(CHATS_QUERY_KEY, (old = []) => [newChat, ...old]);
     },
   });
 
@@ -80,7 +93,7 @@ export const useChats = (chatId?: string) => {
     },
     onSuccess: (updatedChat) => {
       // Update the main list cache
-      queryClient.setQueryData<TypeChat[]>(CHATS_QUERY_KEY, (old = []) =>
+      queryClient.setQueryData<TypeChatWithFile[]>(CHATS_QUERY_KEY, (old = []) =>
         old.map((chat) => (chat.id === updatedChat.id ? updatedChat : chat))
       );
       // Update the specific chat cache
@@ -98,7 +111,7 @@ export const useChats = (chatId?: string) => {
     },
     onSuccess: (deletedChatId) => {
       // Remove from the main list cache
-      queryClient.setQueryData<TypeChat[]>(CHATS_QUERY_KEY, (old = []) =>
+      queryClient.setQueryData<TypeChatWithFile[]>(CHATS_QUERY_KEY, (old = []) =>
         old.filter((chat) => chat.id !== deletedChatId)
       );
       // Invalidate the specific chat query
@@ -109,7 +122,7 @@ export const useChats = (chatId?: string) => {
   // --- HELPER FUNCTIONS ---
 
   /** Retrieves a chat from the cache by its ID. */
-  const getChatById = useCallback((id: string): TypeChat | undefined => {
+  const getChatById = useCallback((id: string): TypeChatWithFile | undefined => {
       return chatsQuery.data?.find((chat) => chat.id === id);
     }, [chatsQuery.data]
   );

@@ -1,18 +1,19 @@
-import { useFileById } from "@/hooks/useFiles";
-import { TypeChat } from "@/types/TypeSupabase";
+import { memo } from "react";
+import { TypeChatWithFile } from "@/types/TypeSupabase";
 import { HistoryPageChatMetadata } from "./HistoryPageChatMetadata";
 import { HistorypageChatDropdown } from "./HistoryPageChatDropdown";
 import Link from "next/link";
 
 /**
  * A responsive glass-morphism themed list item representing a single chat in the history.
+ * Optimized version that uses pre-fetched file data from the chat query.
  */
-export const HistoryPageChatItem = ({ chat }: { chat: TypeChat }) => {
-  const { data: fileData } = useFileById(chat.file_id || "");
-  const file = fileData ? {
-    name: fileData.name,
-    type: fileData.type ?? "unknown",
-    size: fileData.size ?? 0,
+export const HistoryPageChatItem = memo(({ chat }: { chat: TypeChatWithFile }) => {
+  // Use file data from the chat query instead of making a separate API call
+  const file = chat.files ? {
+    name: chat.files.name,
+    type: chat.files.type ?? "unknown",
+    size: chat.files.size ?? 0,
   } : undefined;
 
   return (
@@ -23,4 +24,6 @@ export const HistoryPageChatItem = ({ chat }: { chat: TypeChat }) => {
       <HistorypageChatDropdown chat={chat} file={file} />
     </div>
   );
-};
+});
+
+HistoryPageChatItem.displayName = "HistoryPageChatItem";

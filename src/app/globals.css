@@ -138,3 +138,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide native scrollbars for the chat list scroll area (cross-browser) */
+.chat-list-scroll {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.chat-list-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

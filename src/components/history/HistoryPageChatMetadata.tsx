@@ -1,11 +1,13 @@
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatFileSize, formatTimeAgo } from "@/utils/history-page-utils";
 import { TypeHistoryPageChatMetadataProps } from "@/types/TypeUi";
 
 /**
  * Displays responsive and themed metadata for a single chat item with improved mobile layout.
+ * Memoized to prevent unnecessary re-renders.
  */
-export const HistoryPageChatMetadata = ({ chat, file }: TypeHistoryPageChatMetadataProps) => {
+export const HistoryPageChatMetadata = memo(({ chat, file }: TypeHistoryPageChatMetadataProps) => {
   const title = chat.title || file?.name || "Untitled Chat";
   const fileType = file?.type?.toUpperCase() || "FILE";
 
@@ -60,4 +62,6 @@ export const HistoryPageChatMetadata = ({ chat, file }: TypeHistoryPageChatMetad
       </div>
     </div>
   );
-};
+});
+
+HistoryPageChatMetadata.displayName = "HistoryPageChatMetadata";

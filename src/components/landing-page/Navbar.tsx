@@ -28,10 +28,12 @@ const Navbar = () => {
    */
   const MobileThemeSelector = () => {
     const { setTheme, theme } = useTheme();
-    
+
     return (
       <div className="space-y-4 pt-4 border-t border-border/20">
-        <p className="text-center text-sm font-medium text-muted-foreground">Theme</p>
+        <p className="text-center text-sm font-medium text-muted-foreground">
+          Theme
+        </p>
         <div className="flex justify-center gap-4">
           <Button
             variant={theme === "light" ? "default" : "outline"}
@@ -164,9 +166,9 @@ const Navbar = () => {
               <NavigationList />
             </nav>
             <div className="flex items-center gap-3">
-              <ModeToggle />
               <CTAButtons />
             </div>
+            <ModeToggle />
           </div>
 
           <Button
