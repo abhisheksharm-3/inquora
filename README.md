@@ -1,4 +1,4 @@
-# Chat With Anything
+# Inquora
 
 AI-powered document chat application with intelligent conversation and multi-format support
 
@@ -9,7 +9,7 @@ Visit [inquora.vercel.app](https://inquora.vercel.app) to see the application in
 
 ## 📝 Project Overview
 
-Chat With Anything is a modern AI-powered application that enables users to have intelligent conversations with various types of content. Beyond basic document viewing, Chat With Anything offers AI-powered document processing, intelligent chat capabilities, and support for multiple file formats including PDFs, documents, spreadsheets, presentations, images, YouTube videos, and web URLs.
+Inquora is a modern AI-powered application that enables users to have intelligent conversations with various types of content. Beyond basic document viewing, Inquora offers AI-powered document processing, intelligent chat capabilities, and support for multiple file formats including PDFs, documents, spreadsheets, presentations, images, YouTube videos, and web URLs.
 
 ![Dashboard](public/sample.png)
 
@@ -76,8 +76,8 @@ Chat With Anything is a modern AI-powered application that enables users to have
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/inquora.git
-cd inquora
+git clone https://github.com/abhisheksharm-3/chat-with-anything.git
+cd chat-with-anything
 ```
 
 2. **Install dependencies:**
@@ -133,7 +133,7 @@ yarn dev
 ## 📁 Project Structure
 
 ```
-inquora/
+chat-with-anything/
 ├── src/
 │   ├── app/                      # Next.js app router structure
 │   │   ├── (auth)/               # Authentication pages (login, signup)
