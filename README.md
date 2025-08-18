@@ -74,11 +74,13 @@ Inquora is a modern AI-powered application that enables users to have intelligen
 
 ### Installation
 
-1. **Clone the repository:**
+*1. **Clone the repository:**
 ```bash
+> ⚠️ **Note:** The repository name will be changed to `inquora` soon. Please check for updates if you are cloning after August 2025.
+
 git clone https://github.com/abhisheksharm-3/chat-with-anything.git
 cd chat-with-anything
-```
+```*
 
 2. **Install dependencies:**
 ```bash
