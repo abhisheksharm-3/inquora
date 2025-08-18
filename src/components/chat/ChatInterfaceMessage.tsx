@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useUser } from "@/hooks/useUser";
 import { TypeChatInterfaceMessagesProps } from "@/types/TypeChat";
 import { getUserInitials } from "@/utils/dashboard-utils";
+import { MessageConstants } from "@/constants/MessageConstants";
 
 /**
  * Renders the message list with redesigned, themed chat bubbles.
@@ -58,7 +59,14 @@ export const ChatInterfaceMessages: React.FC<TypeChatInterfaceMessagesProps> = (
                   : "border border-border bg-card text-foreground"
               }`}
             >
-              <div className="whitespace-pre-wrap break-words">{message.content}</div>
+              {message.content === MessageConstants.AssistantThinkingContent ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                  <span>Thinking...</span>
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap break-words">{message.content}</div>
+              )}
             </div>
 
             {/* User Avatar */}
@@ -69,19 +77,6 @@ export const ChatInterfaceMessages: React.FC<TypeChatInterfaceMessagesProps> = (
             )}
           </div>
         ))}
-
-         {/* AI "Thinking..." Indicator */}
-        {isSending && (
-          <div className="flex items-start gap-3 justify-start">
-               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card p-1.5">
-                <Image src="/logo.png" alt="AI" width={24} height={24} />
-              </div>
-               <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-muted-foreground">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                  <span>Thinking...</span>
-               </div>
-          </div>
-        )}
       </div>
 
       <div ref={messagesEndRef} />

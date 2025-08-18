@@ -8,66 +8,50 @@ import { useRef, useCallback, useState, useEffect } from "react";
 
 /**
  * A themed "glass" input area for the chat interface. Uses a Textarea for better UX.
- * Fixed focus handling and cursor position issues by using independent local state.
+ * Uses local state to prevent cursor position issues.
  */
 export const ChatInterfaceInput: React.FC<TypeChatInputProps> = ({
   inputValue, setInputValue, onSendMessage, isSending,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localValue, setLocalValue] = useState("");
-  const previousInputValueRef = useRef(inputValue);
 
-  // Only sync when inputValue is cleared (after message sent) or initially set
+  // Only sync when the global input is cleared (after sending)
   useEffect(() => {
-    // If inputValue was cleared from outside (message sent), clear local value too
-    if (inputValue === "" && previousInputValueRef.current !== "") {
+    if (inputValue === "") {
       setLocalValue("");
     }
-    // If inputValue is set from outside and local is empty, sync it
-    else if (inputValue !== "" && localValue === "") {
-      setLocalValue(inputValue);
-    }
-    previousInputValueRef.current = inputValue;
-  }, [inputValue, localValue]);
+  }, [inputValue]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    // Don't call setInputValue on every change to prevent re-renders
+    // Don't update global state on every keystroke to prevent cursor issues
   }, []);
 
-  const handleSendClick = useCallback(() => {
+  const sendMessage = useCallback(() => {
     if (!localValue.trim() || isSending) return;
     
-    // Update global state with the current local value before sending
+    // Update global state with current local value before sending
     setInputValue(localValue);
     onSendMessage();
     
-    // Keep focus after sending
+    // Maintain focus after sending
     setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }, 10);
+      textareaRef.current?.focus();
+    }, 50);
   }, [onSendMessage, localValue, isSending, setInputValue]);
+
+  const handleSendClick = useCallback(() => {
+    sendMessage();
+  }, [sendMessage]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (localValue.trim() && !isSending) {
-        // Update global state with the current local value before sending
-        setInputValue(localValue);
-        onSendMessage();
-        
-        // Keep focus after sending
-        setTimeout(() => {
-          if (textareaRef.current) {
-            textareaRef.current.focus();
-          }
-        }, 10);
-      }
+      sendMessage();
     }
-  }, [onSendMessage, localValue, isSending, setInputValue]);
+  }, [sendMessage]);
 
   return (
     <div className="border-t border-white/10 p-1">

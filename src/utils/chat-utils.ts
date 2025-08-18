@@ -265,13 +265,12 @@ export const chatInterfaceReducer = (
     case 'SEND_MESSAGE_START':
       return {
         ...state,
-        // Don't clear input immediately - let the component handle it
         localMessages: [...state.localMessages, action.payload.tempUserMessage, action.payload.tempAiMessage],
       };
     case 'SEND_MESSAGE_SUCCESS':
       return {
         ...state,
-        inputValue: "", // Clear input only after successful send
+        inputValue: "", // Clear input after successful send
       };
     case 'SEND_MESSAGE_ERROR':
       return {

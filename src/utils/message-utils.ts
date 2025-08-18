@@ -4,7 +4,7 @@ import { TypeFile, TypeMessage } from "@/types/TypeSupabase";
 /**
  * Compares two messages to determine if they are duplicates.
  * - For 'user' roles, it checks for identical content.
- * - For 'assistant' roles, it checks for identical content within a short time window.
+ * - For 'assistant' roles, it checks for identical content or thinking state replacement.
  *
  * @param msg1 The first message to compare.
  * @param msg2 The second message to compare.
@@ -14,21 +14,18 @@ export const areMessagesDuplicate = (
   msg1: TypeMessage,
   msg2: TypeMessage
 ): boolean => {
-  if (msg1.role !== msg2.role || msg1.content !== msg2.content) {
+  if (msg1.role !== msg2.role) {
     return false;
   }
 
-  // User messages are duplicates if content and role match.
+  // User messages are duplicates if content matches exactly
   if (msg1.role === "user") {
-    return true;
+    return msg1.content === msg2.content;
   }
 
-  // Assistant messages are duplicates if they are also within a specific time window.
+  // Assistant messages are duplicates if content matches exactly
   if (msg1.role === "assistant") {
-    const timeDiff = Math.abs(
-      new Date(msg1.created_at).getTime() - new Date(msg2.created_at).getTime()
-    );
-    return timeDiff < MessageConstants.AssistantDuplicateTimeThresholdMs;
+    return msg1.content === msg2.content;
   }
 
   return false;
@@ -50,6 +47,7 @@ export const checkYouTubeProcessingError = (file: TypeFile): boolean => {
 
 /**
  * Synchronizes server-fetched messages with a local list, preserving pending optimistic updates.
+ * Properly handles replacement of "thinking" messages with real assistant responses.
  *
  * @param serverMessages The authoritative list of messages from the server.
  * @param localMessages The current local state, which may include optimistic UI messages.
@@ -59,19 +57,44 @@ export const syncMessagesWithOptimisticUpdates = (
   serverMessages: TypeMessage[],
   localMessages: TypeMessage[]
 ): TypeMessage[] => {
-  // Filter for optimistic local messages that don't have a confirmed version on the server yet.
+  // Step 1: Filter out optimistic messages that have been confirmed by the server
   const pendingOptimisticMessages = localMessages.filter((localMsg) => {
     if (!localMsg.id.startsWith(MessageConstants.OptimisticIdPrefix)) {
       return false; // Not an optimistic message.
     }
-    // Keep the optimistic message if no server message is a duplicate of it.
-    return !serverMessages.some((serverMsg) =>
+    
+    // Check if this optimistic message has been confirmed by the server
+    const hasServerDuplicate = serverMessages.some((serverMsg) =>
       areMessagesDuplicate(localMsg, serverMsg)
     );
+    
+    return !hasServerDuplicate;
   });
 
-  // The new list is the server messages plus any still-pending optimistic messages.
-  return [...serverMessages, ...pendingOptimisticMessages];
+  // Step 2: Remove "thinking" messages if there are real assistant responses
+  const finalOptimisticMessages = pendingOptimisticMessages.filter((localMsg) => {
+    // If this is a thinking message, check if there's a real assistant response
+    if (localMsg.role === "assistant" && localMsg.content === MessageConstants.AssistantThinkingContent) {
+      // Check if any server message is a real assistant response that should replace this thinking state
+      const hasRealAssistantResponse = serverMessages.some((serverMsg) => 
+        serverMsg.role === "assistant" && 
+        serverMsg.content !== MessageConstants.AssistantThinkingContent
+      );
+      
+      // If there's a real assistant response, remove the thinking message
+      return !hasRealAssistantResponse;
+    }
+    
+    return true;
+  });
+
+  // Step 3: Combine server messages with remaining optimistic messages and sort
+  const combinedMessages = [...serverMessages, ...finalOptimisticMessages];
+  
+  // Sort by created_at to maintain chronological order
+  return combinedMessages.sort((a, b) => 
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
 };
 
 /**

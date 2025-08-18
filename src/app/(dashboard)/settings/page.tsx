@@ -41,7 +41,7 @@ const SettingsPage = () => {
     <div className="container mx-auto max-w-6xl space-y-8 p-6">
       {/* Header Section */}
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent md:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent pb-2 md:text-5xl">
           Account Settings
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">

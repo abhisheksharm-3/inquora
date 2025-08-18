@@ -105,7 +105,7 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isSending && (
+          {isSending && localMessages.some(msg => msg.content === "...") && (
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3 animate-pulse" />
               Thinking
