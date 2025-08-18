@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
-  --font-mono: system-ui, monospace;
+  --font-sans: var(--font-space-grotesk, system-ui, sans-serif);
+  --font-mono: var(--font-jetbrains-mono, system-ui, monospace);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -44,72 +44,90 @@
 }
 
 :root {
-  --radius: 0.25rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.563 0.194 286.5);
-  --primary-foreground: oklch(0.969 0.016 293.756);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
+  --radius: 0.35rem;
+  --background: oklch(0.995 0.002 286); /* soft warm white */
+  --foreground: oklch(0.15 0.005 285.8); /* deep muted ink */
+
+  --card: var(--background);
+  --card-foreground: var(--foreground);
+
+  --popover: var(--background);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.563 0.194 286.5); /* inquora violet */
+  --primary-foreground: oklch(0.98 0.015 295); /* soft light text on violet */
+
+  --secondary: oklch(0.97 0.005 286.3);
+  --secondary-foreground: var(--foreground);
+
+  --muted: oklch(0.945 0.002 286);
+  --muted-foreground: oklch(0.5 0.01 285.9);
+
+  --accent: oklch(0.89 0.05 290); /* soft lilac accent */
+  --accent-foreground: oklch(0.2 0.01 285.9);
+
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.563 0.194 286.5);
+  --border: oklch(0.9 0.01 286);
+  --input: oklch(0.92 0.008 286.3);
+  --ring: var(--primary);
+
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.563 0.194 286.5);
-  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.563 0.194 286.5);
+
+  --sidebar: var(--background);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
+  --background: oklch(0.13 0.006 285.8); /* deep indigo-black */
+  --foreground: oklch(0.98 0 0); /* almost white */
+
+  --card: oklch(0.2 0.01 285.9);
+  --card-foreground: var(--foreground);
+
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+
   --primary: oklch(0.563 0.194 286.5);
-  --primary-foreground: oklch(0.969 0.016 293.756);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.98 0.015 295);
+
+  --secondary: oklch(0.25 0.01 285.8);
+  --secondary-foreground: var(--foreground);
+
+  --muted: oklch(0.25 0.01 285.8);
+  --muted-foreground: oklch(0.7 0.01 285.9);
+
+  --accent: oklch(0.4 0.05 290); /* lilac glow */
+  --accent-foreground: var(--foreground);
+
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.563 0.194 286.5);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: var(--primary);
+
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.563 0.194 286.5);
-  --sidebar-primary-foreground: oklch(0.969 0.016 293.756);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.563 0.194 286.5);
+
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 @layer base {
@@ -121,28 +139,11 @@
   }
 }
 
-.grey-gradient {
-  background: linear-gradient(180deg, #ffffff 0%, #b3b3b3 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
+/* Hide native scrollbars for the chat list scroll area (cross-browser) */
+.chat-list-scroll {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
-
-.bg-grid-pattern {
-  background-color: #121212;
-  background-size: 50px 20px;
-  /* Define the grid lines ONLY */
-  background-image: linear-gradient(
-      to right,
-      rgba(255, 255, 255, 0.05) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-
-  /* Apply a radial mask to create the "blur" (fade-out) effect */
-  -webkit-mask-image: radial-gradient(
-    ellipse at center,
-    black 20%,
-    transparent 70%
-  );
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+.chat-list-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

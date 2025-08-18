@@ -1,74 +1,106 @@
-import Image from "next/image";
-import ButtonCta from "./ButtonCta";
-import { WordRotate } from "../shared/WordRotate";
-import GlowBackground from "../shared/GlowBackground";
-import { FloatingLogosData, RotateWords } from "@/constants/HeroData";
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 /**
- * The main hero section component for the application's landing page.
- *
- * It features a prominent headline with a dynamic word rotator to showcase
- * the various types of content users can interact with. The section also includes
- * a descriptive sub-headline, a primary call-to-action button, and a visually
- * engaging background with a grid pattern, a glow effect, and decorative floating logos.
- *
- * @component
- * @returns {JSX.Element} The rendered hero section.
+ * Renders the hero section for the landing page.
+ * It features a headline, subheading, and call-to-action buttons that animate
+ * into view on component mount for a dynamic user experience.
+ * @returns {JSX.Element} The hero section component.
  */
 const Hero = () => {
-  // Background grid component
-  const BackgroundGrid = () => (
-    <div className="absolute inset-0 z-0">
-      <div className="h-full w-full bg-grid-pattern" />
-      <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#121212] opacity-90" />
-    </div>
-  );
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Floating logos component
-  const FloatingLogos = () => (
-    <div className="absolute inset-0 z-0 max-w-6xl mx-auto">
-      {FloatingLogosData.map((logo) => (
-        <div
-          key={logo.alt}
-          className={`absolute ${logo.position} ${logo.rotation} opacity-70`}
-        >
-          <Image
-            src={logo.src}
-            alt={logo.alt}
-            width={logo.width}
-            height={logo.height}
-            className={logo.size}
-          />
-        </div>
-      ))}
-    </div>
-  );
-
-  // Main content component
-  const HeroContent = () => (
-    <div className="flex flex-col justify-center relative z-10 w-full">
-      <div className="space-y-6 max-w-2xl mx-auto">
-        <div className="text-center text-3xl md:text-4xl lg:text-5xl font-extralight tracking-tight">
-          Now chat with any{" "}
-          <WordRotate className="font-bold" words={RotateWords} />
-        </div>
-        <div className="max-w-md mx-auto text-center text-base md:text-lg text-gray-400 mt-20 px-10 md:mt-10">
-          Using doc2text ask questions, get information from a document, image,
-          video, URL, github repo and more.
-        </div>
-      </div>
-      <div className="mt-10 md:min-w-96 mx-auto px-12 md:px-0">
-        <ButtonCta className="py-6" showArrow={true} link="/signup" />
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <section className="relative mx-auto space-y-20 px-4 overflow-hidden min-h-[80vh] flex items-center border-b border-primary/10">
-      <BackgroundGrid />
-      <GlowBackground />
-      <FloatingLogos />
-      <HeroContent />
+    <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-cover bg-center">
+      <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
+
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center flex flex-col items-center">
+        <div
+          className={`mb-6 transition-all duration-1000 ease-out ${
+            isLoaded ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+          }`}
+        >
+          <Badge
+            variant="secondary"
+            className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/20 bg-background/5 px-4 py-2 text-muted-foreground shadow-sm transition-colors hover:bg-background/10"
+          >
+            <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+            <span className="text-sm font-medium tracking-wide">
+              New: Video & Image Analysis
+            </span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground/70 transition-transform group-hover:translate-x-1" />
+          </Badge>
+        </div>
+
+        <div className="mb-6">
+          <h1
+            className={`text-5xl pb-1 font-bold leading-tight tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground transition-all duration-1000 ease-out md:text-7xl ${
+              isLoaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
+            style={{ transitionDelay: "200ms" }}
+          >
+            Inquire Anything.
+          </h1>
+          <h1
+            className={`text-5xl pb-1 font-bold leading-tight tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground transition-all duration-1000 ease-out md:text-7xl ${
+              isLoaded ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            }`}
+            style={{ transitionDelay: "400ms" }}
+          >
+            Understand Everything.
+          </h1>
+        </div>
+
+        <div
+          className={`mb-10 transition-all duration-1000 ease-out ${
+            isLoaded ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+          }`}
+          style={{ transitionDelay: "600ms" }}
+        >
+          <p className="mx-auto max-w-3xl text-lg font-light leading-relaxed text-muted-foreground md:text-xl">
+            Instantly turn your documents, code, images, and videos into
+            intelligent, interactive conversations with our secure AI platform.
+          </p>
+        </div>
+
+        <div
+          className={`flex flex-col items-center gap-6 transition-all duration-1000 ease-out ${
+            isLoaded ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+          }`}
+          style={{ transitionDelay: "800ms" }}
+        >
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button
+              size="lg"
+              className="w-52 rounded-full bg-primary px-8 text-md font-semibold text-primary-foreground transition-all duration-300 hover:scale-105 hover:bg-primary/90 active:scale-95"
+              asChild
+            >
+              <a href="/signup">
+                Start for Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-52 rounded-full border-border bg-transparent px-8 text-md font-medium text-foreground transition-all duration-300 hover:scale-105 hover:border-border/80 hover:bg-accent hover:text-accent-foreground active:scale-95"
+              asChild
+            >
+              <Link href="/#how-it-works">See it in Action</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 };

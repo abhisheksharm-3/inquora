@@ -1,46 +1,87 @@
-import ButtonCta from "./ButtonCta";
-import SectionHeader from "../shared/SectionHeader";
-import GlowBackground from "../shared/GlowBackground";
+"use client";
+import { Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import React from "react";
 
 /**
- * A section component for the landing page that displays the pricing information.
- *
- * It features a prominent price point, a list of key features included in the plan,
- * and a primary call-to-action button to encourage users to get started.
- * The content is currently hardcoded.
- *
- * @component
- * @returns {JSX.Element} The rendered pricing section.
+ * @description A list of features included in the free beta plan.
+ */
+const featuresIncluded = [
+  "AI-powered conversations",
+  "Support for all document formats",
+  "Unlimited uploads & queries",
+  "Secure cloud storage",
+  "Real-time collaboration",
+];
+
+/**
+ * Renders the pricing section for the landing page.
+ * It displays a single "Free during Beta" plan, listing the included features
+ * and a call-to-action to get started.
+ * @returns {JSX.Element} The pricing section component.
  */
 const Pricing = () => {
   return (
-    <div
+    <section
       id="pricing"
-      className="relative min-h-screen w-full border-b border-primary/10"
+      className="relative w-full border-b border-border bg-cover bg-center py-24 sm:py-32"
     >
-      <div className="flex flex-col items-center justify-center py-16 px-6 max-w-md mx-auto relative z-10">
-        <SectionHeader subtitle="Pricing" title="One plan one price" />
-
-        <div className="flex items-baseline justify-center mb-16 tracking-tighter">
-          <span className="text-8xl font-semibold">$10</span>
-          <span className="text-gray-500 ml-1 text-2xl">/month</span>
+      <div className="absolute inset-0 z-0" />
+      <div className="relative z-10 mx-auto max-w-7xl px-6 text-center">
+        <div className="mb-8 flex justify-center">
+          <Badge
+            variant="outline"
+            className="inline-flex items-center gap-2 rounded-full border-border bg-background/5 px-4 py-2 text-muted-foreground transition-colors hover:bg-background/10"
+          >
+            <div className="h-2 w-2 animate-pulse rounded-full bg-primary/80" />
+            <span className="text-sm font-medium tracking-wide">Pricing</span>
+          </Badge>
         </div>
-
-        {/* Note: Feature list is currently hardcoded */}
-        <ul className="mb-16 w-full flex flex-col items-center text-[#9FA9FF]">
-          {[...Array(4)].map((_, index) => (
-            <li key={index} className="flex items-center gap-3">
-              <span className="text-xl">•</span>
-              <span className="">Networked note-taking</span>
-            </li>
-          ))}
-        </ul>
-
-        <ButtonCta className="py-6" showArrow />
+        <h2 className="mb-4 text-4xl font-bold leading-tight tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground md:text-5xl">
+          Free While We&apos;re in Beta
+        </h2>
+        <p className="mx-auto mb-16 max-w-3xl text-lg font-light text-muted-foreground md:text-xl">
+          Join our journey and enjoy full access to Inquora. No limits, no
+          costs—just your feedback to help us build the best product possible.
+        </p>
+        <div className="relative mx-auto max-w-2xl rounded-2xl border border-border bg-card/50 p-8 text-left backdrop-blur-sm">
+          <div className="flex flex-col gap-8 md:flex-row md:items-center">
+            <div className="flex-1 text-center md:text-left">
+              <p className="text-sm font-medium text-primary">PLAN</p>
+              <p className="mt-2 text-7xl font-bold tracking-tighter text-foreground">
+                Free
+              </p>
+              <p className="text-muted-foreground">During our Beta phase</p>
+            </div>
+            <div className="flex-1 border-t border-border pt-8 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+              <p className="mb-4 font-semibold text-foreground">
+                Includes full access to:
+              </p>
+              <ul className="space-y-3">
+                {featuresIncluded.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <Check className="h-5 w-5 flex-shrink-0 text-primary" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="mt-10 border-t border-border pt-8">
+            <Button
+              size="lg"
+              className="w-full font-semibold transition-all active:scale-[0.98] cursor-pointer"
+            >
+              Get Started for Free
+            </Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground/70">
+              No credit card required.
+            </p>
+          </div>
+        </div>
       </div>
-
-      <GlowBackground />
-    </div>
+    </section>
   );
 };
 

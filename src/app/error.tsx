@@ -3,118 +3,68 @@
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import GlowBackground from "@/components/shared/GlowBackground";
+import Dither from "@/components/backgrounds/Dither/Dither";
 import { TypeErrorProps } from "@/types/TypeUi";
 
 /**
- * Renders a user-friendly error boundary page for the application.
+ * A custom error boundary component for the application.
  *
- * This component is designed to be used as a special `error.tsx` file in Next.js.
- * It catches runtime errors within its route segment and provides a fallback UI.
- * Features include a generic message, a "Try Again" button to re-render,
- * and detailed error information that is only displayed during development.
+ * This page catches runtime errors and displays a user-friendly fallback UI,
+ * providing options to retry the action or return to the homepage.
  *
- * @param props The props for the component, automatically provided by Next.js.
- * @param props.error The error object, extended with a `digest` for server errors.
- * @param props.reset A function to reset the error boundary by re-rendering the segment.
+ * @param {TypeErrorProps} props - Props automatically provided by Next.js.
+ * @param {Error} props.error - The error that was thrown.
+ * @param {() => void} props.reset - A function to re-render the segment.
  * @returns {JSX.Element} The rendered error page.
  */
 const Error = ({ error, reset }: TypeErrorProps) => {
+  const destructiveColor: [number, number, number] = [0.9, 0.2, 0.2];
+
   return (
-    <div className="min-h-screen bg-[#121212] relative overflow-hidden">
-      {/* Background Grid */}
-      <div className="absolute inset-0 z-0">
-        <div className="h-full w-full bg-grid-pattern" />
-        {/* Radial blur to fade grid into background */}
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#121212] opacity-90" />
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
+      <div className="absolute inset-0 -z-10">
+        <Dither waveColor={destructiveColor} waveAmplitude={0.1} />
       </div>
 
-      {/* Glow Background */}
-      <GlowBackground
-        glowElements={[
-          {
-            position: "left-[10%] top-1/3",
-            size: { width: 400, height: 400 },
-            blur: 120,
-            color: "rgba(220, 38, 38, 0.08)",
-          },
-          {
-            position: "right-[15%] bottom-1/3",
-            size: { width: 350, height: 350 },
-            blur: 100,
-            color: "rgba(220, 38, 38, 0.06)",
-          },
-        ]}
-      />
-
-      {/* Floating decorative elements */}
-      <div className="absolute inset-0 z-0 max-w-6xl mx-auto">
-        <div className="absolute top-[20%] left-[20%] w-2 h-2 bg-destructive/30 rounded-full animate-pulse" />
-        <div className="absolute top-[30%] right-[25%] w-1 h-1 bg-destructive/40 rounded-full animate-pulse delay-1000" />
-        <div className="absolute bottom-[25%] left-[15%] w-1.5 h-1.5 bg-destructive/25 rounded-full animate-pulse delay-500" />
-        <div className="absolute bottom-[35%] right-[20%] w-1 h-1 bg-destructive/35 rounded-full animate-pulse delay-1500" />
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 text-center">
-        <div className="max-w-2xl mx-auto space-y-8">
-          {/* Error Icon */}
-          <div className="flex justify-center">
-            <div className="w-24 h-24 bg-destructive/10 rounded-full flex items-center justify-center border border-destructive/20">
-              <AlertTriangle className="h-12 w-12 text-destructive" />
-            </div>
+      <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
+        <div className="flex justify-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-destructive/20 bg-destructive/10">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
           </div>
+        </div>
 
-          {/* Error Message */}
-          <div className="space-y-4">
-            <h1 className="text-3xl md:text-4xl font-light tracking-tight text-foreground">
-              Something went wrong
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-              We encountered an unexpected error. Don&apos;t worry, our team has
-              been notified and is working to fix it.
+        <div className="mt-6 space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            Something went wrong
+          </h1>
+          <p className="text-lg leading-relaxed text-muted-foreground">
+            We encountered an unexpected error. Our team has been notified and
+            is working to fix it.
+          </p>
+        </div>
+
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-6 w-full rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-left">
+            <h3 className="mb-2 text-sm font-medium text-destructive-foreground">
+              Error Details:
+            </h3>
+            <p className="font-mono text-xs text-muted-foreground break-all">
+              {error.message}
             </p>
           </div>
+        )}
 
-          {/* Error Details (Development only) */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4 text-left">
-              <h3 className="text-sm font-medium text-destructive mb-2">
-                Error Details:
-              </h3>
-              <p className="text-xs text-muted-foreground font-mono break-all">
-                {error.message}
-              </p>
-              {error.digest && (
-                <p className="text-xs text-muted-foreground font-mono mt-2">
-                  Error ID: {error.digest}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button
-              onClick={reset}
-              size="lg"
-              className="px-8 py-3 rounded-lg font-medium transition-all duration-200 cursor-pointer"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-
+        <div className="mt-8 flex w-full flex-col gap-4 sm:flex-row sm:justify-center">
+          <Button size="lg" variant="destructive" onClick={reset}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try Again
+          </Button>
+          <Button size="lg" variant="outline" asChild>
             <Link href="/">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-border/50 bg-background/50 hover:bg-background/80 text-foreground px-8 py-3 rounded-lg font-medium transition-all duration-200 cursor-pointer"
-              >
-                <Home className="mr-2 h-4 w-4" />
-                Go Home
-              </Button>
+              <Home className="mr-2 h-4 w-4" />
+              Go Home
             </Link>
-          </div>
+          </Button>
         </div>
       </div>
     </div>

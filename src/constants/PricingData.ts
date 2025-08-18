@@ -1,85 +1,73 @@
+// src/constants/PricingData.ts
+
 import { TypePricingData } from "@/types/TypeContent";
 
 /**
- * A centralized data object containing all pricing plan information.
+ * A centralized data object for pricing, simplified for the Beta phase.
  *
- * This configuration is structured by billing frequency (`annual`, `lifetime`)
- * and then by plan tier (`free`, `personal`, `pro`). Each plan object includes
- * its price, subtitle, features, and any relevant billing notes.
+ * Currently, only a single "Free" plan is offered, providing full access
+ * to all features while the application is in beta.
  */
 export const PricingData: TypePricingData = {
+  // Both billing cycles point to the same single "Free" plan
   annual: {
     free: {
-      price: "Free",
-      subtitle: "Audionotes Trial",
+      title: "Free Beta",
+      price: "₹0",
+      subtitle: "Full access during Beta",
       features: [
-        "Unlimited Voice Notes (Upto 15 mins/note)",
-        "Upload Audio Files (Upto 25 Mb)",
-        "Create High Quality Content",
-        "Notes, Summaries & Content are saved forever",
+        "AI-powered conversations",
+        "Support for all document formats",
+        "Unlimited uploads & queries",
+        "Secure cloud storage",
+        "Real-time collaboration",
+        "Priority support",
       ],
     },
+    // Personal and Pro plans can be added back later
     personal: {
-      price: "₹2299/year",
-      subtitle: "Audionotes Personal",
-      billingNote: "Billed annually",
-      features: [
-        "Unlimited Voice Notes (Upto 15 mins/note)",
-        "Record Upto 60 mins/note (900 mins/mo)",
-        "Upload Audio Files (Upto 50 Mb)",
-        "Create High Quality Content",
-        "Audio digitization and One-Click Content Generate",
-      ],
+        title: "Personal Plan",
+        price: "₹2299/year",
+        subtitle: "For individual power users",
+        billingNote: "Billed annually",
+        features: ["Feature A", "Feature B", "Feature C"],
     },
     pro: {
-      price: "₹5999/year",
-      subtitle: "Audionotes Pro",
-      billingNote: "Billed annually",
-      features: [
-        "Everything in Personal (Incl. Unlimited 15 min Notes)",
-        "Record Upto 60 mins/note (5000 mins/mo)",
-        "Upload Audio Files (Upto 50 Mb)",
-        "Create High Quality Content",
-        "Audio digitization and One-Click Content Generate",
-        "Priority Support",
-      ],
+        title: "Pro Plan",
+        price: "₹5999/year",
+        subtitle: "For professionals & teams",
+        billingNote: "Billed annually",
+        features: ["Feature X", "Feature Y", "Feature Z"],
     },
   },
   lifetime: {
     free: {
-      price: "Free",
-      subtitle: "Audionotes Trial",
+      title: "Free Beta",
+      price: "₹0",
+      subtitle: "Full access during Beta",
       features: [
-        "Unlimited Voice Notes (Upto 15 mins/note)",
-        "Upload Audio Files (Upto 25 Mb)",
-        "Create High Quality Content",
-        "Notes, Summaries & Content are saved forever",
+        "AI-powered conversations",
+        "Support for all document formats",
+        "Unlimited uploads & queries",
+        "Secure cloud storage",
+        "Real-time collaboration",
+        "Priority support",
       ],
     },
+     // Personal and Pro plans can be added back later
     personal: {
-      price: "₹15,999",
-      subtitle: "Audionotes Personal",
-      billingNote: "Billed once",
-      features: [
-        "Unlimited Voice Notes (Upto 15 mins/note)",
-        "Record Upto 60 mins/note (900 mins/mo)",
-        "Upload Audio Files (Upto 50 Mb)",
-        "Create High Quality Content",
-        "Audio digitization and One-Click Content Generate",
-      ],
+        title: "Personal Plan",
+        price: "₹15,999",
+        subtitle: "For individual power users",
+        billingNote: "Billed once",
+        features: ["Feature A", "Feature B", "Feature C"],
     },
     pro: {
-      price: "₹35,999",
-      subtitle: "Audionotes Pro",
-      billingNote: "Billed once",
-      features: [
-        "Everything in Personal (Incl. Unlimited 15 min Notes)",
-        "Record Upto 60 mins/note (5000 mins/mo)",
-        "Upload Audio Files (Upto 50 Mb)",
-        "Create High Quality Content",
-        "Audio digitization and One-Click Content Generate",
-        "Priority Support",
-      ],
+        title: "Pro Plan",
+        price: "₹35,999",
+        subtitle: "For professionals & teams",
+        billingNote: "Billed once",
+        features: ["Feature X", "Feature Y", "Feature Z"],
     },
   },
 };

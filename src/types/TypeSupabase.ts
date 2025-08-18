@@ -118,3 +118,8 @@ export type TypeMessage =
   TypeDatabase["public"]["Tables"]["messages"]["Row"] & {
     isError?: boolean;
   };
+
+// Extended type for chats with included file data
+export type TypeChatWithFile = TypeChat & {
+  files?: TypeFile | null;
+};

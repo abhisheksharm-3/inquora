@@ -9,11 +9,21 @@ const nextConfig: NextConfig = {
         hostname: 'nujgeowsnjculknvimbh.supabase.co',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'avatars.githubusercontent.com',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '15mb',
     },
   },
 };

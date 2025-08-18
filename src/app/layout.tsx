@@ -1,47 +1,57 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Literata, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
-/**
- * Initializes the Inter font with the 'latin' subset and sets it up
- * to be used via a CSS variable for consistent typography.
- */
-const inter = Inter({
-  variable: "--font-inter",
+const literata = Literata({
+  variable: "--font-serif",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 /**
- * Default metadata for the application.
- * Next.js uses this to set the <title> and <meta name="description"> tags
- * in the document's <head>, crucial for SEO and browser tab information.
+ * @description SEO metadata for the application.
  */
 export const metadata: Metadata = {
-  title: "Chat With Anything",
-  description: "Chat with any of your data sources",
+  title: "Inquora",
+  description: "Inquora – Chat with documents, videos, and more using AI.",
 };
 
 /**
- * The root layout component that wraps every page in the application.
+ * The root layout for the application.
  *
- * This component sets up the main HTML structure, applies the global font,
- * and wraps the entire application in necessary providers, such as the
- * `QueryProvider` for client-side data fetching.
+ * This component sets up the main HTML structure, applies global fonts,
+ * and wraps children with necessary context providers like `QueryProvider`.
  *
- * @param {object} props - The component props.
- * @param {React.ReactNode} props.children - The active page or nested layout to be rendered.
- * @returns {React.ReactElement} The root layout of the application.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {React.ReactElement} The root layout element.
  */
 const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) => (
-  <html lang="en" className="dark">
-    <body className={`${inter.variable} antialiased`}>
-      {/* QueryProvider wraps the app to provide a client-side cache for server data */}
-      <QueryProvider>{children}</QueryProvider>
+  <html lang="en">
+    <body
+      className={`${literata.variable} ${jetbrainsMono.variable} font-serif antialiased`}
+    >
+      <QueryProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </QueryProvider>
     </body>
   </html>
 );

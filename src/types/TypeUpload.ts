@@ -1,9 +1,10 @@
-import { StaticImageData } from "next/image";
+import { RemixiconComponentType } from "@remixicon/react";
 
 export interface TypeFileTypeConfig {
   type: string;
   name: string;
-  image: StaticImageData;
+  icon: RemixiconComponentType;
+  iconColor?: string;
   accept: string;
   maxSize: number;
   comingSoon?: boolean;

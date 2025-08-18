@@ -5,8 +5,9 @@ import { Clock, File, Settings } from "lucide-react";
  * Each object defines a navigation link and its corresponding icon.
  */
 export const NavigationItems = [
-  { href: "/choose", icon: File },
-  { href: "/history", icon: Clock },
+  { title: "New Chat", href: "/choose", icon: File },
+  { title: "History", href: "/history", icon: Clock },
+  { title: "Account Settings", href: "/settings", icon: Settings },
 ] as const;
 
 /**
@@ -41,7 +42,6 @@ export const MobileNavItems = [
 export const PublicNavbarRoutes = [
   { label: "Pricing", url: "/#pricing" },
   { label: "FAQ", url: "/#faq" },
-  { label: "Contact Us", url: "/#contact-us" },
 ];
 
 /**

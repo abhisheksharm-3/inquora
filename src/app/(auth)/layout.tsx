@@ -1,35 +1,49 @@
 import { Metadata } from "next";
-import Navbar from "@/components/landing-page/Navbar";
-import Footer from "@/components/landing-page/Footer";
+import Layout from "@/components/layout/Layout";
+import { AuthBrandingPanel } from "@/components/auth/AuthBrandingPanel";
 
-/**
- * SEO metadata for all authentication pages.
- */
 export const metadata: Metadata = {
-  title: "Authentication - Chat With Anything",
-  description: "Login or sign up to Chat With Anything",
+  title: "Authentication - Inquora",
+  description: "Login or sign up to access your Inquora dashboard.",
 };
 
 /**
- * Defines the shared layout for authentication pages like login and signup.
- *
- * This server component wraps its children with a standard Navbar and Footer,
- * ensuring a uniform look and feel across the authentication flow.
- *
- * @param props The properties for the component.
- * @param props.children The specific page content (e.g., a login form) to be rendered.
- * @returns The authentication layout component with the page content.
+ * @description A definitive, asymmetric layout for authentication. It reserves a
+ * fixed-width column for the form, ensuring a consistent, app-like feel, while
+ * the branding panel dynamically fills the remaining space.
  */
-const AuthLayout = async ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="min-h-screen bg-[#121212] flex flex-col w-full items-center justify-between">
-      <Navbar />
-      <main className="flex-1 flex items-center justify-center w-full px-4">
-        {children}
-      </main>
-      <Footer />
-    </div>
-  );
-};
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
 
-export default AuthLayout;
+  return (
+    <Layout
+      showFooter={false}
+      enableNavbarBlur={false}
+      contentClassName="w-full"
+      ditherConfig={{
+        waveColor: brandViolet,
+        fullscreen: true,
+        waveAmplitude: 0.1,
+        waveFrequency: 1.5,
+        waveSpeed: 0.02,
+      }}
+    >
+      <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
+      
+      {/* Mobile-first approach */}
+      <div className="min-h-screen w-full flex flex-col lg:grid lg:grid-cols-[1fr_480px]">
+        {/* Hide branding panel on mobile, show on desktop */}
+        <div className="hidden lg:block">
+          <AuthBrandingPanel />
+        </div>
+        
+        {/* Form container - full height on mobile, centered on desktop */}
+        <div className="relative flex-1 flex items-center justify-center p-4 lg:p-8">
+          <div className="w-full max-w-sm">
+            {children}
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}

@@ -49,11 +49,47 @@ export const useUploadErrorHandler = (dispatch: React.Dispatch<UploadAction>) =>
   );
 
   /**
+   * Extracts user-friendly message from various error formats
+   */
+  const extractUserFriendlyMessage = useCallback((err: unknown): string => {
+    // If it's already a structured error object with our expected format
+    if (typeof err === 'object' && err !== null) {
+      const errorObj = err as TypeUploadError;
+      
+      // Check if it has the message property (your validation errors)
+      if (errorObj.message && typeof errorObj.message === 'string') {
+        return errorObj.message;
+      }
+    }
+    
+    // Fallback to the original getErrorMessage function
+    return getErrorMessage(err);
+  }, []);
+
+  /**
    * Categorizes an unknown error by matching its message against predefined patterns.
-   * @private
+   * Now properly extracts user-friendly messages from structured error objects.
    */
   const getCategorizedError = useCallback((err: unknown): TypeUploadError => {
-    const message = getErrorMessage(err);
+    // First, check if the error is already a properly structured TypeUploadError
+    if (typeof err === 'object' && err !== null) {
+      const errorObj = err as TypeUploadError;
+
+      // If it already has type, message, and retryable properties, use it directly
+      if (errorObj.type && errorObj.message && typeof errorObj.retryable === 'boolean') {
+        return {
+          type: errorObj.type,
+          message: errorObj.message,
+          originalError: err,
+          retryable: errorObj.retryable
+        };
+      }
+    }
+
+    // Extract the user-friendly message for pattern matching
+    const message = extractUserFriendlyMessage(err);
+    
+    // Match against patterns to determine error type
     for (const [pattern, type] of errorTypeMap.entries()) {
       if (pattern.test(message)) {
         // Automatically set retryable to false for validation and auth errors.
@@ -61,9 +97,10 @@ export const useUploadErrorHandler = (dispatch: React.Dispatch<UploadAction>) =>
         return createUploadError(type, message, err, isRetryable);
       }
     }
+    
     // Default to an "unknown" error type, which is considered retryable.
     return createUploadError("unknown", message, err, true);
-  }, [createUploadError]);
+  }, [createUploadError, extractUserFriendlyMessage]);
 
   /**
    * Takes an unknown error, categorizes it, and dispatches it to the reducer.

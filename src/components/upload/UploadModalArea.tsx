@@ -1,57 +1,106 @@
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { TypeUploadModalAreaProps } from "@/types/TypeUpload";
+"use client";
+
+import { getFileTypeConfig } from "@/constants/FileTypes";
+import { cn } from "@/utils/cn";
+import { CircleAlert } from "lucide-react";
+import { useState } from "react";
 
 /**
- * A reusable component that renders a file upload area (a "drop zone").
+ * Renders the drag-and-drop area for file uploads within the upload modal.
  *
- * It provides a clickable and drag-and-drop-ready interface for file selection.
- * The specific file types, size limits, and handling logic are controlled by props,
- * making it adaptable for different upload scenarios.
+ * It handles drag events to provide visual feedback and allows users to either
+ * drop a file or click to open the native file selector. It also displays
+ * information about the selected file.
  *
- * @component
- * @param {TypeUploadModalAreaProps} props - The properties for the component.
- * @param {object} props.fileTypeConfig - An object containing the configuration for the allowed file type.
- * @param {string} props.fileTypeConfig.name - The display name of the file type (e.g., "PDF").
- * @param {string} props.fileTypeConfig.accept - The `accept` attribute string for the file input (e.g., 'application/pdf').
- * @param {number} props.fileTypeConfig.maxSize - The maximum file size in bytes.
- * @param {File | null} props.selectedFile - The currently selected file, used to display its name.
- * @param {(event: React.ChangeEvent<HTMLInputElement>) => void} props.handleFileChange - The callback function triggered when a user selects a file.
- * @returns {JSX.Element} The rendered file upload area.
+ * @param {object} props - The component props.
+ * @param {ReturnType<typeof getFileTypeConfig>} props.fileTypeConfig - Configuration for the accepted file type.
+ * @param {File | null} props.selectedFile - The currently selected file.
+ * @param {(event: React.ChangeEvent<HTMLInputElement>) => void} props.handleFileChange - Callback for file selection.
+ * @returns {JSX.Element} The rendered upload area component.
  */
-const UploadModalArea: React.FC<TypeUploadModalAreaProps> = ({
-  fileTypeConfig,
-  selectedFile,
-  handleFileChange,
-}) => {
+const UploadModalArea: React.FC<{
+  fileTypeConfig: ReturnType<typeof getFileTypeConfig>;
+  selectedFile: File | null;
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ fileTypeConfig, selectedFile, handleFileChange }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const syntheticEvent = {
+        target: { files },
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileChange(syntheticEvent);
+    }
+  };
+
   return (
-    <div className="border border-dashed border-[#333] rounded-lg p-6 text-center mb-4">
-      <Label htmlFor="file-upload" className="cursor-pointer block">
-        <Input
+    <div
+      className={cn(
+        "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer group",
+        isDragOver
+          ? "border-primary bg-primary/5 scale-[1.02]"
+          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
+        selectedFile && "border-primary bg-primary/5"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={() => document.getElementById("file-upload")?.click()}
+    >
+      <label htmlFor="file-upload" className="cursor-pointer block space-y-3">
+        <input
           type="file"
           id="file-upload"
-          className="hidden"
+          className="sr-only"
           onChange={handleFileChange}
           accept={fileTypeConfig.accept}
         />
-        <p className="text-sm">
-          <span className="text-primary hover:text-primary/90 cursor-pointer">
-            Click to upload
-          </span>{" "}
-          or drag and drop
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          {fileTypeConfig.name} (max. {fileTypeConfig.maxSize / (1024 * 1024)}
-          MB)
-        </p>
-      </Label>
+
+        <div className="space-y-2">
+          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <CircleAlert className="h-6 w-6 text-primary" />
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium">
+              <span className="text-primary group-hover:text-primary/90 transition-colors">
+                Click to upload
+              </span>{" "}
+              or drag and drop
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {fileTypeConfig.name} (max.{" "}
+              {Math.round(fileTypeConfig.maxSize / (1024 * 1024))}MB)
+            </p>
+          </div>
+        </div>
+      </label>
+
       {selectedFile && (
-        <div className="mt-2 text-sm text-gray-300">
-          Selected: {selectedFile.name}
+        <div className="mt-4 p-3 bg-muted/50 rounded-md border">
+          <p className="text-sm font-medium text-foreground">
+            Selected: {selectedFile.name}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+          </p>
         </div>
       )}
     </div>
   );
 };
-
 export default UploadModalArea;

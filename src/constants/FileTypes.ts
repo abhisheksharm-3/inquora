@@ -1,31 +1,37 @@
-import pdfIcon from "@/assets/images/logos/pdf.png";
-import docsIcon from "@/assets/images/logos/docs.png";
-import sheetsIcon from "@/assets/images/logos/sheets.png";
-import slidesIcon from "@/assets/images/logos/slides.png";
-import imageIcon from "@/assets/images/logos/flat-color-icons_image-file.png";
-import youtubeIcon from "@/assets/images/logos/youtube.png";
-import githubIcon from "@/assets/images/logos/github.png";
-import notionIcon from "@/assets/images/logos/notion.png";
+import { 
+  RiFilePdf2Fill,
+  RiFileWord2Fill,
+  RiImage2Fill,
+  RiFileExcel2Fill,
+  RiFilePpt2Fill,
+  RiYoutubeFill,
+  RiGithubFill,
+  RiNotionFill
+} from "@remixicon/react";
 import { TypeFileTypeConfig } from "@/types/TypeUpload";
 
 /**
  * An array of configuration objects for each supported file type.
  *
  * Each object defines the properties for an uploadable content type, including its
- * name, icon, accepted MIME types/extensions, and size limits.
+ * name, icon component, accepted MIME types/extensions, and size limits.
+ * 
+ * Using Remix Icons React components for consistent iconography and brand recognition.
  */
 export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "pdf",
     name: "PDF",
-    image: pdfIcon,
+    icon: RiFilePdf2Fill,
+    iconColor: "#DC2626", // Red for PDF
     accept: ".pdf,application/pdf",
     maxSize: 10 * 1024 * 1024, // 10MB
   },
   {
     type: "doc",
     name: "Document",
-    image: docsIcon,
+    icon: RiFileWord2Fill,
+    iconColor: "#2563EB", // Blue for documents
     accept:
       ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     maxSize: 10 * 1024 * 1024, // 10MB
@@ -33,14 +39,16 @@ export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "image",
     name: "Image",
-    image: imageIcon,
+    icon: RiImage2Fill,
+    iconColor: "#16A34A", // Green for images
     accept: ".jpg,.jpeg,.png,image/jpeg,image/png",
     maxSize: 5 * 1024 * 1024, // 5MB
   },
   {
     type: "sheet",
     name: "Spreadsheet",
-    image: sheetsIcon,
+    icon: RiFileExcel2Fill,
+    iconColor: "#059669", // Emerald for spreadsheets
     accept:
       ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     maxSize: 10 * 1024 * 1024, // 10MB
@@ -48,7 +56,8 @@ export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "slides",
     name: "Presentation",
-    image: slidesIcon,
+    icon: RiFilePpt2Fill,
+    iconColor: "#EA580C", // Orange for presentations
     accept:
       ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation",
     maxSize: 10 * 1024 * 1024, // 10MB
@@ -56,7 +65,8 @@ export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "video",
     name: "YouTube Video",
-    image: youtubeIcon,
+    icon: RiYoutubeFill,
+    iconColor: "#DC2626", // YouTube red
     accept: "",
     maxSize: 0,
     urlOnly: true,
@@ -64,7 +74,8 @@ export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "github",
     name: "GitHub Repo",
-    image: githubIcon,
+    icon: RiGithubFill,
+    iconColor: "#1F2937", // Dark gray for GitHub
     accept: "",
     maxSize: 0,
     comingSoon: true,
@@ -73,7 +84,8 @@ export const FileTypes: TypeFileTypeConfig[] = [
   {
     type: "notion",
     name: "Notion Page",
-    image: notionIcon,
+    icon: RiNotionFill,
+    iconColor: "#000000", // Black for Notion
     accept: "",
     maxSize: 0,
     comingSoon: true,

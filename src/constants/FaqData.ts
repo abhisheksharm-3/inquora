@@ -2,33 +2,33 @@ import { TypeFaqItem } from "@/types/TypeContent";
 
 export const FaqData: TypeFaqItem[] = [
   {
-    value: "0",
-    question: "How does the application function",
+    value: "faq-1",
+    question: "Is Inquora really free to use right now?",
     answer:
-      "Our application uses advanced algorithms to process your data and provide meaningful insights. It integrates seamlessly with your existing workflow and provides real-time analytics.",
+      "Yes! Inquora is completely free to use during our public beta phase. We want to gather feedback and build the best product possible with the help of our early users. We will provide plenty of notice before introducing any pricing.",
   },
   {
-    value: "1",
-    question: "How does the application function",
+    value: "faq-2",
+    question: "How secure is my data when I upload it?",
     answer:
-      "Our application uses advanced algorithms to process your data and provide meaningful insights. It integrates seamlessly with your existing workflow and provides real-time analytics.",
+      "Security is our top priority. Your data is encrypted both in transit and at rest. We use secure cloud infrastructure and Supabase for authentication, ensuring that only you have access to your documents and conversations.",
   },
   {
-    value: "2",
-    question: "How does the application function",
+    value: "faq-3",
+    question: "What file types can I use with Inquora?",
     answer:
-      "Our application uses advanced algorithms to process your data and provide meaningful insights. It integrates seamlessly with your existing workflow and provides real-time analytics.",
+      "You can upload a wide variety of formats, including PDFs, Microsoft Office documents (Word, PowerPoint, Excel), and even provide URLs to websites or YouTube videos for analysis. We are constantly expanding our support for new formats.",
   },
   {
-    value: "3",
-    question: "How does the application function",
+    value: "faq-4",
+    question: "Are there any limits on uploads or questions?",
     answer:
-      "Our application uses advanced algorithms to process your data and provide meaningful insights. It integrates seamlessly with your existing workflow and provides real-time analytics.",
+      "During the free beta period, there are no hard limits on the number of documents you can upload or the number of questions you can ask. We encourage you to use the platform as much as you need.",
   },
   {
-    value: "4",
-    question: "How does the application function",
+    value: "faq-5",
+    question: "Do you use my data to train your AI models?",
     answer:
-      "Our application uses advanced algorithms to process your data and provide meaningful insights. It integrates seamlessly with your existing workflow and provides real-time analytics.",
+      "Absolutely not. Your data is yours alone. We do not use any of your documents, conversations, or personal information to train our or any third-party AI models. Your privacy is paramount.",
   },
 ];

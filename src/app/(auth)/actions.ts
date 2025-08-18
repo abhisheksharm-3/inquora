@@ -3,7 +3,7 @@
 import { supabaseServerClient } from "@/utils/supabase/server";
 
 /**
- * Extracts form data safely with type casting
+ * Extracts form data safely with type casting.
  */
 const extractFormData = (formData: FormData, fields: string[]) => {
   return fields.reduce((acc, field) => {
@@ -13,17 +13,16 @@ const extractFormData = (formData: FormData, fields: string[]) => {
 };
 
 /**
- * Handles authentication errors consistently
+ * Handles authentication errors consistently.
  */
 const handleAuthError = (error: unknown): string => {
   return `${error}`;
 };
 
 /**
- * Signs in a user using their email and password credentials.
- * This function is a Next.js Server Action.
- * @param {FormData} formData - The form data submitted by the user. Expected to contain 'email' and 'password'.
- * @returns {Promise<string | void>} Returns an error message as a string if sign-in fails, otherwise returns nothing on success.
+ * Server Action to sign in a user with email and password.
+ * @param {FormData} formData - Must contain 'email' and 'password' fields.
+ * @returns {Promise<string | void>} An error message on failure, otherwise void.
  */
 export const signIn = async (formData: FormData) => {
   const { email, password } = extractFormData(formData, ["email", "password"]);
@@ -44,10 +43,9 @@ export const signIn = async (formData: FormData) => {
 };
 
 /**
- * Creates a new user account with the provided details.
- * This function is a Next.js Server Action.
- * @param {FormData} formData - The form data for the new account. Expected to contain 'full-name', 'email', and 'password'.
- * @returns {Promise<string | void>} Returns an error message as a string if sign-up fails, otherwise returns nothing on success.
+ * Server Action to create a new user account.
+ * @param {FormData} formData - Must contain 'full-name', 'email', and 'password'.
+ * @returns {Promise<string | void>} An error message on failure, otherwise void.
  */
 export const signUp = async (formData: FormData) => {
   const {

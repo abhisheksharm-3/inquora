@@ -1,100 +1,178 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import PricingDialog from "@/components/dashboard/PricingDialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LogoutDialog from "@/components/dashboard/LogoutDialog";
-import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
-import useIsMobile from "@/hooks/useIsMobile";
 import { SettingsLoadingSkeleton } from "@/components/settings/SettingsLoadingSkeleton";
 import { MobileSettingsSections } from "@/constants/SettingsData";
+import { User, Crown, Shield, LogOut } from "lucide-react";
+import avatarImage from "@/assets/images/avatar.svg";
+import { getUserInitials } from "@/utils/dashboard-utils";
+import PricingDialog from "@/components/dashboard/PricingDialog";
 
 /**
- * Renders the user account settings page, optimized for mobile devices.
+ * Renders the user account settings page.
  *
- * This component displays user account details and provides options to upgrade
- * or log out. It enforces a mobile-only view by redirecting desktop users
- * to the main dashboard.
+ * This page displays user information, account details, and subscription
+ * status in a responsive grid layout. It includes actions for upgrading the
+ * plan and logging out. A loading skeleton is shown while user data is being
+ * fetched.
  *
- * @returns {JSX.Element | null} The mobile settings page or null if redirecting.
+ * @returns {JSX.Element} The rendered settings page.
  */
 const SettingsPage = () => {
   const { user, isLoading } = useUser();
-  const isMobile = useIsMobile();
-  const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
 
-  // Effect to track component mount, enabling client-side-only logic.
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Effect to enforce mobile-only view by redirecting desktop users.
-  useEffect(() => {
-    if (isMounted && !isMobile) {
-      router.push("/choose");
-    }
-  }, [isMobile, router, isMounted]);
-
-  // Prevent a flash of content on desktop before redirecting.
-  if (!isMounted || !isMobile) {
-    return null;
+  if (isLoading) {
+    return <SettingsLoadingSkeleton isMobile={false} />;
   }
 
   return (
-    <div className="flex flex-col min-h-[90vh] bg-[#121212]">
-      {/* Header */}
-      <div className="p-6 pb-4 text-center mb-2">
-        <h1 className="text-lg mt-1">Account Settings</h1>
-        <p className="text-[#A9A9A9] text-sm">
-          Everything about your account at one place
+    <div className="container mx-auto max-w-6xl space-y-8 p-6">
+      {/* Header Section */}
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent pb-2 md:text-5xl">
+          Account Settings
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          Manage your profile, subscription, and account preferences in one place.
         </p>
       </div>
 
-      {/* Main content: show skeleton on load, otherwise show settings */}
-      {isLoading ? (
-        <SettingsLoadingSkeleton isMobile={true} />
-      ) : (
-        <div className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-md space-y-6 font-medium text-lg text-center">
-            {/* Render user details from a configuration array */}
-            {MobileSettingsSections.map((section) => (
-              <div key={section.id} className="space-y-1 text-lg">
-                <p className="text-[#A9A9A9]">{section.label}</p>
-                <p>{section.getUserValue(user)}</p>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left Column - Profile & Account Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Profile Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={avatarImage} alt="User Avatar" />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+                    {getUserInitials(user)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-1">
+                  <CardTitle className="text-xl">
+                    {user?.name || "Anonymous User"}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {user?.email}
+                  </CardDescription>
+                </div>
               </div>
-            ))}
+            </CardHeader>
+          </Card>
 
-            {/* Upgrade Plan Button */}
-            <div className="mt-10">
+          {/* Account Details Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <User className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Account Information</CardTitle>
+              </div>
+              <CardDescription>
+                Your personal account details and information.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {MobileSettingsSections.map((section, index) => (
+                  <div key={section.id}>
+                    <div className="flex items-center justify-between py-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {section.label}
+                        </p>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {section.getUserValue(user)}
+                      </div>
+                    </div>
+                    {index < MobileSettingsSections.length - 1 && (
+                      <Separator />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Subscription & Actions */}
+        <div className="space-y-6">
+          {/* Subscription Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Crown className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Subscription</CardTitle>
+              </div>
+              <CardDescription>
+                Manage your current plan and billing.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Free Plan</p>
+                  <p className="text-xs text-muted-foreground">
+                    Full access during beta
+                  </p>
+                </div>
+                <Badge variant="secondary" className="font-medium">
+                  Active
+                </Badge>
+              </div>
+              
               <PricingDialog
                 trigger={
-                  <Button className="rounded-xl py-6 cursor-pointer font-bold w-fit">
-                    Upgrade plan
-                    <span className="text-xs bg-primary-foreground/20 text-primary-foreground font-semibold px-1.5 py-0.5 rounded">
-                      PRO
-                    </span>
+                  <Button variant="outline" className="w-full cursor-pointer" size="lg">
+                    <Crown className="mr-2 h-4 w-4" />
+                    View Plan Details
                   </Button>
                 }
               />
-            </div>
-          </div>
-        </div>
-      )}
+            </CardContent>
+          </Card>
 
-      {/* Logout button fixed at the bottom */}
-      <div className="px-12 pb-16 pt-4">
-        <LogoutDialog
-          trigger={
-            <Button
-              variant="outline"
-              className="w-full py-5 font-semibold text-lg text-destructive border-1 !border-destructive bg-[#1e1e1f] rounded-xl"
-            >
-              Log out
-            </Button>
-          }
-        />
+          {/* Account Actions Card */}
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-destructive" />
+                <CardTitle className="text-destructive">Account Actions</CardTitle>
+              </div>
+              <CardDescription>
+                Critical account management options.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LogoutDialog
+                trigger={
+                  <Button 
+                    variant="destructive" 
+                    className="w-full cursor-pointer" 
+                    size="lg"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                }
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -1,47 +1,33 @@
 import { Loader2 } from "lucide-react";
-import GlowBackground from "@/components/shared/GlowBackground";
+import Dither from "@/components/backgrounds/Dither/Dither";
 
 /**
- * Renders a full-screen loading state for the application.
+ * A full-screen loading component for the application.
  *
- * This component is designed to be used as a special `loading.tsx` file in Next.js,
- * which automatically wraps a page or layout in a React Suspense Boundary.
- * It provides a visually appealing fallback while server components are rendering.
+ * Displays a centered spinner and text with the app's signature dithered
+ * background, providing a consistent loading state for Next.js routes.
  *
  * @returns {JSX.Element} The rendered loading page.
  */
 const Loading = () => {
+  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
+
   return (
-    <div className="min-h-screen bg-[#121212] relative overflow-hidden flex items-center justify-center">
-      {/* Background Grid */}
-      <div className="absolute inset-0 z-0">
-        <div className="h-full w-full bg-grid-pattern" />
-        <div className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-[#121212] opacity-90" />
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 -z-10">
+        <Dither
+          waveColor={brandViolet}
+          waveAmplitude={0.1}
+          waveFrequency={2.5}
+        />
       </div>
-      {/* Glow Background */}
-      <GlowBackground
-        glowElements={[
-          {
-            position: "left-[20%] top-1/2",
-            size: { width: 500, height: 500 },
-            blur: 150,
-            color: "rgba(84, 99, 255, 0.10)",
-          },
-          {
-            position: "right-[20%] top-1/2",
-            size: { width: 500, height: 500 },
-            blur: 150,
-            color: "rgba(84, 99, 255, 0.10)",
-          },
-        ]}
-      />
-      {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center text-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary mb-8" />
-        <h1 className="text-2xl md:text-3xl font-light tracking-tight text-foreground mb-2">
-          Loading...
+
+      <div className="relative z-10 flex animate-fade-in flex-col items-center justify-center text-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <h1 className="mt-8 text-3xl font-semibold tracking-tight text-foreground">
+          Loading
         </h1>
-        <p className="text-base text-muted-foreground max-w-md mx-auto">
+        <p className="mt-2 text-base text-muted-foreground">
           Please wait while we prepare your experience.
         </p>
       </div>

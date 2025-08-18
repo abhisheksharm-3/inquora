@@ -47,13 +47,13 @@ export const HistoryPageSkeletonItems = Array.from(
 
 /**
  * An object containing Tailwind CSS class configurations for various skeleton loader elements.
- * This centralizes styling for consistent loading states across the history page.
+ * Updated for improved responsive design and cohesive styling.
  */
 export const HistoryPageSkeletonConfigs = {
-  title: { height: "h-4", width: "w-32 sm:w-48" },
-  badge: { height: "h-4", width: "w-12" },
-  mobileSize: { height: "h-2", width: "w-12" },
-  mobileTime: { height: "h-2", width: "w-16" },
-  desktopSize: { height: "h-3", width: "w-12" },
+  title: { height: "h-4", width: "w-32 sm:w-48 lg:w-56" },
+  badge: { height: "h-5", width: "w-12 sm:w-14" },
+  mobileSize: { height: "h-3", width: "w-12" },
+  mobileTime: { height: "h-3", width: "w-16" },
+  desktopSize: { height: "h-3", width: "w-14" },
   desktopTime: { height: "h-3", width: "w-20" },
 } as const;

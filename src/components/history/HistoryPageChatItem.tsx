@@ -1,29 +1,29 @@
-import { useFileById } from "@/hooks/useFiles";
-import { TypeChat } from "@/types/TypeSupabase";
+import { memo } from "react";
+import { TypeChatWithFile } from "@/types/TypeSupabase";
 import { HistoryPageChatMetadata } from "./HistoryPageChatMetadata";
 import { HistorypageChatDropdown } from "./HistoryPageChatDropdown";
 import Link from "next/link";
 
-export const HistoryPageChatItem = ({ chat }: { chat: TypeChat }) => {
-  const { data: fileData } = useFileById(chat.file_id || "");
-  // Only pass the required properties and convert nulls to undefined
-  const file = fileData
-    ? {
-        name: fileData.name,
-        type: fileData.type ?? "unknown",
-        size: fileData.size ?? 0,
-      }
-    : undefined;
+/**
+ * A responsive glass-morphism themed list item representing a single chat in the history.
+ * Optimized version that uses pre-fetched file data from the chat query.
+ */
+export const HistoryPageChatItem = memo(({ chat }: { chat: TypeChatWithFile }) => {
+  // Use file data from the chat query instead of making a separate API call
+  const file = chat.files ? {
+    name: chat.files.name,
+    type: chat.files.type ?? "unknown",
+    size: chat.files.size ?? 0,
+  } : undefined;
 
   return (
-    <div className="max-w-[395px] lg:max-w-screen px-2 bg-[#1a1a1a] hover:bg-[#252525] transition-colors relative group">
-      <Link href={`/chat/${chat.id}`} className="block">
-        <div className="p-3 sm:p-4">
-          <HistoryPageChatMetadata chat={chat} file={file} isMobile />
-          <HistoryPageChatMetadata chat={chat} file={file} />
-        </div>
+    <div className="group relative rounded-xl backdrop-blur-sm bg-card/40 border border-border/40 transition-all duration-200 hover:bg-card/60 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98] sm:active:scale-100">
+      <Link href={`/chat/${chat.id}`} className="block p-5 md:p-6 pr-14 md:pr-16">
+        <HistoryPageChatMetadata chat={chat} file={file} />
       </Link>
       <HistorypageChatDropdown chat={chat} file={file} />
     </div>
   );
-};
+});
+
+HistoryPageChatItem.displayName = "HistoryPageChatItem";

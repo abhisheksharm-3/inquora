@@ -2,6 +2,8 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,59 +14,55 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
 import { loginSchema, TypeLoginFormValues } from "../../schemas/AuthSchema";
 import { AuthPasswordInput } from "./AuthPasswordInput";
 import { AuthStatusMessage } from "./AuthStatusMessage";
 import { useAuth } from "@/hooks/useAuth";
+import { JSX } from "react";
 
-/** Shared styling for form inputs to ensure a consistent appearance. */
 const inputClassName =
-  "bg-[#1a1a1a] border-gray-700 text-white focus-visible:ring-primary";
+  "h-12 bg-transparent border-border/80 transition-colors focus-visible:ring-offset-0 focus-visible:border-primary focus-visible:ring-primary";
 
 /**
- * Renders the user login form.
+ * Renders a user login form with client-side validation and submission handling.
  *
- * Manages form state with `react-hook-form` and validates input using a Zod schema.
- * It connects to the `useAuth` hook to handle the submission logic, loading state,
- * and display of any server-side error messages.
+ * It uses `react-hook-form` for state management, `zod` for validation, and the
+ * `useAuth` hook to manage the authentication logic, including loading and error
+ * states.
  *
- * @returns {JSX.Element} The login form component.
+ * @returns {JSX.Element} The rendered login form component.
  */
-export const AuthLoginForm = () => {
+export const AuthLoginForm = (): JSX.Element => {
   const form = useForm<TypeLoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
+    mode: "onChange",
   });
 
   const {
     handleLogin: onSubmit,
     isLoginLoading: isLoading,
-    loginErrorMessage,
+    loginErrorMessage: error,
   } = useAuth();
 
   return (
-    <>
-      {/* Display global error message from the API if present */}
-      {loginErrorMessage && (
-        <AuthStatusMessage message={loginErrorMessage} type="error" />
-      )}
+    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 delay-150">
+      {error && <AuthStatusMessage message={error} type="error" />}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm text-gray-300">Email</FormLabel>
+                <FormLabel className="text-muted-foreground">Email</FormLabel>
                 <FormControl>
                   <Input
+                    type="email"
                     placeholder="you@example.com"
                     className={inputClassName}
+                    disabled={isLoading}
                     {...field}
                   />
                 </FormControl>
@@ -78,11 +76,13 @@ export const AuthLoginForm = () => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm text-gray-300">
-                  Password
-                </FormLabel>
+                <FormLabel className="text-muted-foreground">Password</FormLabel>
                 <FormControl>
-                  <AuthPasswordInput field={field} className={inputClassName} />
+                  <AuthPasswordInput
+                    field={field}
+                    className={inputClassName}
+                    disabled={isLoading}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,20 +91,20 @@ export const AuthLoginForm = () => {
 
           <Button
             type="submit"
-            className="w-full py-5 cursor-pointer"
+            className="h-12 cursor-pointer w-full !mt-8 text-md font-semibold bg-primary text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.99]"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Signing In...
               </>
             ) : (
-              "Sign in"
+              "Sign In"
             )}
           </Button>
         </form>
       </Form>
-    </>
+    </div>
   );
 };

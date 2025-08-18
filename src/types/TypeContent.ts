@@ -1,6 +1,7 @@
 import { TypeFile } from "./TypeSupabase";
 
 export interface TypePricingTier {
+  title?: string; // Optional title for the tier
   price: string;
   subtitle: string;
   features: string[];

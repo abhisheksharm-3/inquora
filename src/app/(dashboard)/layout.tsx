@@ -1,3 +1,4 @@
+import Dither from "@/components/backgrounds/Dither/Dither";
 import { DashboardDesktopSidebar } from "@/components/dashboard/DashboardDesktopSidebar";
 import { DashboardMobileSidebar } from "@/components/dashboard/DashboardMobileSidebar";
 import {
@@ -6,32 +7,34 @@ import {
 } from "@/components/dashboard/DashboardHeaders";
 
 /**
- * Defines the main layout structure for the authenticated dashboard.
+ * The main layout for the application's dashboard section.
  *
- * This server component assembles the responsive headers and sidebars for both
- * mobile and desktop views, wrapping the active page content.
+ * This component arranges the primary UI elements, including a responsive
+ * sidebar, a header, and the main content area, all layered on top of the
+ * signature dithered background.
  *
- * @param props The properties for the component.
- * @param props.children The specific page content to render within the layout.
- * @returns {JSX.Element} The complete dashboard layout with page content.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {JSX.Element} The rendered dashboard layout.
  */
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="relative flex h-screen bg-[#121212] text-foreground">
-      {/* Sidebar for desktop view (always visible) */}
-      <DashboardDesktopSidebar />
+  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
 
-      {/* Sidebar for mobile view (hidden by default) */}
+  return (
+    <div className="relative flex min-h-screen w-full text-foreground">
+      <div className="absolute inset-0 -z-10">
+        <Dither waveColor={brandViolet} waveAmplitude={0.1} />
+        <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
+      </div>
+
+      <DashboardDesktopSidebar />
       <DashboardMobileSidebar />
 
-      <div className="flex-1 flex flex-col md:pl-14">
-        {/* Header for mobile view */}
+      <div className="flex flex-1 flex-col">
         <DashboardMobileHeader />
-
-        {/* Header for desktop view */}
         <DashboardDesktopHeader />
-
-        <main className="flex-1 overflow-auto lg:p-2">{children}</main>
+        <main className="flex-1 p-4 md:p-6 lg:p-8 py-10 min-h-0">
+          {children}
+        </main>
       </div>
     </div>
   );
