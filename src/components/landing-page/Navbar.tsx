@@ -8,10 +8,11 @@ import { CtaButtons, PublicNavbarRoutes } from "@/constants/NavItems";
 import { cn } from "@/utils/cn";
 
 /**
- * The main responsive navigation bar, styled for the "dark glass" theme.
+ * Renders the main responsive navigation bar.
  *
- * @component
- * @returns {JSX.Element} The rendered navigation bar.
+ * Features a "glassmorphism" effect that appears on scroll, a standard
+ * desktop layout, and a full-screen overlay menu for mobile devices.
+ * @returns {JSX.Element} The rendered navigation bar component.
  */
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,18 +21,19 @@ const Navbar = () => {
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
-  // Handle scroll effect for navbar background
   useEffect(() => {
     const handleScroll = () => {
-      const isScrolled = window.scrollY > 20;
-      setScrolled(isScrolled);
+      setScrolled(window.scrollY > 20);
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Navigation items component
+  /**
+   * Renders the list of public navigation links.
+   * @param {{ isMobile?: boolean, onItemClick?: () => void }} props - Component props.
+   */
   const NavigationList = ({
     isMobile = false,
     onItemClick,
@@ -53,8 +55,8 @@ const Navbar = () => {
             className={cn(
               "transition-colors duration-300",
               isMobile
-                ? "block text-xl font-medium text-neutral-100 hover:text-primary"
-                : "relative group text-sm font-medium text-neutral-300 hover:text-neutral-100"
+                ? "block text-xl font-medium text-foreground hover:text-primary"
+                : "relative group text-sm font-medium text-muted-foreground hover:text-foreground"
             )}
             onClick={onItemClick}
           >
@@ -68,7 +70,10 @@ const Navbar = () => {
     </ul>
   );
 
-  // CTA buttons component with styles matching the "dark glass" theme
+  /**
+   * Renders the call-to-action buttons (e.g., Log In, Sign Up).
+   * @param {{ isMobile?: boolean }} props - Component props.
+   */
   const CTAButtons = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div
       className={cn(
@@ -81,13 +86,12 @@ const Navbar = () => {
           label={label}
           link={link}
           size="sm"
-          // Apply specific classes based on the button's intended variant
           className={cn(
             "font-semibold rounded-full transition-transform duration-200 hover:scale-105",
             variant === "outline"
-              ? "border-white/20 bg-white/10 text-neutral-200 hover:bg-white/20"
-              : "bg-neutral-100 text-black hover:bg-neutral-300",
-            isMobile && "w-full text-lg py-6" // Larger buttons for mobile
+              ? "border-border/50 bg-background/10 text-foreground hover:bg-accent"
+              : "bg-foreground text-background hover:bg-foreground/90",
+            isMobile && "w-full text-lg py-6"
           )}
         />
       ))}
@@ -99,21 +103,18 @@ const Navbar = () => {
       <div
         className={cn(
           "mx-auto border-b transition-all duration-300",
-          // On scroll, apply the "dark glass" style
           scrolled
-            ? "bg-black/70 backdrop-blur-md border-white/10"
+            ? "bg-background/70 backdrop-blur-md border-border/50"
             : "bg-transparent border-transparent"
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between p-4 px-6 lg:px-8">
-          {/* Logo with updated colors */}
           <Link href="/" className="flex items-center justify-center">
-            <span className="text-2xl font-bold text-neutral-100 transition-colors duration-300 hover:text-primary">
+            <span className="text-2xl font-bold text-foreground transition-colors duration-300 hover:text-primary">
               inquora
             </span>
           </Link>
 
-          {/* Desktop Navigation & CTA */}
           <div className="hidden md:flex items-center gap-8">
             <nav>
               <NavigationList />
@@ -121,11 +122,10 @@ const Navbar = () => {
             <CTAButtons />
           </div>
 
-          {/* Mobile Menu Button */}
           <Button
             variant="ghost"
             size="icon"
-            className="text-neutral-100 hover:bg-white/10 md:hidden"
+            className="text-foreground hover:bg-accent md:hidden"
             onClick={toggleMenu}
           >
             <Menu className="h-6 w-6" />
@@ -134,24 +134,23 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Overlay Menu with "dark glass" background */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm"
+            className="fixed inset-0 bg-background/90 backdrop-blur-sm"
             onClick={closeMenu}
           >
             <div className="flex h-full flex-col p-6 pt-4">
               <div className="flex items-center justify-between">
                 <Link
                   href="/"
-                  className="text-2xl font-bold text-neutral-100"
+                  className="text-2xl font-bold text-foreground"
                   onClick={closeMenu}
                 >
                   inquora
                 </Link>
                 <Button variant="ghost" size="icon" onClick={closeMenu}>
-                  <X className="h-6 w-6 text-neutral-100" />
+                  <X className="h-6 w-6 text-foreground" />
                   <span className="sr-only">Close menu</span>
                 </Button>
               </div>

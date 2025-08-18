@@ -5,8 +5,12 @@ import { AuthSocialLogins } from "@/components/auth/AuthSocialLogins";
 import { JSX } from "react";
 
 /**
- * @description Renders the signup page with a compact layout that requires
- * no scrolling on standard screen sizes.
+ * Renders the user sign-up page.
+ *
+ * This page assembles various authentication components to create a complete
+ * registration form, including a header, social logins, an email/password
+ * sign-up form, and a link to the login page.
+ * @returns {JSX.Element} The rendered sign-up page component.
  */
 const SignupPage = (): JSX.Element => {
   return (

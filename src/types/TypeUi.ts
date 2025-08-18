@@ -112,3 +112,10 @@ export interface LayoutProps {
     waveSpeed?: number;
   };
 }
+
+export interface TypeSlide {
+  type: "image" | "video";
+  src: string;
+  caption: string;
+  title?: string;
+}

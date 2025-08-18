@@ -4,6 +4,13 @@ import { AuthLink } from "@/components/auth/AuthLink";
 import { AuthSocialLogins } from "@/components/auth/AuthSocialLogins";
 import { JSX } from "react";
 
+/**
+ * Renders the login page for the application.
+ * It combines several authentication components into a single, cohesive form,
+ * including a header, social logins, an email/password form, and a link to
+- * the sign-up page.
+ * @returns {JSX.Element} The rendered login page component.
+ */
 const LoginPage = (): JSX.Element => {
   return (
     <div className="w-full max-w-sm animate-in fade-in slide-in-from-top-4 duration-700">

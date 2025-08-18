@@ -5,11 +5,15 @@ import { TypeButtonCta } from "@/types/TypeUi";
 import { ArrowRight } from "lucide-react";
 
 /**
- * A reusable, linked call-to-action (CTA) button.
- * It's a flexible wrapper around the shadcn/ui Button.
+ * Renders a reusable call-to-action (CTA) button wrapped in a Next.js Link.
  *
- * @component
- * @param {TypeButtonCta} props - The properties for the component.
+ * @param {TypeButtonCta} props - The component props.
+ * @param {string} [props.label="Get Started"] - The text displayed on the button.
+ * @param {string} [props.link="#"] - The destination URL for the link.
+ * @param {string} [props.variant="default"] - The button's visual style.
+ * @param {string} [props.size="lg"] - The button's size.
+ * @param {boolean} [props.showArrow=false] - If true, displays an arrow icon.
+ * @param {string} [props.className] - Additional classes to apply to the button.
  * @returns {JSX.Element} The rendered CTA button component.
  */
 const ButtonCta = ({
@@ -22,13 +26,11 @@ const ButtonCta = ({
   ...props
 }: TypeButtonCta) => {
   return (
-    // The Link wrapper no longer forces full-width by default.
     <Link href={link}>
       <Button
         variant={variant}
         size={size}
-        // w-full has been removed from the base classes for better reusability
-        className={cn("cursor-pointer px-8 py-4 text-base", className)}
+        className={cn("cursor-pointer px-8 py-4 text-base transition-colors", className)}
         {...props}
       >
         {label}
