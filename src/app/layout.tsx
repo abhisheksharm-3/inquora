@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Literata, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
 const literata = Literata({
   variable: "--font-serif",
@@ -37,11 +38,20 @@ const RootLayout = ({
 }: Readonly<{
   children: React.ReactNode;
 }>) => (
-  <html lang="en" className="dar">
+  <html lang="en">
     <body
       className={`${literata.variable} ${jetbrainsMono.variable} font-serif antialiased`}
     >
-      <QueryProvider>{children}</QueryProvider>
+      <QueryProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </QueryProvider>
     </body>
   </html>
 );

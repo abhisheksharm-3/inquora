@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CtaButtons, PublicNavbarRoutes } from "@/constants/NavItems";
 import { cn } from "@/utils/cn";
+import { ModeToggle } from "@/components/shared/mode-toggle";
 
 /**
  * Renders the main responsive navigation bar.
@@ -119,7 +120,10 @@ const Navbar = () => {
             <nav>
               <NavigationList />
             </nav>
-            <CTAButtons />
+            <div className="flex items-center gap-3">
+              <ModeToggle />
+              <CTAButtons />
+            </div>
           </div>
 
           <Button
@@ -158,7 +162,10 @@ const Navbar = () => {
                 <nav>
                   <NavigationList isMobile onItemClick={closeMenu} />
                 </nav>
-                <CTAButtons isMobile />
+                <div className="flex flex-col items-center gap-4 w-full">
+                  <ModeToggle />
+                  <CTAButtons isMobile />
+                </div>
               </div>
             </div>
           </div>

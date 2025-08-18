@@ -12,6 +12,7 @@ import { useSidebarState } from "@/hooks/useMobileSidebarState";
 import { useChats } from "@/hooks/useChats";
 import { useFileById } from "@/hooks/useFiles";
 import { TypeChat, TypeFile } from "@/types/TypeSupabase";
+import { ModeToggle } from "@/components/shared/mode-toggle";
 
 /**
  * Displays information about the currently active chat or file in the desktop header.
@@ -66,7 +67,10 @@ export const DashboardMobileHeader = () => {
       <Link href="/dashboard">
         <Image src="/logo.png" alt="Logo" width={28} height={28} priority />
       </Link>
-      <PricingDialog trigger={<Button size="sm" className="cursor-pointer">Upgrade</Button>} />
+      <div className="flex items-center gap-2">
+        <ModeToggle />
+        <PricingDialog trigger={<Button size="sm" className="cursor-pointer">Upgrade</Button>} />
+      </div>
     </header>
   );
 };
@@ -93,16 +97,19 @@ export const DashboardDesktopHeader = () => {
         {!isHistoryPage && <ActiveTab chat={chat ?? null} file={file || null} />}
         <AddTabButton />
       </div>
-      <PricingDialog
-        trigger={
-          <Button size="sm">
-            Upgrade plan
-            <Badge variant="secondary" className="ml-2 bg-muted">
-              PRO
-            </Badge>
-          </Button>
-        }
-      />
+      <div className="flex items-center gap-3">
+        <ModeToggle />
+        <PricingDialog
+          trigger={
+            <Button size="sm">
+              Upgrade plan
+              <Badge variant="secondary" className="ml-2 bg-muted">
+                PRO
+              </Badge>
+            </Button>
+          }
+        />
+      </div>
     </header>
   );
 };
