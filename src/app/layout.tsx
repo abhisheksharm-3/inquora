@@ -1,33 +1,22 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Literata, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 
-/**
- * Font configuration using Space Grotesk and JetBrains Mono
- * 
- * Space Grotesk: Modern, distinctive sans-serif with character and excellent readability
- * JetBrains Mono: Premium monospace font designed specifically for developers
- * 
- * This combination provides a unique, modern aesthetic perfect for AI applications
- * while maintaining excellent readability for chat interfaces and technical content.
- */
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const literata = Literata({
+  variable: "--font-serif",
   subsets: ["latin"],
   display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono", 
+  variable: "--font-mono",
   subsets: ["latin"],
   display: "swap",
 });
 
 /**
- * Default metadata for the application.
- * Next.js uses this to set the <title> and <meta name="description"> tags
- * in the document's <head>, crucial for SEO and browser tab information.
+ * @description SEO metadata for the application.
  */
 export const metadata: Metadata = {
   title: "Inquora",
@@ -35,28 +24,23 @@ export const metadata: Metadata = {
 };
 
 /**
- * The root layout component that wraps every page in the application.
+ * The root layout for the application.
  *
- * This component sets up the main HTML structure, applies the optimal font combination,
- * and wraps the entire application in necessary providers, such as the
- * `QueryProvider` for client-side data fetching.
+ * This component sets up the main HTML structure, applies global fonts,
+ * and wraps children with necessary context providers like `QueryProvider`.
  *
- * Font hierarchy:
- * - Primary: Space Grotesk (UI, body text, headings) - distinctive and modern
- * - Monospace: JetBrains Mono (code, technical content) - developer-focused
- *
- * @param {object} props - The component props.
- * @param {React.ReactNode} props.children - The active page or nested layout to be rendered.
- * @returns {React.ReactElement} The root layout of the application.
+ * @param {{ children: React.ReactNode }} props - The component props.
+ * @returns {React.ReactElement} The root layout element.
  */
 const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) => (
-  <html lang="en" className="dark">
-    <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}>
-      {/* QueryProvider wraps the app to provide a client-side cache for server data */}
+  <html lang="en" className="dar">
+    <body
+      className={`${literata.variable} ${jetbrainsMono.variable} font-serif antialiased`}
+    >
       <QueryProvider>{children}</QueryProvider>
     </body>
   </html>
