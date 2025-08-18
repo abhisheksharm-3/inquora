@@ -42,7 +42,7 @@ const ChatPage = async ({ params }: { params: Promise<{ id: string }> }) => {
   }
 
   return (
-    <div className="h-full">
+    <div className="h-[calc(100vh-200px)] min-h-[600px]">
       <ChatInterface chatId={chatId} />
     </div>
   );

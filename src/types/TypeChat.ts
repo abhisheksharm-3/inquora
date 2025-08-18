@@ -14,7 +14,7 @@ export interface TypeChatInputProps {
   setInputValue: (value: string) => void;
   onSendMessage: () => void;
   isSending?: boolean;
-  onKeyPress: (e: React.KeyboardEvent) => void;
+  onKeyPress?: (e: React.KeyboardEvent) => void;
   className?: string;
 }
 

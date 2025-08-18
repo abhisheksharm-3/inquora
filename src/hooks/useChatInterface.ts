@@ -40,6 +40,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
 
     try {
       await sendMessage(trimmedInput);
+      dispatch({ type: 'SEND_MESSAGE_SUCCESS' });
     } catch (error) {
       console.error("Failed to send message:", error);
       const errorMessage = createErrorMessage(chatId);
@@ -47,13 +48,6 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     }
   }, [inputValue, isSending, chatId, sendMessage]);
 
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  }, [handleSendMessage]);
-  
   const setInputValue = (value: string) => dispatch({ type: 'SET_INPUT_VALUE', payload: value });
   const setShowDocument = (show: boolean) => dispatch({ type: 'SET_SHOW_DOCUMENT', payload: show });
 
@@ -104,6 +98,5 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     isSending,
     // Handlers
     handleSendMessage,
-    handleKeyPress,
   };
 };

@@ -241,6 +241,7 @@ export type ChatInterfaceAction =
   | { type: 'SYNC_MESSAGES'; payload: TypeMessage[] }
   | { type: 'ADD_INITIAL_ERROR'; payload: TypeMessage }
   | { type: 'SEND_MESSAGE_START'; payload: { tempUserMessage: TypeMessage; tempAiMessage: TypeMessage } }
+  | { type: 'SEND_MESSAGE_SUCCESS' }
   | { type: 'SEND_MESSAGE_ERROR'; payload: { tempUserMessage: TypeMessage; tempAiMessage: TypeMessage; errorMessage: TypeMessage } };
 
 export const initialChatInterfaceState: TypeChatInterfaceState = {
@@ -264,8 +265,13 @@ export const chatInterfaceReducer = (
     case 'SEND_MESSAGE_START':
       return {
         ...state,
-        inputValue: "",
+        // Don't clear input immediately - let the component handle it
         localMessages: [...state.localMessages, action.payload.tempUserMessage, action.payload.tempAiMessage],
+      };
+    case 'SEND_MESSAGE_SUCCESS':
+      return {
+        ...state,
+        inputValue: "", // Clear input only after successful send
       };
     case 'SEND_MESSAGE_ERROR':
       return {
