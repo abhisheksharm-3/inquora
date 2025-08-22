@@ -80,8 +80,8 @@ Inquora is a modern AI-powered application that enables users to have intelligen
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/abhisheksharm-3/chat-with-anything.git
-cd chat-with-anything
+git clone https://github.com/abhisheksharm-3/inquora.git
+cd inquora
 ```
 
 2. **Install dependencies:**
@@ -137,7 +137,7 @@ yarn dev
 ## 📁 Project Structure
 
 ```
-chat-with-anything/
+inquora/
 ├── src/
 │   ├── app/                      # Next.js app router structure
 │   │   ├── (auth)/               # Authentication pages (login, signup)
