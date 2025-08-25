@@ -17,7 +17,7 @@ const AuthCodeErrorPage = (): JSX.Element => {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Authentication Error</h1>
           <p className="text-muted-foreground">
-            Sorry, we couldn't complete your sign-in request. This could be due to:
+            Sorry, we couldn&apos;t complete your sign-in request. This could be due to:
           </p>
           <ul className="text-sm text-muted-foreground space-y-1 text-left">
             <li>• The authentication request was cancelled</li>

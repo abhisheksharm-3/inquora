@@ -152,7 +152,7 @@ export const sendMessage = async (
     if (chatError || !chat) throw new Error("Chat not found.");
 
     // Get user information for context
-    let userContext: { currentDateTime?: string; userName?: string; userEmail?: string } = {
+    const userContext: { currentDateTime?: string; userName?: string; userEmail?: string } = {
       currentDateTime: new Date().toLocaleString('en-US', { 
         timeZone: 'UTC',
         year: 'numeric',
