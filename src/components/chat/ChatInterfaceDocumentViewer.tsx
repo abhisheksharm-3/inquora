@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import Image from "next/image";
 import {
   Loader2,
@@ -83,7 +83,7 @@ const StateDisplay = ({ icon: Icon, title, message, variant = "default", animate
 /**
  * A beautiful and versatile document viewer component for the chat interface.
  */
-export const ChatInterfaceDocumentViewer: React.FC<TypeChatInterfaceDocumentViewerProps> = ({
+const ChatInterfaceDocumentViewerComponent: React.FC<TypeChatInterfaceDocumentViewerProps> = ({
   file, isLoading, isError, title,
 }) => {
   const [zoomLevel, setZoomLevel] = useState(100);
@@ -169,3 +169,27 @@ export const ChatInterfaceDocumentViewer: React.FC<TypeChatInterfaceDocumentView
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const ChatInterfaceDocumentViewer = memo(ChatInterfaceDocumentViewerComponent, (prevProps, nextProps) => {
+  // Custom comparison function to prevent re-renders when file object reference changes but content is the same
+  const prevFile = prevProps.file;
+  const nextFile = nextProps.file;
+  
+  // Deep comparison of file properties to prevent unnecessary re-renders
+  const filesEqual = (
+    prevFile?.id === nextFile?.id &&
+    prevFile?.url === nextFile?.url &&
+    prevFile?.type === nextFile?.type &&
+    prevFile?.name === nextFile?.name &&
+    prevFile?.processing_status === nextFile?.processing_status &&
+    prevFile?.processing_error === nextFile?.processing_error
+  );
+  
+  return (
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.isError === nextProps.isError &&
+    prevProps.title === nextProps.title &&
+    filesEqual
+  );
+});

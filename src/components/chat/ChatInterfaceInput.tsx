@@ -32,15 +32,17 @@ export const ChatInterfaceInput: React.FC<TypeChatInputProps> = ({
   const sendMessage = useCallback(() => {
     if (!localValue.trim() || isSending) return;
     
-    // Update global state with current local value before sending
-    setInputValue(localValue);
-    onSendMessage();
+    // Pass the message content directly to avoid state synchronization issues
+    onSendMessage(localValue);
+    
+    // Clear the local input
+    setLocalValue("");
     
     // Maintain focus after sending
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
-  }, [onSendMessage, localValue, isSending, setInputValue]);
+  }, [onSendMessage, localValue, isSending]);
 
   const handleSendClick = useCallback(() => {
     sendMessage();

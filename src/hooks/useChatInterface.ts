@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useReducer } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
 import { useChats } from "@/hooks/useChats";
 import { useFileById } from "@/hooks/useFiles";
-import { checkYouTubeProcessingError, createErrorMessage, createOptimisticMessages, createYouTubeErrorMessage } from "@/utils/message-utils";
-import { chatInterfaceReducer, initialChatInterfaceState } from "@/utils/chat-utils";
+import { checkYouTubeProcessingError, createYouTubeErrorMessage } from "@/utils/message-utils";
 
 const REDIRECT_DELAY_MS = 2000;
 
@@ -15,41 +14,37 @@ const REDIRECT_DELAY_MS = 2000;
  */
 export const useChatInterface = ({ chatId }: { chatId: string }) => {
   const router = useRouter();
-  const [state, dispatch] = useReducer(chatInterfaceReducer, initialChatInterfaceState);
-  const { inputValue, localMessages, showDocument } = state;
+  const [inputValue, setInputValue] = useState("");
+  const [showDocument, setShowDocument] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- Core Data Hooks ---
-  const { messages: serverMessages, isLoading: messagesLoading, isSending, sendMessage, subscribeToMessages } = useMessages(chatId);
-  const { getChatById } = useChats(); // Fixed: use getChatById instead
+  const { messages, isLoading: messagesLoading, isSending, sendMessage, subscribeToMessages } = useMessages(chatId);
+  const { getChatById } = useChats();
   
   // --- Derived State ---
-  const chat = getChatById(chatId); // Fixed: call getChatById
-  const { data: file, isLoading: isFileLoading, isError: isFileError } = useFileById(chat?.file_id || ""); // Fixed: use file_id
+  const chat = getChatById(chatId);
+  const { data: file, isLoading: isFileLoading, isError: isFileError } = useFileById(chat?.file_id || "");
   
   const isChatLoading = !chat && messagesLoading;
   const isChatError = !chat && !messagesLoading;
 
   // --- Handlers ---
-  const handleSendMessage = useCallback(async () => {
-    const trimmedInput = inputValue.trim();
-    if (!trimmedInput || isSending) return;
+  const handleSendMessage = useCallback(async (messageContent?: string) => {
+    const content = messageContent || inputValue.trim();
+    if (!content || isSending) return;
 
-    const { tempUserMessage, tempAiMessage } = createOptimisticMessages(chatId, trimmedInput);
-    dispatch({ type: 'SEND_MESSAGE_START', payload: { tempUserMessage, tempAiMessage } });
+    // Clear input if message content was passed directly (from ChatInterfaceInput)
+    if (messageContent) {
+      setInputValue("");
+    }
 
     try {
-      await sendMessage(trimmedInput);
-      dispatch({ type: 'SEND_MESSAGE_SUCCESS' });
+      await sendMessage(content);
     } catch (error) {
       console.error("Failed to send message:", error);
-      const errorMessage = createErrorMessage(chatId);
-      dispatch({ type: 'SEND_MESSAGE_ERROR', payload: { tempUserMessage, tempAiMessage, errorMessage } });
     }
-  }, [inputValue, isSending, chatId, sendMessage]);
-
-  const setInputValue = (value: string) => dispatch({ type: 'SET_INPUT_VALUE', payload: value });
-  const setShowDocument = (show: boolean) => dispatch({ type: 'SET_SHOW_DOCUMENT', payload: show });
+  }, [inputValue, isSending, sendMessage]);
 
   // --- Effects ---
   useEffect(() => {
@@ -59,26 +54,31 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     }
   }, [isChatError, isChatLoading, router]);
 
-  useEffect(() => {
-    if (serverMessages) {
-      dispatch({ type: 'SYNC_MESSAGES', payload: serverMessages });
-    }
-  }, [serverMessages]);
-
-  useEffect(() => {
-    if (!file || localMessages.length > 0) return;
-    
-    if (checkYouTubeProcessingError(file)) {
-      const errorMessage = createYouTubeErrorMessage(chatId, file);
-      dispatch({ type: 'ADD_INITIAL_ERROR', payload: errorMessage });
-    }
-  }, [file, chatId, localMessages.length]);
-
+  // Separate effect for subscription
   useEffect(() => {
     const unsubscribe = subscribeToMessages();
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     return unsubscribe;
-  }, [subscribeToMessages, localMessages]);
+  }, [subscribeToMessages]);
+
+  // Separate effect for scrolling - scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Use requestAnimationFrame to ensure DOM is fully updated
+      const scrollToBottom = () => {
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ 
+            behavior: "smooth", 
+            block: "nearest",
+            inline: "nearest"
+          });
+        });
+      };
+      
+      // Small delay to ensure all DOM updates are complete
+      const timeoutId = setTimeout(scrollToBottom, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages.length, messages[messages.length - 1]?.content, messages[messages.length - 1]?.id]);
 
   return {
     // State
@@ -86,7 +86,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     setInputValue,
     showDocument,
     setShowDocument,
-    localMessages,
+    localMessages: messages, // Use messages from useMessages hook with React 19 optimistic updates
     messagesEndRef,
     // Derived State
     chat,

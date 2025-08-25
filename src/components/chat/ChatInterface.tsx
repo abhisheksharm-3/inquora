@@ -18,7 +18,7 @@ import {
   X
 } from "lucide-react";
 import { useChatInterface } from "@/hooks/useChatInterface";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 import { ChatInterfaceInput } from "./ChatInterfaceInput";
 import { ChatInterfaceDocumentViewer } from "./ChatInterfaceDocumentViewer";
@@ -48,22 +48,9 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
 
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
 
-  if (isChatLoading || !chat) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <div className="absolute inset-0 h-12 w-12 animate-pulse rounded-full bg-primary/20" />
-        </div>
-        <div className="text-center space-y-1">
-          <p className="text-sm font-medium text-foreground">Loading Chat</p>
-          <p className="text-xs text-muted-foreground">Please wait while we prepare your conversation</p>
-        </div>
-      </div>
-    );
-  }
-
-  const DocumentPanel = () => (
+  // Memoize DocumentPanel to prevent re-creation on every render
+  // IMPORTANT: This must be called before any conditional returns to maintain hook order
+  const DocumentPanel = useMemo(() => (
     <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
       {file ? (
         <div className="h-full w-full">
@@ -71,7 +58,7 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
             file={file}
             isLoading={isFileLoading}
             isError={isFileError}
-            title={chat.title || "Document"}
+            title={chat?.title || "Document"}
           />
         </div>
       ) : (
@@ -88,9 +75,11 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
         </div>
       )}
     </Card>
-  );
+  ), [file, isFileLoading, isFileError, chat?.title]);
 
-  const ChatPanel = () => (
+  // Memoize ChatPanel to prevent re-creation on every render
+  // IMPORTANT: This must be called before any conditional returns to maintain hook order
+  const ChatPanel = useMemo(() => (
     <Card className="flex h-full flex-col border-border/50 bg-card/95 backdrop-blur-md shadow-lg py-0 gap-0 md:m-0 m-0 rounded-none md:rounded-lg">
       <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
@@ -134,7 +123,25 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
         />
       </div>
     </Card>
-  );  return (
+  ), [localMessages, messagesLoading, messagesEndRef, isSending, inputValue, setInputValue, handleSendMessage]);
+
+  // Conditional rendering AFTER all hooks have been called
+  if (isChatLoading || !chat) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4">
+        <div className="relative">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <div className="absolute inset-0 h-12 w-12 animate-pulse rounded-full bg-primary/20" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">Loading Chat</p>
+          <p className="text-xs text-muted-foreground">Please wait while we prepare your conversation</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <div className="h-full">
       {/* Desktop Layout: Enhanced Resizable Glass Panels */}
       <div className="hidden h-full p-1 md:block">
@@ -143,7 +150,7 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
           className="h-full gap-4"
         >
           <ResizablePanel defaultSize={45} minSize={30} maxSize={70}>
-            <DocumentPanel />
+            {DocumentPanel}
           </ResizablePanel>
           
           <ResizableHandle 
@@ -156,14 +163,14 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
           />
           
           <ResizablePanel defaultSize={55} minSize={30} maxSize={70}>
-            <ChatPanel />
+            {ChatPanel}
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
 
       {/* Mobile Layout: Modern Full-Screen Chat with Floating Document Access */}
       <div className="h-full flex flex-col md:hidden relative bg-gradient-to-b from-background to-background/95">
-        <ChatPanel />
+        {ChatPanel}
         
         {/* Floating Document Button with Enhanced UX */}
         {file && (
@@ -221,7 +228,7 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
                   
                   {/* Maximum Document Content Space */}
                   <div className="flex-1 min-h-0 overflow-hidden">
-                    <DocumentPanel />
+                    {DocumentPanel}
                   </div>
                 </div>
               </SheetContent>

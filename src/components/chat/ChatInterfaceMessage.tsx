@@ -1,6 +1,7 @@
 // src/components/chat/ChatInterfaceMessages.tsx
 
 import { Loader2 } from "lucide-react";
+import { memo } from "react";
 import Image from "next/image";
 import { useUser } from "@/hooks/useUser";
 import { TypeChatInterfaceMessagesProps } from "@/types/TypeChat";
@@ -10,7 +11,7 @@ import { MessageConstants } from "@/constants/MessageConstants";
 /**
  * Renders the message list with redesigned, themed chat bubbles.
  */
-export const ChatInterfaceMessages: React.FC<TypeChatInterfaceMessagesProps> = ({
+const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> = ({
   messages, messagesLoading, messagesEndRef, isSending,
 }) => {
   const { user } = useUser();
@@ -37,49 +38,60 @@ export const ChatInterfaceMessages: React.FC<TypeChatInterfaceMessagesProps> = (
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-6 flex flex-col">
-      <div className="flex-1 space-y-6">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {/* Assistant Avatar */}
-            {message.role === "assistant" && (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card p-1.5">
-                <Image src="/logo.png" alt="AI" width={24} height={24} />
-              </div>
-            )}
-
-            {/* Message Bubble */}
-            <div
-              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-card text-foreground"
-              }`}
-            >
-              {message.content === MessageConstants.AssistantThinkingContent ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                  <span>Thinking...</span>
-                </div>
-              ) : (
-                <div className="whitespace-pre-wrap break-words">{message.content}</div>
-              )}
+    <div className="h-full overflow-y-auto p-4 space-y-6">
+      {messages.map((message) => (
+        <div
+          key={message.id}
+          className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+        >
+          {/* Assistant Avatar */}
+          {message.role === "assistant" && (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card p-1.5">
+              <Image src="/logo.png" alt="AI" width={24} height={24} />
             </div>
+          )}
 
-            {/* User Avatar */}
-            {message.role === "user" && (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card font-semibold text-primary">
-                {getUserInitials(user)}
+          {/* Message Bubble */}
+          <div
+            className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
+              message.role === "user"
+                ? "bg-primary text-primary-foreground"
+                : "border border-border bg-card text-foreground"
+            }`}
+          >
+            {message.content === MessageConstants.AssistantThinkingContent ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                <span>Thinking...</span>
               </div>
+            ) : (
+              <div className="whitespace-pre-wrap break-words">{message.content}</div>
             )}
           </div>
-        ))}
-      </div>
 
-      <div ref={messagesEndRef} />
+          {/* User Avatar */}
+          {message.role === "user" && (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card font-semibold text-primary">
+              {getUserInitials(user)}
+            </div>
+          )}
+        </div>
+      ))}
+      <div ref={messagesEndRef} className="h-4" />
     </div>
   );
 };
+
+// Memoize the messages component to prevent unnecessary re-renders
+export const ChatInterfaceMessages = memo(ChatInterfaceMessagesComponent, (prevProps, nextProps) => {
+  // Only re-render if messages content actually changed, not just array reference
+  return (
+    prevProps.messagesLoading === nextProps.messagesLoading &&
+    prevProps.isSending === nextProps.isSending &&
+    prevProps.messages.length === nextProps.messages.length &&
+    prevProps.messages.every((msg, index) => 
+      msg.id === nextProps.messages[index]?.id && 
+      msg.content === nextProps.messages[index]?.content
+    )
+  );
+});
