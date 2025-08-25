@@ -18,19 +18,18 @@ import {
   X
 } from "lucide-react";
 import { useChatInterface } from "@/hooks/useChatInterface";
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 
 import { ChatInterfaceInput } from "./ChatInterfaceInput";
 import { ChatInterfaceDocumentViewer } from "./ChatInterfaceDocumentViewer";
 import { ChatInterfaceMessages } from "./ChatInterfaceMessage";
 import { cn } from "@/utils/cn";
 
-/**
- * Renders a beautiful and responsive chat interface with glassmorphism design.
- * Features a resizable split-screen on desktop and a modern slide-up panel on mobile.
- * Uses proper shadcn theming and modern UI components.
- */
-const ChatInterface = ({ chatId }: { chatId: string }) => {
+interface ChatInterfaceProps {
+  chatId: string;
+}
+
+const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
   const {
     inputValue,
     setInputValue,
@@ -48,8 +47,6 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
 
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
 
-  // Memoize DocumentPanel to prevent re-creation on every render
-  // IMPORTANT: This must be called before any conditional returns to maintain hook order
   const DocumentPanel = useMemo(() => (
     <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
       {file ? (
@@ -77,8 +74,6 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
     </Card>
   ), [file, isFileLoading, isFileError, chat?.title]);
 
-  // Memoize ChatPanel to prevent re-creation on every render
-  // IMPORTANT: This must be called before any conditional returns to maintain hook order
   const ChatPanel = useMemo(() => (
     <Card className="flex h-full flex-col border-border/50 bg-card/95 backdrop-blur-md shadow-lg py-0 gap-0 md:m-0 m-0 rounded-none md:rounded-lg">
       <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
@@ -125,7 +120,6 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
     </Card>
   ), [localMessages, messagesLoading, messagesEndRef, isSending, inputValue, setInputValue, handleSendMessage]);
 
-  // Conditional rendering AFTER all hooks have been called
   if (isChatLoading || !chat) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
@@ -143,7 +137,6 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
 
   return (
     <div className="h-full">
-      {/* Desktop Layout: Enhanced Resizable Glass Panels */}
       <div className="hidden h-full p-1 md:block">
         <ResizablePanelGroup 
           direction="horizontal" 
@@ -168,14 +161,11 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
         </ResizablePanelGroup>
       </div>
 
-      {/* Mobile Layout: Modern Full-Screen Chat with Floating Document Access */}
       <div className="h-full flex flex-col md:hidden relative bg-gradient-to-b from-background to-background/95">
         {ChatPanel}
         
-        {/* Floating Document Button with Enhanced UX */}
         {file && (
           <div className="absolute bottom-24 right-6 z-10 flex flex-col items-end gap-3">
-            {/* Document Preview Tooltip */}
             {!isDocumentPanelOpen && (
               <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-lg max-w-[200px] animate-in slide-in-from-right-2 duration-200">
                 <p className="text-xs text-muted-foreground mb-1">Document available:</p>
@@ -199,12 +189,10 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
                 className="h-[96vh] p-0 border-none bg-background backdrop-blur-xl rounded-t-3xl shadow-2xl"
               >
                 <div className="h-full flex flex-col">
-                  {/* Minimal Handle Bar */}
                   <div className="flex items-center justify-center py-2 shrink-0">
                     <div className="w-12 h-1 bg-muted-foreground/40 rounded-full" />
                   </div>
                   
-                  {/* Ultra Compact Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-card/30 shrink-0">
                     <div className="flex items-center gap-2">
                       <div className="rounded-full bg-primary/10 p-1.5">
@@ -226,7 +214,6 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
                     </Button>
                   </div>
                   
-                  {/* Maximum Document Content Space */}
                   <div className="flex-1 min-h-0 overflow-hidden">
                     {DocumentPanel}
                   </div>
@@ -239,5 +226,11 @@ const ChatInterface = ({ chatId }: { chatId: string }) => {
     </div>
   );
 };
+
+const ChatInterface = memo(ChatInterfaceComponent, (prevProps, nextProps) => {
+  return prevProps.chatId === nextProps.chatId;
+});
+
+ChatInterface.displayName = 'ChatInterface';
 
 export default ChatInterface;

@@ -7,144 +7,118 @@ import { useUser } from "./useUser";
 import { sendMessage as sendMessageToGemini } from "@/utils/gemini/actions";
 import { useMemo, useCallback, useTransition, useOptimistic } from "react";
 
-/** The base query key for all message-related queries. */
 export const MESSAGES_QUERY_KEY = ["messages"];
 
-// --- Optimistic Update Helpers for sendMessage ---
-
-/**
- * Creates temporary messages for optimistic UI updates.
- * @private
- */
-const _createOptimisticMessages = (chatId: string, content: string) => {
+const createOptimisticMessages = (chatId: string, content: string) => {
   const timestamp = new Date().toISOString();
-  const tempUserMessage: TypeMessage = {
-    id: `temp-user-${Date.now()}`,
-    chat_id: chatId,
-    role: "user",
-    content,
-    created_at: timestamp,
+  const baseId = Date.now();
+  
+  return {
+    tempUserMessage: {
+      id: `temp-user-${baseId}`,
+      chat_id: chatId,
+      role: "user" as const,
+      content,
+      created_at: timestamp,
+    },
+    tempAiMessage: {
+      id: `temp-ai-${baseId}`,
+      chat_id: chatId,
+      role: "assistant" as const,
+      content: "...",
+      created_at: timestamp,
+    },
   };
-  const tempAiMessage: TypeMessage = {
-    id: `temp-ai-${Date.now()}`,
-    chat_id: chatId,
-    role: "assistant",
-    content: "...",
-    created_at: timestamp,
-  };
-  return { tempUserMessage, tempAiMessage };
 };
 
-/**
- * A custom hook for fetching and managing messages within a specific chat session.
- *
- * It handles fetching, real-time updates via subscriptions, and mutations for sending,
- * creating, updating, and deleting messages. It features optimistic UI updates for a
- * responsive user experience.
- *
- * @param chatId The ID of the chat to manage messages for.
- */
 export const useMessages = (chatId: string) => {
   const queryClient = useQueryClient();
   const supabase = supabaseBrowserClient();
   const { isAuthenticated, userId } = useUser();
   const [isPending, startTransition] = useTransition();
 
-  const isValidChatId =
-    !!chatId && typeof chatId === "string" && chatId.trim() !== "";
+  const isValidChatId = useMemo(() => 
+    !!chatId && typeof chatId === "string" && chatId.trim() !== "", 
+    [chatId]
+  );
 
   const queryKey = useMemo(() => [...MESSAGES_QUERY_KEY, chatId], [chatId]);
 
-  /** Query to fetch all messages for the specified chat. */
   const messagesQuery = useQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async (): Promise<TypeMessage[]> => {
       if (!isValidChatId) return [];
-      try {
-        const { data, error } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("chat_id", chatId)
-          .order("created_at", { ascending: true });
-        if (error) throw error;
-        return data as TypeMessage[];
-      } catch (error) {
+      
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true });
+      
+      if (error) {
         console.error("Error fetching messages:", error);
         return [];
       }
+      
+      return data as TypeMessage[];
     },
     enabled: isAuthenticated && isValidChatId,
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
-  // Base messages from server
-  const serverMessages = useMemo(() => {
-    return messagesQuery.data || [];
-  }, [messagesQuery.data]);
+  const serverMessages = messagesQuery.data || [];
 
-  // Use React 19's useOptimistic for optimistic updates
-  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
-    serverMessages,
-    (state: TypeMessage[], newMessage: TypeMessage) => {
-      // If it's a user message, just add it
-      if (newMessage.role === "user") {
-        return [...state, newMessage];
-      }
-      
-      // If it's an AI message, check if we need to replace an existing temp AI message
-      if (newMessage.role === "assistant") {
-        const existingTempAiIndex = state.findIndex(msg => 
-          msg.role === "assistant" && msg.id.startsWith("temp-ai-")
-        );
-        
-        if (existingTempAiIndex !== -1) {
-          // Replace the existing temp AI message
-          const newState = [...state];
-          newState[existingTempAiIndex] = newMessage;
-          return newState;
-        } else {
-          // Add new AI message
-          return [...state, newMessage];
-        }
-      }
-      
+  const optimisticReducer = useCallback((state: TypeMessage[], newMessage: TypeMessage) => {
+    if (newMessage.role === "user") {
       return [...state, newMessage];
     }
+    
+    if (newMessage.role === "assistant") {
+      const existingTempAiIndex = state.findIndex(msg => 
+        msg.role === "assistant" && msg.id.startsWith("temp-ai-")
+      );
+      
+      if (existingTempAiIndex !== -1) {
+        const newState = [...state];
+        newState[existingTempAiIndex] = newMessage;
+        return newState;
+      }
+      return [...state, newMessage];
+    }
+    
+    return [...state, newMessage];
+  }, []);
+
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(
+    serverMessages,
+    optimisticReducer
   );
 
-  const messages = optimisticMessages;
-
-  /** Simplified send message function using React 19 hooks */
   const sendMessage = useCallback(async (content: string) => {
     if (!isValidChatId) throw new Error("No chat ID provided");
     if (!userId) throw new Error("No authenticated user");
     if (!content.trim()) return;
 
-    // Create optimistic messages
-    const { tempUserMessage, tempAiMessage } = _createOptimisticMessages(chatId, content);
+    const { tempUserMessage, tempAiMessage } = createOptimisticMessages(chatId, content);
     
-    // Wrap optimistic updates in startTransition
     startTransition(() => {
-      // Add user message optimistically
       addOptimisticMessage(tempUserMessage);
-      
-      // Add AI thinking message optimistically
       addOptimisticMessage(tempAiMessage);
     });
 
     try {
-      // Convert current server messages to ChatMessage format for Gemini
       const currentMessages = serverMessages.filter(
-        (msg) => !msg.id.startsWith("temp-") && msg.content !== "...",
+        (msg) => !msg.id.startsWith("temp-") && msg.content !== "..."
       );
+      
       const formattedMessages: { role: "user" | "model"; content: string }[] = currentMessages.map((msg) => ({
         role: msg.role === "user" ? "user" : "model",
         content: msg.content,
       }));
 
-      // Send to AI backend
       await sendMessageToGemini(chatId, content, formattedMessages);
       
-      // Invalidate queries to fetch fresh data
       await queryClient.invalidateQueries({
         queryKey,
         exact: true,
@@ -152,7 +126,6 @@ export const useMessages = (chatId: string) => {
     } catch (error) {
       console.error("Send message error:", error);
       
-      // Create error message and wrap in transition
       startTransition(() => {
         const errorMessage: TypeMessage = {
           id: `error-${Date.now()}`,
@@ -162,7 +135,6 @@ export const useMessages = (chatId: string) => {
           created_at: new Date().toISOString(),
         };
         
-        // Replace AI thinking message with error
         addOptimisticMessage(errorMessage);
       });
     }
@@ -279,13 +251,11 @@ export const useMessages = (chatId: string) => {
   }, [isValidChatId, isAuthenticated, chatId, queryClient, supabase, queryKey]);
 
   return {
-    // Queries - using optimistic messages
-    messages,
+    messages: optimisticMessages,
     isLoading: messagesQuery.isLoading,
     isError: messagesQuery.isError,
     error: messagesQuery.error,
 
-    // Send message using React 19 hooks
     sendMessage,
     isSending: isPending,
 
@@ -301,7 +271,6 @@ export const useMessages = (chatId: string) => {
     deleteMessageAsync: deleteMessageMutation.mutateAsync,
     isDeleting: deleteMessageMutation.isPending,
 
-    // Real-time subscription
     subscribeToMessages,
   };
 };

@@ -1,22 +1,15 @@
-// src/components/chat/ChatInterfaceInput.tsx
-
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TypeChatInputProps } from "@/types/TypeChat";
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState, useEffect, memo } from "react";
 
-/**
- * A themed "glass" input area for the chat interface. Uses a Textarea for better UX.
- * Uses local state to prevent cursor position issues.
- */
-export const ChatInterfaceInput: React.FC<TypeChatInputProps> = ({
+const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
   inputValue, setInputValue, onSendMessage, isSending,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localValue, setLocalValue] = useState("");
 
-  // Only sync when the global input is cleared (after sending)
   useEffect(() => {
     if (inputValue === "") {
       setLocalValue("");
@@ -24,21 +17,15 @@ export const ChatInterfaceInput: React.FC<TypeChatInputProps> = ({
   }, [inputValue]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
-    // Don't update global state on every keystroke to prevent cursor issues
+    setLocalValue(e.target.value);
   }, []);
 
   const sendMessage = useCallback(() => {
     if (!localValue.trim() || isSending) return;
     
-    // Pass the message content directly to avoid state synchronization issues
     onSendMessage(localValue);
-    
-    // Clear the local input
     setLocalValue("");
     
-    // Maintain focus after sending
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
@@ -81,3 +68,14 @@ export const ChatInterfaceInput: React.FC<TypeChatInputProps> = ({
     </div>
   );
 };
+
+export const ChatInterfaceInput = memo(ChatInterfaceInputComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.inputValue === nextProps.inputValue &&
+    prevProps.isSending === nextProps.isSending &&
+    prevProps.onSendMessage === nextProps.onSendMessage &&
+    prevProps.setInputValue === nextProps.setInputValue
+  );
+});
+
+ChatInterfaceInput.displayName = 'ChatInterfaceInput';

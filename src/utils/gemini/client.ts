@@ -46,15 +46,18 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  * Determines the appropriate system instruction based on file content.
  * @private
  */
-const _getSystemInstruction = (fileContent?: string): Content | null => {
+const _getSystemInstruction = (
+  fileContent?: string,
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
+): Content | null => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
     return null; // No system prompt needed for images or standard chat
   }
 
   const promptText =
     fileContent === "YOUTUBE_TRANSCRIPT"
-      ? createYoutubeSystemPrompt(fileContent)
-      : createRagSystemPrompt(fileContent);
+      ? createYoutubeSystemPrompt(fileContent, context)
+      : createRagSystemPrompt(fileContent, context);
 
   return {
     role: "user",
@@ -68,12 +71,14 @@ const _getSystemInstruction = (fileContent?: string): Content | null => {
  * @param messages The history of the conversation.
  * @param fileContent Optional context from a file (e.g., PDF content or a placeholder like 'YOUTUBE_TRANSCRIPT').
  * @param imageData Optional image data to include in the message.
+ * @param context Optional context information including date/time and user details.
  * @returns {Promise<string>} A promise that resolves to the model's text response.
  */
 export const sendMessageToGemini = async (
   messages: { role: "user" | "model"; content: string }[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
     return "Error: Gemini API key is not configured.";
@@ -88,7 +93,7 @@ export const sendMessageToGemini = async (
 
     // Construct the chat history, including the system prompt if applicable.
     const history: Content[] = [];
-    const systemInstruction = _getSystemInstruction(fileContent);
+    const systemInstruction = _getSystemInstruction(fileContent, context);
     if (systemInstruction) {
       history.push(systemInstruction);
     }
