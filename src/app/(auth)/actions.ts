@@ -82,10 +82,13 @@ export const signInWithGoogle = async () => {
   const supabase = await supabaseServerClient();
 
   try {
+    // Dynamically determine the correct redirect URL
+    const redirectUrl = getAuthRedirectUrl();
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.SITE_URL}/api/auth/callback`,
+        redirectTo: `${redirectUrl}/api/auth/callback`,
       },
     });
 
@@ -98,3 +101,33 @@ export const signInWithGoogle = async () => {
     return handleAuthError(error);
   }
 };
+
+/**
+ * Determines the correct redirect URL for OAuth based on environment
+ * @returns {string} The base URL for redirects
+ */
+function getAuthRedirectUrl(): string {
+  // In development, use localhost
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+  
+  // In production, try to get the URL from various sources
+  // First try SITE_URL if it's set
+  if (process.env.SITE_URL) {
+    return process.env.SITE_URL;
+  }
+  
+  // Try VERCEL_URL for Vercel deployments
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Try NEXT_PUBLIC_SITE_URL as a fallback
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL;
+  }
+  
+  // Default fallback (you should set this to your actual production domain)
+  return 'https://inquora.vercel.app';
+}
