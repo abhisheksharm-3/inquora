@@ -85,7 +85,7 @@ const ChoosePage = () => {
                         FIXING
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground text-left">Slides have issues with their XML format, YouTube API is acting up. We're fixing these soon.</p>
+                    <p className="text-sm text-muted-foreground text-left">Slides have issues with their XML format, YouTube API is acting up. We&apos;re fixing these soon.</p>
                   </div>
                 </div>
               </CardContent>

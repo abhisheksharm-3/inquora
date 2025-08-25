@@ -73,3 +73,28 @@ export const signUp = async (formData: FormData) => {
     return handleAuthError(error);
   }
 };
+
+/**
+ * Server Action to sign in with Google OAuth.
+ * @returns {Promise<string | void>} An error message on failure, otherwise void.
+ */
+export const signInWithGoogle = async () => {
+  const supabase = await supabaseServerClient();
+
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${process.env.SITE_URL}/api/auth/callback`,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    return handleAuthError(error);
+  }
+};
