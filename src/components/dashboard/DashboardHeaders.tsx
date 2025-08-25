@@ -42,7 +42,7 @@ const ActiveTab = ({
  */
 const AddTabButton = () => (
   <Button asChild variant="outline" size="icon">
-    <Link href="/dashboard">
+    <Link href="/choose">
       <Plus className="h-4 w-4" />
     </Link>
   </Button>

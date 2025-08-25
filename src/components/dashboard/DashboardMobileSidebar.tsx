@@ -177,7 +177,7 @@ export const DashboardMobileSidebar = () => {
         }`}
       >
         <div className="flex items-center justify-between border-b border-border p-4">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/choose" className="flex items-center gap-2">
             <Image
               src="/logo.png"
               alt="Logo"

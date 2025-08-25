@@ -23,7 +23,7 @@ import {
 const DesktopNavigation = () => {
   const pathname = usePathname();
   const isActive = (href: string) =>
-    pathname === href || (href === "/dashboard" && pathname.startsWith("/chat"));
+    pathname === href || (href === "/choose" && pathname.startsWith("/chat"));
 
   return (
     <nav className="flex flex-col items-center gap-2">
