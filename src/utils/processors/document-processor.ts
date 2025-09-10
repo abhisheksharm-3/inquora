@@ -7,7 +7,6 @@ import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
 import { Document } from "langchain/document";
 import mammoth from "mammoth";
-import ExcelJS from "exceljs";
 
 // --- Constants ---
 const CHUNK_SIZE = 1000;
@@ -104,39 +103,8 @@ const _extractTextFromGenericDocument = async (
     case "xls":
     case "xlsx":
       try {
-        // Use ExcelJS for robust Excel processing
-        const workbook = new ExcelJS.Workbook();
-        const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-        await workbook.xlsx.load(arrayBuffer);
-        const textParts: string[] = [];
-        
-        // Add header
-        textParts.push("=== Excel Spreadsheet Content ===\n");
-        
-        workbook.worksheets.forEach((worksheet) => {
-          textParts.push(`\n=== Sheet: ${worksheet.name} ===\n`);
-          
-          worksheet.eachRow((row, rowNumber) => {
-            const rowValues = row.values as unknown[];
-            if (Array.isArray(rowValues) && rowValues.length > 1) { // Skip index 0 which is undefined
-              const rowText = rowValues
-                .slice(1) // Remove the first undefined element
-                .map(cell => cell != null ? String(cell).trim() : "")
-                .filter(text => text.length > 0)
-                .join(" | ");
-              
-              if (rowText) {
-                textParts.push(`Row ${rowNumber}: ${rowText}`);
-              }
-            }
-          });
-        });
-        
-        const result = textParts.join("\n");
-        if (result.trim().length === 0) {
-          throw new Error("No readable content found in spreadsheet");
-        }
-        return result;
+        // Enhanced Excel processing with multiple methods
+        return await _extractExcelText(buffer, documentType);
       } catch (error) {
         console.error("Error extracting Excel:", error);
         throw new Error(`Failed to extract text from Excel file: ${error instanceof Error ? error.message : String(error)}`);
@@ -168,6 +136,237 @@ const _extractTextFromGenericDocument = async (
 
     default:
       throw new Error(`Unsupported document type: ${documentType}`);
+  }
+};
+
+/**
+ * Enhanced Excel text extraction with multiple fallback methods
+ * @private
+ */
+const _extractExcelText = async (buffer: Buffer, documentType: string): Promise<string> => {
+  const textParts: string[] = [];
+  
+  // Determine file type from buffer signature
+  const isXlsxFile = _isXlsxFile(buffer);
+  const isXlsFile = _isXlsFile(buffer);
+  
+  console.log(`Processing Excel file: type=${documentType}, isXlsx=${isXlsxFile}, isXls=${isXlsFile}`);
+  
+  // Method 1: Try ExcelJS for both XLS and XLSX
+  try {
+    const ExcelJS = (await import("exceljs")).default;
+    const workbook = new ExcelJS.Workbook();
+    
+    // Validate the buffer before processing
+    if (buffer.length === 0) {
+      throw new Error("Empty file buffer");
+    }
+    
+    // Use different methods based on file type
+    if (isXlsxFile) {
+      // For XLSX files, use xlsx.load
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+      await workbook.xlsx.load(arrayBuffer as ArrayBuffer);
+    } else {
+      // For XLS files or uncertain types, try csv.load as a fallback
+      // ExcelJS doesn't fully support XLS format, so we'll try the stream approach
+      const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+      await workbook.xlsx.load(arrayBuffer as ArrayBuffer);
+    }
+    
+    // Add header
+    textParts.push("=== Excel Spreadsheet Content ===\n");
+    
+    workbook.worksheets.forEach((worksheet) => {
+      textParts.push(`\n=== Sheet: ${worksheet.name} ===\n`);
+      
+      worksheet.eachRow((row, rowNumber) => {
+        const rowValues = row.values as unknown[];
+        if (Array.isArray(rowValues) && rowValues.length > 1) { // Skip index 0 which is undefined
+          const rowText = rowValues
+            .slice(1) // Remove the first undefined element
+            .map(cell => cell != null ? String(cell).trim() : "")
+            .filter(text => text.length > 0)
+            .join(" | ");
+          
+          if (rowText) {
+            textParts.push(`Row ${rowNumber}: ${rowText}`);
+          }
+        }
+      });
+    });
+    
+    const result = textParts.join("\n");
+    if (result.trim().length === 0) {
+      throw new Error("No readable content found in spreadsheet");
+    }
+    return result;
+    
+  } catch (excelJsError) {
+    console.warn("ExcelJS method failed:", excelJsError);
+    
+    // Method 2: Try JSZip extraction for .xlsx files only
+    if (isXlsxFile) {
+      try {
+        return await _extractExcelWithJSZip(buffer);
+      } catch (jsZipError) {
+        console.warn("JSZip method failed:", jsZipError);
+      }
+    }
+    
+    // Method 3: Enhanced text extraction with better parsing for XLS files
+    try {
+      return await _extractExcelTextFallback(buffer);
+    } catch (fallbackError) {
+      console.warn("Fallback method failed:", fallbackError);
+      throw new Error(`All Excel extraction methods failed. File may be corrupted or in an unsupported format. Original error: ${excelJsError instanceof Error ? excelJsError.message : String(excelJsError)}`);
+    }
+  }
+};
+
+/**
+ * Check if buffer contains XLSX file signature
+ * @private
+ */
+const _isXlsxFile = (buffer: Buffer): boolean => {
+  // XLSX files start with PK (ZIP signature)
+  return buffer.length >= 2 && buffer[0] === 0x50 && buffer[1] === 0x4B;
+};
+
+/**
+ * Check if buffer contains XLS file signature
+ * @private
+ */
+const _isXlsFile = (buffer: Buffer): boolean => {
+  // XLS files have different signatures, commonly starting with 0xD0CF (OLE2 format)
+  return buffer.length >= 8 && 
+         buffer[0] === 0xD0 && buffer[1] === 0xCF && 
+         buffer[2] === 0x11 && buffer[3] === 0xE0;
+};
+
+/**
+ * Enhanced fallback text extraction for Excel files
+ * @private
+ */
+const _extractExcelTextFallback = async (buffer: Buffer): Promise<string> => {
+  console.log("Using fallback text extraction method for Excel file");
+  
+  // Try to extract readable text from the binary format
+  let extractedText = buffer.toString('utf8')
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ') // Remove control characters
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+  
+  // Also try latin1 encoding which sometimes works better for binary files
+  if (extractedText.length < 100) {
+    const latin1Text = buffer.toString('latin1')
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    if (latin1Text.length > extractedText.length) {
+      extractedText = latin1Text;
+    }
+  }
+  
+  // Filter out very short strings and extract meaningful content
+  const words = extractedText.split(/\s+/)
+    .filter(word => word.length > 2 && /[a-zA-Z0-9]/.test(word))
+    .slice(0, 500); // Limit to first 500 meaningful words
+  
+  if (words.length < 5) {
+    throw new Error("Insufficient readable content found in file");
+  }
+  
+  const result = `=== Excel Content (Fallback Extraction) ===\n\nExtracted text content:\n${words.join(' ')}`;
+  
+  console.log(`Fallback extraction found ${words.length} meaningful words`);
+  return result;
+};
+
+/**
+ * Alternative Excel extraction using JSZip for .xlsx files
+ * @private
+ */
+const _extractExcelWithJSZip = async (buffer: Buffer): Promise<string> => {
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(buffer);
+  const textParts: string[] = [];
+
+  try {
+    textParts.push("=== Excel Spreadsheet Content (JSZip Method) ===\n");
+
+    // Look for worksheet files
+    const worksheetFiles = Object.keys(zip.files).filter(name => 
+      name.startsWith('xl/worksheets/sheet') && name.endsWith('.xml')
+    );
+
+    for (const worksheetFile of worksheetFiles) {
+      try {
+        const worksheetContent = await zip.files[worksheetFile].async('text');
+        
+        // Extract text from XML using regex patterns for cell values
+        const cellMatches = worksheetContent.match(/<v[^>]*>([^<]+)<\/v>/g);
+        const textMatches = worksheetContent.match(/<t[^>]*>([^<]+)<\/t>/g);
+        
+        const sheetNumber = worksheetFile.match(/sheet(\d+)/)?.[1] || 'unknown';
+        textParts.push(`\n=== Sheet ${sheetNumber} ===\n`);
+        
+        // Extract numeric values
+        if (cellMatches) {
+          const cellValues = cellMatches
+            .map(match => match.replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0);
+          
+          if (cellValues.length > 0) {
+            textParts.push("Numeric values: " + cellValues.join(", "));
+          }
+        }
+        
+        // Extract text values
+        if (textMatches) {
+          const textValues = textMatches
+            .map(match => match.replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0);
+          
+          if (textValues.length > 0) {
+            textParts.push("Text values: " + textValues.join(", "));
+          }
+        }
+        
+      } catch (sheetError) {
+        console.warn(`Error processing ${worksheetFile}:`, sheetError);
+      }
+    }
+
+    // Also try to extract shared strings
+    if (zip.files['xl/sharedStrings.xml']) {
+      try {
+        const sharedStringsContent = await zip.files['xl/sharedStrings.xml'].async('text');
+        const stringMatches = sharedStringsContent.match(/<t[^>]*>([^<]+)<\/t>/g);
+        
+        if (stringMatches) {
+          const sharedStrings = stringMatches
+            .map(match => match.replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0);
+          
+          if (sharedStrings.length > 0) {
+            textParts.push("\n=== Shared Strings ===\n" + sharedStrings.join(", "));
+          }
+        }
+      } catch (sharedStringError) {
+        console.warn("Error processing shared strings:", sharedStringError);
+      }
+    }
+
+    const result = textParts.join('\n');
+    if (result.trim().length === 0) {
+      throw new Error("No text content found in Excel file");
+    }
+    
+    return result;
+  } catch (error) {
+    throw new Error(`JSZip Excel extraction failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 

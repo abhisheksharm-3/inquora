@@ -99,7 +99,21 @@ const prepareContextForGemini = async (
 
   if (fileContent.startsWith("ERROR:")) {
     const errorMessage = fileContent.substring(6).trim();
-    return { error: `I couldn't process this document: ${errorMessage}.` };
+    
+    // Provide more helpful error messages based on the error type
+    if (errorMessage.includes("not been processed yet")) {
+      return { 
+        error: `I need a moment to analyze this document before we can chat about it. The document processing wasn't completed during upload. Please try uploading the document again, and I'll process it fully before creating the chat.` 
+      };
+    } else if (errorMessage.includes("Failed to process")) {
+      return { 
+        error: `I had trouble processing this document: ${errorMessage}. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.` 
+      };
+    } else {
+      return { 
+        error: `I encountered an issue with this document: ${errorMessage}. Please try uploading it again or contact support if the problem persists.` 
+      };
+    }
   }
 
   if (chat.files?.type === "image") {
@@ -113,11 +127,20 @@ const prepareContextForGemini = async (
   if (chat.type && RAG_SUPPORTED_TYPES.has(chat.type)) {
     try {
       const relevantDocs = await queryDocuments(userQuery, chat.file_id, 5);
+      
+      if (!relevantDocs || relevantDocs.length === 0) {
+        return { 
+          error: "I don't have enough information from this document to answer your question. This might mean the document wasn't fully processed or doesn't contain relevant content for your query. Please try rephrasing your question or ensure the document was uploaded correctly." 
+        };
+      }
+      
       const combinedContent = relevantDocs.map((doc) => doc.pageContent).join("\n\n");
-      return { fileContent: combinedContent || "No relevant sections found." };
+      return { fileContent: combinedContent };
     } catch (queryError) {
       console.error(`Error querying ${chat.type} content:`, queryError);
-      return { fileContent: "Could not retrieve document context." };
+      return { 
+        error: "I'm having trouble accessing the processed document content. Please try asking your question again, or re-upload the document if the issue persists." 
+      };
     }
   }
 

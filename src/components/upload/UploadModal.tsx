@@ -22,6 +22,7 @@ import UploadModalProgress from "./UploadModalProgress";
 import UploadModalSuccess from "./UploadModalSuccess";
 import UploadModalError from "./UploadModalError";
 import UploadModalUrlInput from "./UploadModalUrlInput";
+import { DocumentProcessingProgress } from "./DocumentProcessingProgress";
 import { TypeUploadModalProps } from "@/types/TypeUpload";
 
 /**
@@ -58,6 +59,9 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     url,
     error,
     selectedFile,
+    isProcessing,
+    processingProgress,
+    processingError,
     handleFileChange,
     handleUrlChange,
     handleRemoveFile,
@@ -160,7 +164,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-6">
-          {/* File upload area - only show if not URL-only */}
+          {/* File upload area - only show if not URL-only and in idle state */}
           {!isUrlOnly && uploadStatus === "idle" && (
             <UploadModalArea
               fileTypeConfig={fileTypeConfig}
@@ -171,6 +175,19 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
 
           {/* Upload progress */}
           {uploadStatus === "uploading" && <UploadModalProgress />}
+          
+          {/* Document processing progress */}
+          {uploadStatus === "processing" && (
+            <DocumentProcessingProgress
+              fileName={fileName || selectedFile?.name || "Document"}
+              fileType={fileType}
+              status="processing"
+              progress={processingProgress}
+              error={processingError}
+              onRetry={handleRetry}
+              canRetry={error?.retryable}
+            />
+          )}
           
           {/* Upload success */}
           {uploadStatus === "uploaded" && (
@@ -189,8 +206,8 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             />
           )}
 
-          {/* Separator between file upload and URL input - only show if not URL-only */}
-          {!isUrlOnly && (
+          {/* Separator between file upload and URL input - only show if not URL-only and in idle state */}
+          {!isUrlOnly && uploadStatus === "idle" && (
             <div className="relative">
               <Separator />
               <div className="absolute inset-0 flex items-center justify-center">
@@ -201,26 +218,28 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             </div>
           )}
 
-          {/* URL input section */}
-          <div className="space-y-4">
-            <UploadModalUrlInput
-              url={url}
-              fileTypeConfig={fileTypeConfig}
-              isUrlOnly={isUrlOnly}
-              handleUrlChange={handleUrlChange}
-              handleUrlSubmit={handleSubmit}
-              handleKeyDown={handleKeyDown}
-              isUploading={isUploading}
-            />
+          {/* URL input section - only show in idle state */}
+          {uploadStatus === "idle" && (
+            <div className="space-y-4">
+              <UploadModalUrlInput
+                url={url}
+                fileTypeConfig={fileTypeConfig}
+                isUrlOnly={isUrlOnly}
+                handleUrlChange={handleUrlChange}
+                handleUrlSubmit={handleSubmit}
+                handleKeyDown={handleKeyDown}
+                isUploading={isUploading}
+              />
 
-            {/* Access warning alert */}
-            <Alert className="border-primary/20 bg-primary/5">
-              <CircleAlert className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm font-medium text-primary">
-                Please make sure the link can be accessed directly
-              </AlertDescription>
-            </Alert>
-          </div>
+              {/* Access warning alert */}
+              <Alert className="border-primary/20 bg-primary/5">
+                <CircleAlert className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm font-medium text-primary">
+                  Please make sure the link can be accessed directly
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
@@ -229,16 +248,18 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               variant="outline"
               onClick={handleClose}
               className="flex-1 cursor-pointer"
-              disabled={isUploading}
+              disabled={isUploading || isProcessing}
             >
-              Cancel
+              {(isUploading || isProcessing) ? "Processing..." : "Cancel"}
             </Button>
             <Button
               onClick={handleSubmit}
               className="flex-1 cursor-pointer"
               disabled={
                 isUploading || 
+                isProcessing ||
                 uploadStatus === "uploaded" || 
+                uploadStatus === "processing" ||
                 (!selectedFile && !url?.trim())
               }
             >
@@ -247,8 +268,13 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                   Uploading...
                 </div>
+              ) : isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Processing...
+                </div>
               ) : (
-                "Upload"
+                "Upload & Process"
               )}
             </Button>
           </div>

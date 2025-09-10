@@ -14,9 +14,9 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 import { extractYoutubeVideoId } from "./youtube-utils";
 
 /**
- * Retrieves the content or triggers the processing for a given file.
- * For documents and videos, it initiates a processing and indexing flow if not already completed.
- * It returns placeholders for content that is retrieved via RAG, and direct content for others (e.g., URLs).
+ * Retrieves the content or status for a given file.
+ * For documents that require processing, it checks if they're already processed
+ * and returns appropriate placeholders or error messages.
  *
  * @param fileId The unique identifier of the file.
  * @returns A promise that resolves to the file content, a placeholder string
@@ -45,72 +45,23 @@ export const getFileContent = async (
 
     case "video":
     case "youtube":
-      if (file.url && extractYoutubeVideoId(file.url)) {
-        return _handleProcessableFile({
-          supabase,
-          file,
-          placeholder: "YOUTUBE_TRANSCRIPT",
-          processor: () => processYoutubeVideo(file.url!, file.id),
-        });
-      }
-      return file.url ?? null; // Fallback for non-YouTube videos
+      return _handleProcessableFile(file, "YOUTUBE_TRANSCRIPT");
 
     case "github":
-      return _handleProcessableFile({
-        supabase,
-        file,
-        placeholder: "GITHUB_REPOSITORY",
-        processor: async () => {
-          try {
-            // Try the clone-based approach first
-            return await processGitHubRepositoryWithClone(file.url!, file.id);
-          } catch (cloneError) {
-            console.warn("Clone-based processing failed, falling back to API method:", cloneError);
-            // Fallback to API-based approach if clone fails
-            return await processGitHubRepository(file.url!, file.id);
-          }
-        },
-      });
+      return _handleProcessableFile(file, "GITHUB_REPOSITORY");
 
     case "web":
-      return _handleProcessableFile({
-        supabase,
-        file,
-        placeholder: "WEB_PAGE_CONTENT",
-        processor: () => processWebPage(file.url!, file.id),
-      });
+      return _handleProcessableFile(file, "WEB_PAGE_CONTENT");
 
     case "pdf":
-      return _handleProcessableFile({
-        supabase,
-        file,
-        placeholder: "PDF_CONTENT",
-        processor: async () => {
-          const blob = await getFileBlob(supabase, file);
-          if (!blob)
-            throw new Error("Could not read the PDF file from storage.");
-          return processPdfDocument(blob, file.id);
-        },
-      });
+      return _handleProcessableFile(file, "PDF_CONTENT");
 
     case "doc":
     case "docs":
     case "sheet":
     case "sheets":
     case "slides":
-      return _handleProcessableFile({
-        supabase,
-        file,
-        placeholder: `${file.type.toUpperCase()}_CONTENT`,
-        processor: async () => {
-          const blob = await getFileBlob(supabase, file);
-          if (!blob)
-            throw new Error(
-              `Could not read the ${file.type} file from storage.`
-            );
-          return processGenericDocument(blob, file.id, file.type);
-        },
-      });
+      return _handleProcessableFile(file, `${file.type.toUpperCase()}_CONTENT`);
 
     case "url":
       return file.url;
@@ -127,21 +78,10 @@ export const getFileContent = async (
  * and triggers processing if necessary, updating the status in Supabase along the way.
  * @private
  */
-async function _handleProcessableFile({
-  supabase,
-  file,
-  placeholder,
-  processor,
-}: {
-  supabase: SupabaseClient;
-  file: TypeFile;
-  placeholder: string;
-  processor: () => Promise<{
-    success: boolean;
-    error?: string;
-    numDocs?: number;
-  }>;
-}): Promise<string> {
+async function _handleProcessableFile(
+  file: TypeFile,
+  placeholder: string
+): Promise<string> {
   const { id: fileId, processing_status, processing_error } = file;
 
   // 1. Check for a previously failed status.
@@ -160,6 +100,7 @@ async function _handleProcessableFile({
   if (namespaceExists) {
     // If the namespace exists but status isn't 'completed', update it now.
     if (processing_status !== "completed") {
+      const supabase = supabaseBrowserClient();
       await supabase
         .from("files")
         .update({ processing_status: "completed" })
@@ -177,12 +118,59 @@ async function _handleProcessableFile({
   // 4. If not processed, trigger the processing now.
   try {
     console.log(`Processing ${file.type} file now: ${fileId}`);
+    const supabase = supabaseBrowserClient();
     await supabase
       .from("files")
       .update({ processing_status: "processing" })
       .eq("id", fileId);
 
-    const result = await processor();
+    let result: { success: boolean; error?: string; numDocs?: number };
+
+    // Process based on file type
+    switch (file.type) {
+      case "youtube":
+      case "video":
+        if (file.url && extractYoutubeVideoId(file.url)) {
+          result = await processYoutubeVideo(file.url, fileId);
+        } else {
+          throw new Error("Invalid YouTube URL");
+        }
+        break;
+
+      case "github":
+        if (!file.url) throw new Error("GitHub URL is required");
+        try {
+          result = await processGitHubRepositoryWithClone(file.url, fileId);
+        } catch (cloneError) {
+          console.warn("Clone-based processing failed, falling back to API method:", cloneError);
+          result = await processGitHubRepository(file.url, fileId);
+        }
+        break;
+
+      case "web":
+        if (!file.url) throw new Error("Web URL is required");
+        result = await processWebPage(file.url, fileId);
+        break;
+
+      case "pdf":
+        const pdfBlob = await getFileBlob(supabase, file);
+        if (!pdfBlob) throw new Error("Could not read PDF file from storage");
+        result = await processPdfDocument(pdfBlob, fileId);
+        break;
+
+      case "doc":
+      case "docs":
+      case "sheet":
+      case "sheets":
+      case "slides":
+        const docBlob = await getFileBlob(supabase, file);
+        if (!docBlob) throw new Error(`Could not read ${file.type} file from storage`);
+        result = await processGenericDocument(docBlob, fileId, file.type);
+        break;
+
+      default:
+        throw new Error(`Unsupported file type: ${file.type}`);
+    }
 
     if (!result.success) {
       throw new Error(result.error || `Unknown error during processing.`);
@@ -205,6 +193,7 @@ async function _handleProcessableFile({
     console.error(`Failed to process ${file.type} ${fileId}:`, errorMessage);
 
     // Update status to failed on error.
+    const supabase = supabaseBrowserClient();
     await supabase
       .from("files")
       .update({

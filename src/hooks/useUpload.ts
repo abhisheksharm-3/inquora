@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useFiles } from "@/hooks/useFiles";
 import { useChats } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
+import { useDocumentProcessor } from "@/hooks/useDocumentProcessor";
 import { TypeFile, TypeChat } from "@/types/TypeSupabase";
 import { getFileTypeConfig } from "@/constants/FileTypes";
 import { TypeUseUploadLogicProps } from "@/types/TypeUpload";
@@ -25,7 +26,7 @@ const UPLOAD_TIMEOUT_MS = 60000;
 
 /**
  * A custom hook providing the complete logic for a file/URL upload modal.
- * It manages state, validation, error handling, and the submission flow with retries.
+ * It manages state, validation, error handling, document processing, and the submission flow with retries.
  *
  * @param fileType The type of content being uploaded (e.g., 'pdf', 'youtube').
  * @param onClose A function to call when the upload is complete to close the modal.
@@ -46,6 +47,7 @@ export const useUploadLogic = ({
   const { validateFile, validateUrl } = useUploadValidation({
     createUploadError,
   });
+  const documentProcessor = useDocumentProcessor();
 
   // --- Core Logic ---
 
@@ -157,6 +159,24 @@ export const useUploadLogic = ({
     [uploadFileAsync, updateFileAsync, fileType]
   );
 
+  const _processDocument = useCallback(
+    async (file: TypeFile): Promise<void> => {
+      dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "processing" });
+      
+      const result = await documentProcessor.processDocument(file);
+      
+      if (!result.success) {
+        throw createUploadError(
+          "file_processing",
+          result.error || "Document processing failed",
+          null,
+          true
+        );
+      }
+    },
+    [documentProcessor, createUploadError]
+  );
+
   const _createChatWithRetry = useCallback(
     async (fileId: string): Promise<TypeChat> => {
       for (let i = 0; i <= MAX_CHAT_CREATION_RETRIES; i++) {
@@ -247,6 +267,8 @@ export const useUploadLogic = ({
 
     try {
       let uploadedFile: TypeFile | null = null;
+      
+      // Step 1: Upload the file or URL
       if (selectedFile) {
         uploadedFile = await _uploadFile(selectedFile);
       } else if (url) {
@@ -271,11 +293,16 @@ export const useUploadLogic = ({
         );
       }
 
+      // Step 2: Process the document immediately
+      await _processDocument(uploadedFile);
+
+      // Step 3: Create chat only after processing is complete
       const newChat = await _createChatWithRetry(uploadedFile.id);
 
       dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "uploaded" });
       onClose();
 
+      // Navigate to chat immediately since processing is complete
       setTimeout(() => router.push(`/chat/${newChat.id}`), NAVIGATION_DELAY_MS);
     } catch (err) {
       setUploadError(err);
@@ -289,6 +316,7 @@ export const useUploadLogic = ({
     validateUrl,
     _uploadFile,
     _uploadUrl,
+    _processDocument,
     _createChatWithRetry,
     onClose,
     router,
@@ -314,6 +342,11 @@ export const useUploadLogic = ({
     isRetrying,
     canRetry: state.error?.retryable ?? false,
 
+    // Document processing state
+    isProcessing: documentProcessor.isProcessing,
+    processingProgress: documentProcessor.progress,
+    processingError: documentProcessor.error,
+
     // UI event handlers
     handleFileChange,
     handleUrlChange,
@@ -321,6 +354,9 @@ export const useUploadLogic = ({
     handleSubmit,
     handleKeyDown,
     handleRetry,
-    resetState: () => dispatch({ type: EnumUploadActionType.RESET }),
+    resetState: () => {
+      dispatch({ type: EnumUploadActionType.RESET });
+      documentProcessor.reset();
+    },
   };
 };
