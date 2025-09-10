@@ -72,7 +72,7 @@ export interface TypeDatabase {
           file_id: string | null;
           title: string | null;
           created_at: string;
-          type: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | null;
+          type: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | "github" | "web" | null;
         };
         Insert: {
           id?: string;
@@ -80,7 +80,7 @@ export interface TypeDatabase {
           file_id?: string | null;
           title?: string | null;
           created_at?: string;
-          type?: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | null;
+          type?: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | "github" | "web" | null;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["chats"]["Insert"]>;
       };

@@ -3,6 +3,9 @@ import {
   processYoutubeVideo,
   processPdfDocument,
   processGenericDocument,
+  processGitHubRepository,
+  processGitHubRepositoryWithClone,
+  processWebPage,
 } from "@/utils/processors";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TypeFile } from "@/types/TypeSupabase";
@@ -52,6 +55,31 @@ export const getFileContent = async (
       }
       return file.url ?? null; // Fallback for non-YouTube videos
 
+    case "github":
+      return _handleProcessableFile({
+        supabase,
+        file,
+        placeholder: "GITHUB_REPOSITORY",
+        processor: async () => {
+          try {
+            // Try the clone-based approach first
+            return await processGitHubRepositoryWithClone(file.url!, file.id);
+          } catch (cloneError) {
+            console.warn("Clone-based processing failed, falling back to API method:", cloneError);
+            // Fallback to API-based approach if clone fails
+            return await processGitHubRepository(file.url!, file.id);
+          }
+        },
+      });
+
+    case "web":
+      return _handleProcessableFile({
+        supabase,
+        file,
+        placeholder: "WEB_PAGE_CONTENT",
+        processor: () => processWebPage(file.url!, file.id),
+      });
+
     case "pdf":
       return _handleProcessableFile({
         supabase,
@@ -84,7 +112,6 @@ export const getFileContent = async (
         },
       });
 
-    case "web":
     case "url":
       return file.url;
 
@@ -141,7 +168,13 @@ async function _handleProcessableFile({
     return placeholder;
   }
 
-  // 3. If not processed, trigger the processing now.
+  // 3. If processing is already in progress, return placeholder without starting again
+  if (processing_status === "processing") {
+    console.log(`Processing already in progress for file ${fileId}`);
+    return placeholder;
+  }
+
+  // 4. If not processed, trigger the processing now.
   try {
     console.log(`Processing ${file.type} file now: ${fileId}`);
     await supabase

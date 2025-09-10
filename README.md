@@ -27,7 +27,7 @@ Inquora is a modern AI-powered application that enables users to have intelligen
 - **YouTube Videos** - Transcript extraction and video-based conversations
 - **Web URLs** - Web page content processing and chat
 - **GitHub Repositories** - Code analysis and discussion (coming soon)
-- **Notion Pages** - Knowledge base integration (coming soon)
+- **Web Pages** - Content extraction and scraping from any webpage
 
 ### 🤖 AI-Powered Capabilities
 - **Intelligent Document Processing** - Automatic text extraction and vector indexing

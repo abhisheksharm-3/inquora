@@ -1,6 +1,7 @@
 "use server";
 
 import { YoutubeTranscript } from "youtube-transcript";
+import { YoutubeTranscript as DanielYoutubeTranscript } from "@danielxceron/youtube-transcript";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
@@ -17,20 +18,81 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
 /**
- * Fetches and formats the transcript from a YouTube video.
+ * Fetches and formats the transcript from a YouTube video with multiple fallback methods.
  * @private
  */
 const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
   console.log(`Fetching transcript for YouTube video: ${videoId}`);
-  const transcriptParts = await YoutubeTranscript.fetchTranscript(videoId);
-
-  if (!transcriptParts || transcriptParts.length === 0) {
-    throw new Error("No transcript content found.");
+  
+  // Method 1: Try danielxceron/youtube-transcript (primary)
+  try {
+    console.log("Attempting with @danielxceron/youtube-transcript...");
+    const transcriptParts = await DanielYoutubeTranscript.fetchTranscript(videoId);
+    
+    if (transcriptParts && transcriptParts.length > 0) {
+      const transcriptText = transcriptParts.map((item) => item.text).join(" ");
+      console.log(`Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`);
+      return transcriptText;
+    }
+  } catch (error) {
+    console.warn("danielxceron/youtube-transcript failed:", error);
   }
 
-  const transcriptText = transcriptParts.map((item) => item.text).join(" ");
-  console.log(`Successfully extracted transcript with ${transcriptText.length} characters.`);
-  return transcriptText;
+  // Method 2: Try original youtube-transcript (fallback 1)
+  try {
+    console.log("Attempting with original youtube-transcript...");
+    const transcriptParts = await YoutubeTranscript.fetchTranscript(videoId);
+    
+    if (transcriptParts && transcriptParts.length > 0) {
+      const transcriptText = transcriptParts.map((item) => item.text).join(" ");
+      console.log(`Successfully extracted transcript with ${transcriptText.length} characters using original.`);
+      return transcriptText;
+    }
+  } catch (error) {
+    console.warn("Original youtube-transcript failed:", error);
+  }
+
+  // Method 3: Try alternative API approach (fallback 2)
+  try {
+    console.log("Attempting alternative YouTube API approach...");
+    const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+    const html = await response.text();
+    
+    // Extract captions from video page - this is a basic approach
+    const captionMatch = html.match(/"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/);
+    if (captionMatch) {
+      const captionData = JSON.parse(`[${captionMatch[1]}]`) as Array<{
+        languageCode: string;
+        baseUrl?: string;
+      }>;
+      const englishCaption = captionData.find((cap) => 
+        cap.languageCode === 'en' || cap.languageCode === 'en-US' || cap.languageCode.startsWith('en')
+      );
+      
+      if (englishCaption && englishCaption.baseUrl) {
+        const captionResponse = await fetch(englishCaption.baseUrl);
+        const captionXml = await captionResponse.text();
+        
+        // Parse XML captions
+        const textMatches = captionXml.match(/<text[^>]*>([^<]+)<\/text>/g);
+        if (textMatches) {
+          const transcriptText = textMatches
+            .map(match => match.replace(/<[^>]*>/g, '').trim())
+            .filter(text => text.length > 0)
+            .join(' ');
+          
+          if (transcriptText.length > 0) {
+            console.log(`Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`);
+            return transcriptText;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Alternative YouTube API approach failed:", error);
+  }
+
+  throw new Error("No transcript content found using any available method. The video may not have captions available.");
 };
 
 /**

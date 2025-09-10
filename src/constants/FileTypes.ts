@@ -6,7 +6,7 @@ import {
   RiFilePpt2Fill,
   RiYoutubeFill,
   RiGithubFill,
-  RiNotionFill
+  RiGlobalLine
 } from "@remixicon/react";
 import { TypeFileTypeConfig } from "@/types/TypeUpload";
 
@@ -75,20 +75,18 @@ export const FileTypes: TypeFileTypeConfig[] = [
     type: "github",
     name: "GitHub Repo",
     icon: RiGithubFill,
-    iconColor: "#1F2937", // Dark gray for GitHub
+    iconColor: "#fff", // White for GitHub
     accept: "",
     maxSize: 0,
-    comingSoon: true,
     urlOnly: true,
   },
   {
-    type: "notion",
-    name: "Notion Page",
-    icon: RiNotionFill,
-    iconColor: "#000000", // Black for Notion
+    type: "web",
+    name: "Web Page",
+    icon: RiGlobalLine,
+    iconColor: "#22c55e", // Green for web
     accept: "",
     maxSize: 0,
-    comingSoon: true,
     urlOnly: true,
   },
 ];

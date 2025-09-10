@@ -20,19 +20,34 @@ export const isValidUrl = (url: string): boolean => {
 };
 
 /**
- * Determines the type of content from a URL, specifically checking for YouTube links.
+ * Determines the type of content from a URL, specifically checking for YouTube links, GitHub repositories, and web pages.
  * @param {string} url The URL to analyze.
- * @param {string} fileType A pre-determined file type hint, which can also be 'youtube'.
- * @returns {'youtube' | 'web'} The determined type of the URL.
+ * @param {string} fileType A pre-determined file type hint, which can also be 'youtube', 'github', or 'web'.
+ * @returns {'youtube' | 'github' | 'web'} The determined type of the URL.
  */
 export const getUrlType = (url: string, fileType: string): string => {
+  // Check for YouTube URLs first
   if (
     fileType === "youtube" ||
+    fileType === "video" || // Handle the case where fileType is "video" from FileTypes config
+    url.includes("youtube.com/watch") ||
+    url.includes("youtu.be/") ||
+    url.includes("youtube.com/embed/") ||
+    url.includes("youtube.com/v/") ||
     url.includes("googleusercontent.com/youtube.com/0") ||
     url.includes("googleusercontent.com/youtube.com/1")
   ) {
     return "youtube";
   }
+  
+  if (
+    fileType === "github" ||
+    url.includes("github.com/")
+  ) {
+    return "github";
+  }
+  
+  // All other URLs are treated as web pages for scraping
   return "web";
 };
 

@@ -11,13 +11,23 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 
 const FILE_TYPE_MAP = new Map([
   ["youtube", "video"],
-  ["web", "video"], 
+  ["web", "video"],
   ["url", "video"],
+  ["doc", "doc"],
   ["docs", "doc"],
+  ["docx", "doc"],
+  ["sheet", "sheet"],
   ["sheets", "sheet"],
+  ["xls", "sheet"],
+  ["xlsx", "sheet"],
+  ["slides", "slides"],
+  ["ppt", "slides"],
+  ["pptx", "slides"],
+  ["github", "github"],
+  ["web", "web"],
 ]);
 
-const VALID_CHAT_TYPES = new Set(["pdf", "image", "doc", "video", "sheet", "slides"]);
+const VALID_CHAT_TYPES = new Set(["pdf", "image", "doc", "video", "sheet", "slides", "github", "web"]);
 
 const mapFileTypeToChatType = (fileType: string | null): string | null => {
   if (!fileType) return null;
@@ -75,7 +85,7 @@ export const createChat = async (fileId: string, userId?: string) => {
   }
 };
 
-const RAG_SUPPORTED_TYPES = new Set(["pdf", "doc", "docs", "sheet", "sheets", "slides"]);
+const RAG_SUPPORTED_TYPES = new Set(["pdf", "doc", "sheet", "slides", "video", "github", "web"]);
 
 const prepareContextForGemini = async (
   chat: TypeChat & { files: TypeFile },

@@ -7,6 +7,7 @@ import { useUser } from "@/hooks/useUser";
 import { TypeChatInterfaceMessagesProps } from "@/types/TypeChat";
 import { getUserInitials } from "@/utils/dashboard-utils";
 import { MessageConstants } from "@/constants/MessageConstants";
+import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 
 /**
  * Renders the message list with redesigned, themed chat bubbles.
@@ -64,6 +65,11 @@ const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> =
                 <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
                 <span>Thinking...</span>
               </div>
+            ) : message.role === "assistant" ? (
+              <MarkdownRenderer 
+                content={message.content} 
+                className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+              />
             ) : (
               <div className="whitespace-pre-wrap break-words">{message.content}</div>
             )}

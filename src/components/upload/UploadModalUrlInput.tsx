@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Send, AlertCircle, Link } from "lucide-react";
 import { TypeUploadModalUrlInputProps } from "@/types/TypeUpload";
 import { extractYoutubeVideoId } from "@/utils/youtube-utils";
+import { isValidGitHubUrl } from "@/utils/processors/github-processor";
+import { isValidWebUrl } from "@/utils/web-scraper-utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,12 +30,19 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
   isUploading,
 }) => {
   const [isYouTube, setIsYouTube] = useState(false);
+  const [isGitHub, setIsGitHub] = useState(false);
+  const [isWebPage, setIsWebPage] = useState(false);
 
   /**
-   * Checks if the entered URL is a YouTube link to conditionally show a help message.
+   * Checks if the entered URL is a YouTube link, GitHub repository, or web page to conditionally show help messages.
    */
   useEffect(() => {
-    setIsYouTube(!!extractYoutubeVideoId(url));
+    const checkUrls = async () => {
+      setIsYouTube(!!extractYoutubeVideoId(url));
+      setIsGitHub(await isValidGitHubUrl(url));
+      setIsWebPage(isValidWebUrl(url) && !extractYoutubeVideoId(url) && !(await isValidGitHubUrl(url)));
+    };
+    checkUrls();
   }, [url]);
 
   return (
@@ -80,6 +89,28 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
           <AlertDescription className="text-blue-800 dark:text-blue-200">
             <span className="font-medium">YouTube video detected:</span> Only videos with available captions can be processed. 
             Private or auto-generated captions may not work reliably.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Enhanced GitHub notice with Alert component */}
+      {isGitHub && (
+        <Alert className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/20">
+          <AlertCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <AlertDescription className="text-purple-800 dark:text-purple-200">
+            <span className="font-medium">GitHub repository detected:</span> Only public repositories can be processed. 
+            Large repositories may take several minutes to analyze.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Enhanced web page notice with Alert component */}
+      {isWebPage && (
+        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
+          <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription className="text-green-800 dark:text-green-200">
+            <span className="font-medium">Web page detected:</span> The page content will be extracted and processed for chat. 
+            Pages requiring authentication or heavy JavaScript may not work reliably.
           </AlertDescription>
         </Alert>
       )}

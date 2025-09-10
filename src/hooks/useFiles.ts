@@ -4,15 +4,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabaseBrowserClient } from "@/utils/supabase/client";
 import { TypeFile } from "@/types/TypeSupabase";
 import { useUser } from "./useUser";
-import { processPdfDocument, processGenericDocument } from "@/utils/processors";
+import { processPdfDocument, processGenericDocument, processYoutubeVideo, processGitHubRepository, processGitHubRepositoryWithClone, processWebPage } from "@/utils/processors";
 import { TypeUpdateFileParams, TypeUploadFileParams } from "@/types/TypeContent";
 import { useMemo } from "react";
 
 export const FILES_QUERY_KEY = ["files"];
 
 const STORAGE_BUCKET = "file-storage";
-const PROCESSABLE_DOC_TYPES = new Set(["pdf", "doc", "docs", "sheet", "sheets", "slides"]);
-const URL_BASED_TYPES = new Set(["url", "web", "youtube"]);
+const PROCESSABLE_DOC_TYPES = new Set(["pdf", "doc", "docs", "docx", "sheet", "sheets", "xls", "xlsx", "slides", "ppt", "pptx"]);
+const URL_BASED_TYPES = new Set(["url", "web", "youtube", "github", "video"]);
+const BACKGROUND_PROCESS_TYPES = new Set(["youtube", "github", "web", "video"]);
 
 export const useFiles = () => {
   const queryClient = useQueryClient();
@@ -64,10 +65,36 @@ export const useFiles = () => {
       
     if (insertError || !newFile) throw insertError || new Error("Failed to create file record.");
 
+    // Start background processing for documents
     if (PROCESSABLE_DOC_TYPES.has(newFile.type || "")) {
       const processor = newFile.type === 'pdf' ? processPdfDocument : processGenericDocument;
       processor(file, newFile.id, newFile.type!).catch(err => 
         console.error(`Background processing failed for ${newFile.id}:`, err)
+      );
+    }
+    
+    // Start background processing for URL-based types that need immediate processing
+    if (BACKGROUND_PROCESS_TYPES.has(newFile.type || "") && newFile.url) {
+      let processor: Promise<{ numDocs: number; success: boolean; error?: string }>;
+      
+      switch (newFile.type) {
+        case "youtube":
+        case "video": // Handle both "video" from FileTypes config and "youtube" from processing
+          processor = processYoutubeVideo(newFile.url, newFile.id);
+          break;
+        case "github":
+          processor = processGitHubRepositoryWithClone(newFile.url, newFile.id)
+            .catch(() => processGitHubRepository(newFile.url!, newFile.id));
+          break;
+        case "web":
+          processor = processWebPage(newFile.url, newFile.id);
+          break;
+        default:
+          processor = Promise.resolve({ numDocs: 0, success: true });
+      }
+      
+      processor.catch(err => 
+        console.error(`Background URL processing failed for ${newFile.id}:`, err)
       );
     }
     

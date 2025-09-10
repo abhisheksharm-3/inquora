@@ -164,6 +164,7 @@ const createFileDescription = (fileName: string, fileType: string): string => {
     pdf: `Chat about PDF: ${fileName}`,
     youtube: `Chat about YouTube video: ${fileName}`,
     text: `Chat about text document: ${fileName}`,
+    github: `Chat about GitHub repo: ${fileName}`,
   };
   return descriptions[fileType] || `Chat about the file: ${fileName}`;
 };
