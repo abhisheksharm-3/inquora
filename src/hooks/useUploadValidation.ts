@@ -21,7 +21,7 @@ export const useUploadValidation = ({
     type: TypeUploadError["type"],
     message: string,
     originalError?: unknown,
-    retryable?: boolean
+    retryable?: boolean,
   ) => TypeUploadError;
 }) => {
   const acceptedFileTypes = getAllAcceptedFileTypes();
@@ -38,19 +38,19 @@ export const useUploadValidation = ({
       if (file.size > config.maxSize) {
         return createUploadError(
           "validation",
-          `File exceeds ${config.maxSize / 1024 / 1024}MB limit.`
+          `File exceeds ${config.maxSize / 1024 / 1024}MB limit.`,
         );
       }
       if (!acceptedFileTypes.some((type) => file.type.includes(type))) {
         return createUploadError(
           "validation",
-          `File type "${file.type}" is not supported.`
+          `File type "${file.type}" is not supported.`,
         );
       }
       if (file.size === 0) {
         return createUploadError(
           "validation",
-          "The selected file appears to be empty."
+          "The selected file appears to be empty.",
         );
       }
       if (file.name.length > MAX_FILE_NAME_LENGTH) {
@@ -58,7 +58,7 @@ export const useUploadValidation = ({
       }
       return null;
     },
-    [acceptedFileTypes, createUploadError]
+    [acceptedFileTypes, createUploadError],
   );
 
   /**
@@ -72,7 +72,7 @@ export const useUploadValidation = ({
       if (!isValidUrl(url)) {
         return createUploadError(
           "validation",
-          "Please enter a valid URL (e.g., https://example.com)."
+          "Please enter a valid URL (e.g., https://example.com).",
         );
       }
       try {
@@ -82,7 +82,7 @@ export const useUploadValidation = ({
         ) {
           return createUploadError(
             "validation",
-            "Local URLs are not supported."
+            "Local URLs are not supported.",
           );
         }
       } catch {
@@ -90,7 +90,7 @@ export const useUploadValidation = ({
       }
       return null;
     },
-    [createUploadError]
+    [createUploadError],
   );
 
   return { validateFile, validateUrl };

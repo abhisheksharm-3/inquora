@@ -23,7 +23,7 @@ const MaxRetryDelayMs = 30000;
 export const createChatError = (
   message: string,
   code?: string,
-  statusCode?: number
+  statusCode?: number,
 ): TypeChatError => {
   const error = new Error(message) as TypeChatError;
   error.name = "ChatError";
@@ -51,7 +51,7 @@ export const isChatError = (error: unknown): error is TypeChatError => {
  */
 export const getErrorFromSupabaseError = (
   error: { code?: string; message: string },
-  operation: string
+  operation: string,
 ): TypeChatError => {
   const errorMap = new Map<string, { message: string; statusCode: number }>([
     ["PGRST116", { message: "Resource not found", statusCode: 404 }],
@@ -64,7 +64,7 @@ export const getErrorFromSupabaseError = (
     return createChatError(
       mappedError.message,
       error.code,
-      mappedError.statusCode
+      mappedError.statusCode,
     );
   }
 
@@ -72,7 +72,7 @@ export const getErrorFromSupabaseError = (
   return createChatError(
     `Failed to ${operation}: ${error.message}`,
     error.code || "SUPABASE_ERROR",
-    500
+    500,
   );
 };
 
@@ -119,7 +119,7 @@ export const createRetryConfig = () => ({
  * @returns A promise that resolves to a Next.js Metadata object.
  */
 export const generateChatMetadata = async (
-  chatId: string
+  chatId: string,
 ): Promise<Metadata> => {
   if (!validateChatId(chatId)) {
     return generateFallbackMetadata({ isInvalid: true });
@@ -206,7 +206,7 @@ const generateFallbackMetadata = ({
 const buildMetadata = (
   chat: TypeChat,
   file: TypeFile | null,
-  chatId: string
+  chatId: string,
 ): Metadata => {
   const chatTitle = chat.title || "Untitled Chat";
   const pageTitle = `${chatTitle} - Conversation`;
@@ -234,4 +234,3 @@ const buildMetadata = (
     },
   };
 };
-

@@ -61,90 +61,93 @@ export const useUploadLogic = ({
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
           () => reject(new Error("File upload timeout")),
-          UPLOAD_TIMEOUT_MS
-        )
+          UPLOAD_TIMEOUT_MS,
+        ),
       );
       return Promise.race([uploadPromise, timeoutPromise]);
     },
-    [uploadFileAsync, fileType]
+    [uploadFileAsync, fileType],
   );
 
   const _uploadUrl = useCallback(
     async (urlToUpload: string): Promise<TypeFile | null> => {
       dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "uploading" });
       const urlType = getUrlType(urlToUpload, fileType);
-      
+
       // Extract a meaningful filename based on URL type
       let urlFileName: string;
-      if (urlType === 'github') {
+      if (urlType === "github") {
         // Extract owner/repo from GitHub URL for better naming
         try {
-          const githubMatch = urlToUpload.match(/github\.com\/([^\/]+)\/([^\/\?#]+)/i);
+          const githubMatch = urlToUpload.match(
+            /github\.com\/([^\/]+)\/([^\/\?#]+)/i,
+          );
           if (githubMatch) {
             const [, owner, repo] = githubMatch;
-            urlFileName = `${owner}/${repo.replace(/\.git$/, '')}`;
+            urlFileName = `${owner}/${repo.replace(/\.git$/, "")}`;
           } else {
             urlFileName = new URL(urlToUpload).hostname;
           }
         } catch {
           urlFileName = new URL(urlToUpload).hostname;
         }
-      } else if (urlType === 'web') {
+      } else if (urlType === "web") {
         // Extract page title from web URL for better naming
         try {
-          let pageTitle = '';
-          
+          let pageTitle = "";
+
           // First try to get actual page title
           try {
             const response = await fetch(urlToUpload, {
-              method: 'GET',
+              method: "GET",
               headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                "User-Agent":
+                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
               },
               signal: AbortSignal.timeout(5000), // 5 second timeout
             });
-            
+
             if (response.ok) {
               const html = await response.text();
               const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
               if (titleMatch && titleMatch[1]) {
                 pageTitle = titleMatch[1]
-                  .replace(/\s*[-|]\s*.+$/, '') // Remove site name
+                  .replace(/\s*[-|]\s*.+$/, "") // Remove site name
                   .trim();
                 if (pageTitle.length > 60) {
-                  pageTitle = pageTitle.substring(0, 60) + '...';
+                  pageTitle = pageTitle.substring(0, 60) + "...";
                 }
               }
             }
           } catch {
             // Could not fetch page title, using URL-based naming
           }
-          
+
           // Fallback to URL-based naming if title fetch failed
           if (pageTitle) {
             urlFileName = pageTitle;
           } else {
             const urlObj = new URL(urlToUpload);
-            const pathSegments = urlObj.pathname.split('/').filter(Boolean);
+            const pathSegments = urlObj.pathname.split("/").filter(Boolean);
             if (pathSegments.length > 0) {
               urlFileName = pathSegments[pathSegments.length - 1]
-                .replace(/[-_]/g, ' ')
-                .replace(/\.(html?|php|asp|jsp)$/i, '');
+                .replace(/[-_]/g, " ")
+                .replace(/\.(html?|php|asp|jsp)$/i, "");
             } else {
-              urlFileName = urlObj.hostname.replace(/^www\./, '');
+              urlFileName = urlObj.hostname.replace(/^www\./, "");
             }
           }
         } catch {
-          urlFileName = 'Web Page';
+          urlFileName = "Web Page";
         }
-        
+
         if (!urlFileName) {
-          urlFileName = 'Web Page';
+          urlFileName = "Web Page";
         }
       } else {
         urlFileName = new URL(urlToUpload).hostname;
       }
-      
+
       const uploadedFile = await uploadFileAsync({
         file: new File([""], urlFileName, { type: "text/plain" }),
         fileData: { name: urlFileName, type: urlType, size: 0 },
@@ -154,30 +157,33 @@ export const useUploadLogic = ({
         fileId: uploadedFile.id,
         fileData: { url: urlToUpload },
       });
-      
+
       // Update the file object with the URL for processing
       const updatedFile = { ...uploadedFile, url: urlToUpload };
       return updatedFile;
     },
-    [uploadFileAsync, updateFileAsync, fileType]
+    [uploadFileAsync, updateFileAsync, fileType],
   );
 
   const _processDocument = useCallback(
     async (file: TypeFile): Promise<void> => {
-      dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "processing" });
-      
+      dispatch({
+        type: EnumUploadActionType.SET_STATUS,
+        payload: "processing",
+      });
+
       const result = await documentProcessor.processDocument(file);
-      
+
       if (!result.success) {
         throw createUploadError(
           "file_processing",
           result.error || "Document processing failed",
           null,
-          true
+          true,
         );
       }
     },
-    [documentProcessor, createUploadError]
+    [documentProcessor, createUploadError],
   );
 
   const _createChatWithRetry = useCallback(
@@ -202,11 +208,11 @@ export const useUploadLogic = ({
               "chat_creation",
               "Failed to create chat.",
               error,
-              true
+              true,
             );
           }
           await new Promise((resolve) =>
-            setTimeout(resolve, RETRY_DELAY_MS * 2 ** i)
+            setTimeout(resolve, RETRY_DELAY_MS * 2 ** i),
           ); // Exponential backoff
         }
       }
@@ -214,10 +220,10 @@ export const useUploadLogic = ({
         "chat_creation",
         "Chat creation failed after all retries.",
         null,
-        true
+        true,
       );
     },
-    [startChatWithFileAsync, createUploadError]
+    [startChatWithFileAsync, createUploadError],
   );
 
   // --- UI Handlers ---
@@ -233,30 +239,30 @@ export const useUploadLogic = ({
         dispatch({ type: EnumUploadActionType.SET_FILE, payload: file });
       }
     },
-    [validateFile, setUploadError]
+    [validateFile, setUploadError],
   );
 
   const handleUrlChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       dispatch({ type: EnumUploadActionType.SET_URL, payload: e.target.value });
     },
-    []
+    [],
   );
 
   const handleRemoveFile = useCallback(
     () => dispatch({ type: EnumUploadActionType.RESET_FILE }),
-    []
+    [],
   );
 
   const handleRetry = useCallback(
     () => dispatch({ type: EnumUploadActionType.RETRY }),
-    []
+    [],
   );
 
   const handleSubmit = useCallback(async () => {
     if (!isAuthenticated || !userId) {
       return setUploadError(
-        createUploadError("auth", "You must be logged in.", null, false)
+        createUploadError("auth", "You must be logged in.", null, false),
       );
     }
 
@@ -270,7 +276,7 @@ export const useUploadLogic = ({
 
     try {
       let uploadedFile: TypeFile | null = null;
-      
+
       // Step 1: Upload the file or URL
       if (selectedFile) {
         uploadedFile = await _uploadFile(selectedFile);
@@ -282,8 +288,8 @@ export const useUploadLogic = ({
             "validation",
             "Please select a file or enter a URL.",
             null,
-            false
-          )
+            false,
+          ),
         );
       }
 
@@ -292,7 +298,7 @@ export const useUploadLogic = ({
           "server",
           "File upload failed: Invalid server response.",
           null,
-          true
+          true,
         );
       }
 
@@ -334,7 +340,7 @@ export const useUploadLogic = ({
         handleSubmit();
       }
     },
-    [handleSubmit]
+    [handleSubmit],
   );
 
   return {

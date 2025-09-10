@@ -91,7 +91,7 @@ const Navbar = () => {
       className={cn(
         isMobile
           ? "space-y-6 text-center"
-          : "flex items-center gap-8 justify-center"
+          : "flex items-center gap-8 justify-center",
       )}
     >
       {PublicNavbarRoutes.map((item, index) => (
@@ -102,7 +102,7 @@ const Navbar = () => {
               "transition-colors duration-300",
               isMobile
                 ? "block text-xl font-medium text-foreground hover:text-primary"
-                : "relative group text-sm font-medium text-muted-foreground hover:text-foreground"
+                : "relative group text-sm font-medium text-muted-foreground hover:text-foreground",
             )}
             onClick={onItemClick}
           >
@@ -123,7 +123,9 @@ const Navbar = () => {
   const CTAButtons = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div
       className={cn(
-        isMobile ? "flex flex-col gap-4 w-full pt-8" : "flex items-center gap-3"
+        isMobile
+          ? "flex flex-col gap-4 w-full pt-8"
+          : "flex items-center gap-3",
       )}
     >
       {CtaButtons.map(({ label, link, variant }) => (
@@ -137,7 +139,7 @@ const Navbar = () => {
             variant === "outline"
               ? "border-border/50 bg-background/10 text-foreground hover:bg-accent"
               : "bg-foreground text-background hover:bg-foreground/90",
-            isMobile && "w-full text-lg py-6"
+            isMobile && "w-full text-lg py-6",
           )}
         />
       ))}
@@ -151,7 +153,7 @@ const Navbar = () => {
           "mx-auto border-b transition-all duration-300",
           scrolled
             ? "bg-background/70 backdrop-blur-md border-border/50"
-            : "bg-transparent border-transparent"
+            : "bg-transparent border-transparent",
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between p-4 px-6 lg:px-8">

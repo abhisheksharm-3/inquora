@@ -1,12 +1,12 @@
-import React from 'react';
-import { Loader2, Upload } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import React from "react";
+import { Loader2, Upload } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 /**
  * A presentational component that displays a visual indicator for an ongoing file upload.
  *
  * It features an animated spinner with upload icon and enhanced visual feedback
- * to inform the user that their file is currently being uploaded. This component 
+ * to inform the user that their file is currently being uploaded. This component
  * takes no props and uses shadcn theming for consistent design.
  *
  * @component
@@ -23,18 +23,28 @@ const UploadModalProgress: React.FC = () => {
           </div>
           <Loader2 className="w-12 h-12 text-primary animate-spin absolute inset-0" />
         </div>
-        
+
         {/* Progress text with better typography */}
         <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">Uploading your file...</p>
-          <p className="text-xs text-muted-foreground">Please wait while we process your upload</p>
+          <p className="text-sm font-medium text-foreground">
+            Uploading your file...
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Please wait while we process your upload
+          </p>
         </div>
-        
+
         {/* Optional animated progress dots */}
         <div className="flex space-x-1">
           <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-primary/70 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-primary/40 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          <div
+            className="w-2 h-2 bg-primary/70 rounded-full animate-pulse"
+            style={{ animationDelay: "0.2s" }}
+          ></div>
+          <div
+            className="w-2 h-2 bg-primary/40 rounded-full animate-pulse"
+            style={{ animationDelay: "0.4s" }}
+          ></div>
         </div>
       </CardContent>
     </Card>

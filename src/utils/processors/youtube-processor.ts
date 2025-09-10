@@ -23,15 +23,18 @@ const RETRY_DELAY_MS = 1000;
  */
 const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
   console.log(`Fetching transcript for YouTube video: ${videoId}`);
-  
+
   // Method 1: Try danielxceron/youtube-transcript (primary)
   try {
     console.log("Attempting with @danielxceron/youtube-transcript...");
-    const transcriptParts = await DanielYoutubeTranscript.fetchTranscript(videoId);
-    
+    const transcriptParts =
+      await DanielYoutubeTranscript.fetchTranscript(videoId);
+
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
-      console.log(`Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`);
+      console.log(
+        `Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`,
+      );
       return transcriptText;
     }
   } catch (error) {
@@ -42,10 +45,12 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
   try {
     console.log("Attempting with original youtube-transcript...");
     const transcriptParts = await YoutubeTranscript.fetchTranscript(videoId);
-    
+
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
-      console.log(`Successfully extracted transcript with ${transcriptText.length} characters using original.`);
+      console.log(
+        `Successfully extracted transcript with ${transcriptText.length} characters using original.`,
+      );
       return transcriptText;
     }
   } catch (error) {
@@ -57,32 +62,39 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.log("Attempting alternative YouTube API approach...");
     const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
     const html = await response.text();
-    
+
     // Extract captions from video page - this is a basic approach
-    const captionMatch = html.match(/"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/);
+    const captionMatch = html.match(
+      /"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/,
+    );
     if (captionMatch) {
       const captionData = JSON.parse(`[${captionMatch[1]}]`) as Array<{
         languageCode: string;
         baseUrl?: string;
       }>;
-      const englishCaption = captionData.find((cap) => 
-        cap.languageCode === 'en' || cap.languageCode === 'en-US' || cap.languageCode.startsWith('en')
+      const englishCaption = captionData.find(
+        (cap) =>
+          cap.languageCode === "en" ||
+          cap.languageCode === "en-US" ||
+          cap.languageCode.startsWith("en"),
       );
-      
+
       if (englishCaption && englishCaption.baseUrl) {
         const captionResponse = await fetch(englishCaption.baseUrl);
         const captionXml = await captionResponse.text();
-        
+
         // Parse XML captions
         const textMatches = captionXml.match(/<text[^>]*>([^<]+)<\/text>/g);
         if (textMatches) {
           const transcriptText = textMatches
-            .map(match => match.replace(/<[^>]*>/g, '').trim())
-            .filter(text => text.length > 0)
-            .join(' ');
-          
+            .map((match) => match.replace(/<[^>]*>/g, "").trim())
+            .filter((text) => text.length > 0)
+            .join(" ");
+
           if (transcriptText.length > 0) {
-            console.log(`Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`);
+            console.log(
+              `Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`,
+            );
             return transcriptText;
           }
         }
@@ -92,7 +104,9 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("Alternative YouTube API approach failed:", error);
   }
 
-  throw new Error("No transcript content found using any available method. The video may not have captions available.");
+  throw new Error(
+    "No transcript content found using any available method. The video may not have captions available.",
+  );
 };
 
 /**
@@ -101,7 +115,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
  */
 const _splitTranscriptToDocs = async (
   transcript: string,
-  videoUrl: string
+  videoUrl: string,
 ): Promise<Document[]> => {
   console.log(`Splitting transcript into chunks...`);
   const splitter = new RecursiveCharacterTextSplitter({
@@ -121,14 +135,13 @@ const _splitTranscriptToDocs = async (
  * Creates embeddings and stores the document chunks in Pinecone.
  * @private
  */
-const _storeDocsInPinecone = async (
-  docs: Document[],
-  namespace: string,
-) => {
+const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
   console.log("Creating Gemini embeddings...");
   const embeddings = await createGeminiEmbeddings();
   if (!embeddings) {
-    throw new Error("Failed to create embeddings. Gemini API may not be configured properly.");
+    throw new Error(
+      "Failed to create embeddings. Gemini API may not be configured properly.",
+    );
   }
 
   const pineconeIndex = await getPineconeIndex();
@@ -136,7 +149,9 @@ const _storeDocsInPinecone = async (
     throw new Error("Pinecone index is not initialized.");
   }
 
-  console.log(`Storing ${docs.length} chunks in Pinecone with namespace: ${namespace}...`);
+  console.log(
+    `Storing ${docs.length} chunks in Pinecone with namespace: ${namespace}...`,
+  );
   let retries = 0;
   while (retries < MAX_RETRIES) {
     try {
@@ -148,7 +163,10 @@ const _storeDocsInPinecone = async (
       return; // Success
     } catch (error) {
       retries++;
-      console.error(`Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`, error);
+      console.error(
+        `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
+        error,
+      );
       if (retries >= MAX_RETRIES) {
         throw error; // Re-throw after final attempt
       }
@@ -169,9 +187,13 @@ export const processYoutubeVideo = async (
   videoUrl: string,
   namespace: string,
 ): Promise<{ numDocs: number; success: boolean; error?: string }> => {
-  console.log(`Starting YouTube transcript processing for namespace: ${namespace}`);
+  console.log(
+    `Starting YouTube transcript processing for namespace: ${namespace}`,
+  );
   if (!(await isPineconeConfigured())) {
-    throw new Error("Pinecone is not configured. Please check environment variables.");
+    throw new Error(
+      "Pinecone is not configured. Please check environment variables.",
+    );
   }
 
   const supabase = supabaseBrowserClient();
@@ -195,15 +217,19 @@ export const processYoutubeVideo = async (
     return { numDocs: chunkedDocs.length, success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Processing failed for namespace ${namespace}:`, errorMessage);
+    console.error(
+      `Processing failed for namespace ${namespace}:`,
+      errorMessage,
+    );
 
-    await updateFileStatus(supabase, namespace, "failed", { error: errorMessage });
+    await updateFileStatus(supabase, namespace, "failed", {
+      error: errorMessage,
+    });
 
     // Return a failure result instead of throwing to allow for graceful handling.
     return { numDocs: 0, success: false, error: errorMessage };
   }
 };
-
 
 /**
  * Retrieves basic information about a YouTube video.
@@ -213,7 +239,7 @@ export const processYoutubeVideo = async (
  * @returns A promise that resolves to the video's information.
  */
 export const getYoutubeVideoInfo = async (
-  videoId: string
+  videoId: string,
 ): Promise<{ title: string; channel: string; duration: number }> => {
   return {
     title: `YouTube Video ${videoId}`,

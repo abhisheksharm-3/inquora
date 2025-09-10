@@ -12,9 +12,9 @@ import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
 /**
  * Renders the message list with redesigned, themed chat bubbles.
  */
-const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> = ({
-  messages, messagesLoading, messagesEndRef, isSending,
-}) => {
+const ChatInterfaceMessagesComponent: React.FC<
+  TypeChatInterfaceMessagesProps
+> = ({ messages, messagesLoading, messagesEndRef, isSending }) => {
   const { user } = useUser();
 
   if (messagesLoading && messages.length === 0) {
@@ -30,9 +30,19 @@ const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> =
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <Image src="/logo.png" alt="Logo" width={48} height={48} className="mx-auto" />
-          <p className="mt-4 font-medium text-foreground">Chat with your document</p>
-          <p className="text-sm text-muted-foreground">Ask a question to get started.</p>
+          <Image
+            src="/logo.png"
+            alt="Logo"
+            width={48}
+            height={48}
+            className="mx-auto"
+          />
+          <p className="mt-4 font-medium text-foreground">
+            Chat with your document
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Ask a question to get started.
+          </p>
         </div>
       </div>
     );
@@ -66,12 +76,14 @@ const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> =
                 <span>Thinking...</span>
               </div>
             ) : message.role === "assistant" ? (
-              <MarkdownRenderer 
-                content={message.content} 
+              <MarkdownRenderer
+                content={message.content}
                 className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
               />
             ) : (
-              <div className="whitespace-pre-wrap break-words">{message.content}</div>
+              <div className="whitespace-pre-wrap break-words">
+                {message.content}
+              </div>
             )}
           </div>
 
@@ -89,15 +101,19 @@ const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> =
 };
 
 // Memoize the messages component to prevent unnecessary re-renders
-export const ChatInterfaceMessages = memo(ChatInterfaceMessagesComponent, (prevProps, nextProps) => {
-  // Only re-render if messages content actually changed, not just array reference
-  return (
-    prevProps.messagesLoading === nextProps.messagesLoading &&
-    prevProps.isSending === nextProps.isSending &&
-    prevProps.messages.length === nextProps.messages.length &&
-    prevProps.messages.every((msg, index) => 
-      msg.id === nextProps.messages[index]?.id && 
-      msg.content === nextProps.messages[index]?.content
-    )
-  );
-});
+export const ChatInterfaceMessages = memo(
+  ChatInterfaceMessagesComponent,
+  (prevProps, nextProps) => {
+    // Only re-render if messages content actually changed, not just array reference
+    return (
+      prevProps.messagesLoading === nextProps.messagesLoading &&
+      prevProps.isSending === nextProps.isSending &&
+      prevProps.messages.length === nextProps.messages.length &&
+      prevProps.messages.every(
+        (msg, index) =>
+          msg.id === nextProps.messages[index]?.id &&
+          msg.content === nextProps.messages[index]?.content,
+      )
+    );
+  },
+);

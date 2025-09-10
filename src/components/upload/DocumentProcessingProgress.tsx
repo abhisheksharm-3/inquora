@@ -1,6 +1,6 @@
 /**
  * DocumentProcessingProgress Component
- * 
+ *
  * Shows real-time progress for document processing operations.
  * Provides visual feedback to users during upload and processing.
  */
@@ -9,16 +9,16 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Loader2, 
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
   AlertCircle,
   RefreshCw,
   FileText,
   Globe,
   Github,
-  Youtube
+  Youtube,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -88,7 +88,9 @@ const getStatusMessage = (status: string, fileType: string) => {
   }
 };
 
-export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProps> = ({
+export const DocumentProcessingProgress: React.FC<
+  DocumentProcessingProgressProps
+> = ({
   fileName,
   fileType,
   status,
@@ -107,16 +109,21 @@ export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProp
     <Card className={cn("p-4 space-y-4", className)}>
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "p-2 rounded-lg transition-colors",
-          isSuccess && "bg-green-100 text-green-600",
-          isError && "bg-red-100 text-red-600",
-          isActive && "bg-blue-100 text-blue-600",
-          !isActive && !isSuccess && !isError && "bg-muted text-muted-foreground"
-        )}>
+        <div
+          className={cn(
+            "p-2 rounded-lg transition-colors",
+            isSuccess && "bg-green-100 text-green-600",
+            isError && "bg-red-100 text-red-600",
+            isActive && "bg-blue-100 text-blue-600",
+            !isActive &&
+              !isSuccess &&
+              !isError &&
+              "bg-muted text-muted-foreground",
+          )}
+        >
           <FileIcon className="h-4 w-4" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm truncate">{fileName}</p>
           <p className={cn("text-xs", getStatusColor(status))}>
@@ -128,17 +135,15 @@ export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProp
           {isActive && (
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
           )}
-          
-          {isSuccess && (
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          )}
-          
-          {isError && (
-            <XCircle className="h-4 w-4 text-red-600" />
-          )}
 
-          <Badge 
-            variant={isSuccess ? "default" : isError ? "destructive" : "secondary"}
+          {isSuccess && <CheckCircle className="h-4 w-4 text-green-600" />}
+
+          {isError && <XCircle className="h-4 w-4 text-red-600" />}
+
+          <Badge
+            variant={
+              isSuccess ? "default" : isError ? "destructive" : "secondary"
+            }
             className="text-xs"
           >
             {status === "uploading" && "Uploading"}
@@ -154,16 +159,18 @@ export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProp
       {(isActive || isSuccess) && (
         <div className="space-y-2">
           <div className="w-full bg-muted rounded-full h-2">
-            <div 
+            <div
               className={cn(
                 "h-2 rounded-full transition-all duration-300",
-                isSuccess ? "bg-green-600" : "bg-blue-600"
+                isSuccess ? "bg-green-600" : "bg-blue-600",
               )}
               style={{ width: `${isSuccess ? 100 : progress}%` }}
             />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{isSuccess ? "Processing complete" : `${Math.round(progress)}%`}</span>
+            <span>
+              {isSuccess ? "Processing complete" : `${Math.round(progress)}%`}
+            </span>
             {isActive && (
               <span className="flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -180,11 +187,13 @@ export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProp
           <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-red-800">Processing Failed</p>
+              <p className="text-sm font-medium text-red-800">
+                Processing Failed
+              </p>
               <p className="text-sm text-red-700 mt-1">{error}</p>
             </div>
           </div>
-          
+
           {canRetry && onRetry && (
             <Button
               variant="outline"

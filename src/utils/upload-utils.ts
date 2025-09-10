@@ -39,14 +39,11 @@ export const getUrlType = (url: string, fileType: string): string => {
   ) {
     return "youtube";
   }
-  
-  if (
-    fileType === "github" ||
-    url.includes("github.com/")
-  ) {
+
+  if (fileType === "github" || url.includes("github.com/")) {
     return "github";
   }
-  
+
   // All other URLs are treated as web pages for scraping
   return "web";
 };
@@ -153,7 +150,7 @@ export type UploadAction =
 
 export const uploadReducer = (
   state: TypeUploadState,
-  action: UploadAction
+  action: UploadAction,
 ): TypeUploadState => {
   switch (action.type) {
     case EnumUploadActionType.SET_STATUS:

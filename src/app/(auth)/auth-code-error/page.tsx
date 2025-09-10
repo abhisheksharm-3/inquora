@@ -1,7 +1,7 @@
-import Link from 'next/link'
-import { JSX } from 'react'
-import { Button } from '@/components/ui/button'
-import { AlertCircle } from 'lucide-react'
+import Link from "next/link";
+import { JSX } from "react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
 /**
  * Error page displayed when OAuth authentication fails.
@@ -17,7 +17,8 @@ const AuthCodeErrorPage = (): JSX.Element => {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Authentication Error</h1>
           <p className="text-muted-foreground">
-            Sorry, we couldn&apos;t complete your sign-in request. This could be due to:
+            Sorry, we couldn&apos;t complete your sign-in request. This could be
+            due to:
           </p>
           <ul className="text-sm text-muted-foreground space-y-1 text-left">
             <li>• The authentication request was cancelled</li>
@@ -35,7 +36,7 @@ const AuthCodeErrorPage = (): JSX.Element => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AuthCodeErrorPage
+export default AuthCodeErrorPage;

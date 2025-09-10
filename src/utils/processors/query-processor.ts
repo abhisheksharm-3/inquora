@@ -22,7 +22,9 @@ export const queryDocuments = async (
   console.log(`Querying top ${topK} documents in namespace "${namespace}"...`);
 
   if (!(await isPineconeConfigured())) {
-    throw new Error("Pinecone is not configured. Please check environment variables.");
+    throw new Error(
+      "Pinecone is not configured. Please check environment variables.",
+    );
   }
 
   const pineconeIndex = await getPineconeIndex();
@@ -44,7 +46,6 @@ export const queryDocuments = async (
     const results = await vectorStore.similaritySearch(query, topK);
     console.log(`Found ${results.length} documents.`);
     return results;
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("Error querying documents:", errorMessage);
@@ -68,7 +69,9 @@ export const checkNamespaceExists = async (
 
   const pineconeIndex = await getPineconeIndex();
   if (!pineconeIndex) {
-    console.warn("Pinecone index not initialized, assuming namespace does not exist.");
+    console.warn(
+      "Pinecone index not initialized, assuming namespace does not exist.",
+    );
     return false;
   }
 
@@ -80,7 +83,6 @@ export const checkNamespaceExists = async (
     const exists = (namespaceStats?.recordCount ?? 0) > 0;
     console.log(`Namespace "${namespace}" exists: ${exists}`);
     return exists;
-
   } catch (error) {
     console.error(`Error checking if namespace "${namespace}" exists:`, error);
     return false; // Assume it doesn't exist on error

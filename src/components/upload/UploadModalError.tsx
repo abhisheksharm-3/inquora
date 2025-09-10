@@ -196,8 +196,8 @@ const UploadModalError: React.FC<TypeUploadModalErrorProps> = ({
               {isRetrying
                 ? "Trying again..."
                 : retryCount > 0
-                ? "Try again"
-                : "Retry"}
+                  ? "Try again"
+                  : "Retry"}
             </Button>
           )}
 

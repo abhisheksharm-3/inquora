@@ -17,7 +17,10 @@ export * from "./query-processor";
 export * from "./github-processor";
 
 // Export GitHub processor with clone functionality
-export { processGitHubRepositoryWithClone, cleanupOrphanedTempDirectories } from "./github-processor-clone";
+export {
+  processGitHubRepositoryWithClone,
+  cleanupOrphanedTempDirectories,
+} from "./github-processor-clone";
 
 // Export web scraping processor and utilities
 export { processWebPage, getWebPageInfo } from "./web-scraper-server";

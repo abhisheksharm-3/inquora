@@ -20,7 +20,6 @@ export const formatFileSize = (bytes: number, decimals: number = 1): string => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${unit}`;
 };
 
-
 /**
  * Formats an ISO date string into a relative "time ago" format (e.g., "5 minutes ago").
  * This function uses the modern Intl.RelativeTimeFormat API for accurate, localized formatting.

@@ -1,4 +1,4 @@
-import { 
+import {
   RiFilePdf2Fill,
   RiFileWord2Fill,
   RiImage2Fill,
@@ -6,7 +6,7 @@ import {
   RiFilePpt2Fill,
   RiYoutubeFill,
   RiGithubFill,
-  RiGlobalLine
+  RiGlobalLine,
 } from "@remixicon/react";
 import { TypeFileTypeConfig } from "@/types/TypeUpload";
 
@@ -15,7 +15,7 @@ import { TypeFileTypeConfig } from "@/types/TypeUpload";
  *
  * Each object defines the properties for an uploadable content type, including its
  * name, icon component, accepted MIME types/extensions, and size limits.
- * 
+ *
  * Using Remix Icons React components for consistent iconography and brand recognition.
  */
 export const FileTypes: TypeFileTypeConfig[] = [
@@ -92,7 +92,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
 ];
 
 /** A Map for efficient O(1) lookup of file type configurations. */
-const fileTypeConfigMap = new Map(FileTypes.map(ft => [ft.type, ft]));
+const fileTypeConfigMap = new Map(FileTypes.map((ft) => [ft.type, ft]));
 
 /**
  * Retrieves the configuration object for a specific file type.
@@ -110,5 +110,5 @@ export const getFileTypeConfig = (fileType: string): TypeFileTypeConfig => {
  * @returns {string[]} An array of all unique accepted file specifiers.
  */
 export const getAllAcceptedFileTypes = (): string[] => {
-  return FileTypes.flatMap(ft => ft.accept ? ft.accept.split(",") : []);
+  return FileTypes.flatMap((ft) => (ft.accept ? ft.accept.split(",") : []));
 };

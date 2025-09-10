@@ -54,7 +54,7 @@ const UploadModalArea: React.FC<{
         isDragOver
           ? "border-primary bg-primary/5 scale-[1.02]"
           : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30",
-        selectedFile && "border-primary bg-primary/5"
+        selectedFile && "border-primary bg-primary/5",
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

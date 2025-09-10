@@ -18,7 +18,7 @@ import { VirtualizedChatList } from "@/components/history/VirtualizedChatList";
 const HistoryPage = () => {
   const { chats, isLoading, isError, error, refetch } = useChats();
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Debounce search query to reduce filtering frequency
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -26,33 +26,41 @@ const HistoryPage = () => {
   const filteredChats = useMemo(() => {
     if (!Array.isArray(chats)) return [];
     if (!debouncedSearchQuery.trim()) return chats;
-    
+
     const query = debouncedSearchQuery.toLowerCase().trim();
-    return chats.filter((chat) => 
-      chat?.title?.toLowerCase().includes(query)
-    );
+    return chats.filter((chat) => chat?.title?.toLowerCase().includes(query));
   }, [chats, debouncedSearchQuery]);
 
   // Debounced search handler to reduce filtering frequency
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  }, []);
+  const handleSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(e.target.value);
+    },
+    [],
+  );
 
   const renderContent = () => {
     if (isError) {
       return (
         <div className="mt-8 md:mt-12 text-center">
           <div className="mx-auto max-w-md">
-            <Alert variant="destructive" className="backdrop-blur-sm bg-destructive/10 border-destructive/30 rounded-xl">
+            <Alert
+              variant="destructive"
+              className="backdrop-blur-sm bg-destructive/10 border-destructive/30 rounded-xl"
+            >
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="text-sm md:text-base font-semibold">Failed to load chats</AlertTitle>
+              <AlertTitle className="text-sm md:text-base font-semibold">
+                Failed to load chats
+              </AlertTitle>
               <AlertDescription className="text-xs md:text-sm mt-2 leading-relaxed">
-                {error instanceof Error ? error.message : "An unexpected error occurred."}
+                {error instanceof Error
+                  ? error.message
+                  : "An unexpected error occurred."}
               </AlertDescription>
             </Alert>
-            <Button 
-              onClick={() => refetch()} 
-              variant="secondary" 
+            <Button
+              onClick={() => refetch()}
+              variant="secondary"
               className="mt-4 w-full sm:w-auto backdrop-blur-sm bg-secondary/80 hover:bg-secondary/90 h-11 min-w-[120px]"
             >
               <RefreshCw className="mr-2 h-4 w-4" /> Retry
@@ -64,7 +72,9 @@ const HistoryPage = () => {
     if (isLoading) {
       return (
         <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => <HistoryChatlistSkeletonItem key={i} />)}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <HistoryChatlistSkeletonItem key={i} />
+          ))}
         </div>
       );
     }
@@ -81,8 +91,8 @@ const HistoryPage = () => {
                   ? "No chats match your search. Try a different term."
                   : "You have no chats yet. Create one to get started."}
               </p>
-              <Button 
-                asChild 
+              <Button
+                asChild
                 className="w-full sm:w-auto min-w-[140px] backdrop-blur-sm bg-primary hover:bg-primary/90 h-11"
               >
                 <Link href="/choose">
@@ -101,7 +111,7 @@ const HistoryPage = () => {
           <VirtualizedChatList chats={filteredChats} />
         ) : (
           filteredChats.map((chat) =>
-            chat?.id ? <HistoryPageChatItem key={chat.id} chat={chat} /> : null
+            chat?.id ? <HistoryPageChatItem key={chat.id} chat={chat} /> : null,
           )
         )}
       </div>
@@ -109,7 +119,9 @@ const HistoryPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]"> {/* Adjust height to account for header and padding */}
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {" "}
+      {/* Adjust height to account for header and padding */}
       {/* Fixed Header Section */}
       <div className="flex-shrink-0 mx-auto w-full max-w-4xl px-4 py-4 md:px-6 md:py-6 border-b border-border/20 fixed-header">
         {/* Header */}
@@ -138,13 +150,10 @@ const HistoryPage = () => {
           </div>
         </div>
       </div>
-
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto px-4 py-4 md:px-6 md:py-6 chat-list-scroll smooth-scroll">
-          <div className="mx-auto w-full max-w-4xl">
-            {renderContent()}
-          </div>
+          <div className="mx-auto w-full max-w-4xl">{renderContent()}</div>
         </div>
       </div>
     </div>

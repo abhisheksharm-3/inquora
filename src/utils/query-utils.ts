@@ -17,14 +17,16 @@
  * @returns {string} The complete system prompt string, ready to be sent to the AI model.
  */
 export const createRagSystemPrompt = (
-  documentContent: string, 
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
+  documentContent: string,
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
 ): string => {
-  const contextInfo = context ? `
+  const contextInfo = context
+    ? `
 
 **Current Context:**
-- Date/Time: ${context.currentDateTime || 'Not available'}
-- User: ${context.userName || 'Anonymous'} (${context.userEmail || 'No email provided'})` : '';
+- Date/Time: ${context.currentDateTime || "Not available"}
+- User: ${context.userName || "Anonymous"} (${context.userEmail || "No email provided"})`
+    : "";
 
   return `**Role:** You are an expert Q&A assistant helping users understand and analyze documents.
 **Task:** Answer the user's question based *exclusively* on the provided document content.${contextInfo}

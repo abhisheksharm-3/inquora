@@ -12,7 +12,7 @@ export const MESSAGES_QUERY_KEY = ["messages"];
 const createOptimisticMessages = (chatId: string, content: string) => {
   const timestamp = new Date().toISOString();
   const baseId = Date.now();
-  
+
   return {
     tempUserMessage: {
       id: `temp-user-${baseId}`,
@@ -37,9 +37,9 @@ export const useMessages = (chatId: string) => {
   const { isAuthenticated, userId } = useUser();
   const [isPending, startTransition] = useTransition();
 
-  const isValidChatId = useMemo(() => 
-    !!chatId && typeof chatId === "string" && chatId.trim() !== "", 
-    [chatId]
+  const isValidChatId = useMemo(
+    () => !!chatId && typeof chatId === "string" && chatId.trim() !== "",
+    [chatId],
   );
 
   const queryKey = useMemo(() => [...MESSAGES_QUERY_KEY, chatId], [chatId]);
@@ -48,18 +48,18 @@ export const useMessages = (chatId: string) => {
     queryKey,
     queryFn: async (): Promise<TypeMessage[]> => {
       if (!isValidChatId) return [];
-      
+
       const { data, error } = await supabase
         .from("messages")
         .select("*")
         .eq("chat_id", chatId)
         .order("created_at", { ascending: true });
-      
+
       if (error) {
         console.error("Error fetching messages:", error);
         return [];
       }
-      
+
       return data as TypeMessage[];
     },
     enabled: isAuthenticated && isValidChatId,
@@ -69,80 +69,102 @@ export const useMessages = (chatId: string) => {
 
   const serverMessages = messagesQuery.data || [];
 
-  const optimisticReducer = useCallback((state: TypeMessage[], newMessage: TypeMessage) => {
-    if (newMessage.role === "user") {
-      return [...state, newMessage];
-    }
-    
-    if (newMessage.role === "assistant") {
-      const existingTempAiIndex = state.findIndex(msg => 
-        msg.role === "assistant" && msg.id.startsWith("temp-ai-")
-      );
-      
-      if (existingTempAiIndex !== -1) {
-        const newState = [...state];
-        newState[existingTempAiIndex] = newMessage;
-        return newState;
+  const optimisticReducer = useCallback(
+    (state: TypeMessage[], newMessage: TypeMessage) => {
+      if (newMessage.role === "user") {
+        return [...state, newMessage];
       }
+
+      if (newMessage.role === "assistant") {
+        const existingTempAiIndex = state.findIndex(
+          (msg) => msg.role === "assistant" && msg.id.startsWith("temp-ai-"),
+        );
+
+        if (existingTempAiIndex !== -1) {
+          const newState = [...state];
+          newState[existingTempAiIndex] = newMessage;
+          return newState;
+        }
+        return [...state, newMessage];
+      }
+
       return [...state, newMessage];
-    }
-    
-    return [...state, newMessage];
-  }, []);
+    },
+    [],
+  );
 
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     serverMessages,
-    optimisticReducer
+    optimisticReducer,
   );
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!isValidChatId) throw new Error("No chat ID provided");
-    if (!userId) throw new Error("No authenticated user");
-    if (!content.trim()) return;
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!isValidChatId) throw new Error("No chat ID provided");
+      if (!userId) throw new Error("No authenticated user");
+      if (!content.trim()) return;
 
-    const { tempUserMessage, tempAiMessage } = createOptimisticMessages(chatId, content);
-    
-    startTransition(() => {
-      addOptimisticMessage(tempUserMessage);
-      addOptimisticMessage(tempAiMessage);
-    });
-
-    try {
-      const currentMessages = serverMessages.filter(
-        (msg) => !msg.id.startsWith("temp-") && msg.content !== "..."
+      const { tempUserMessage, tempAiMessage } = createOptimisticMessages(
+        chatId,
+        content,
       );
-      
-      const formattedMessages: { role: "user" | "model"; content: string }[] = currentMessages.map((msg) => ({
-        role: msg.role === "user" ? "user" : "model",
-        content: msg.content,
-      }));
 
-      await sendMessageToGemini(chatId, content, formattedMessages);
-      
-      await queryClient.invalidateQueries({
-        queryKey,
-        exact: true,
-      });
-    } catch (error) {
-      console.error("Send message error:", error);
-      
       startTransition(() => {
-        const errorMessage: TypeMessage = {
-          id: `error-${Date.now()}`,
-          chat_id: chatId,
-          role: "assistant",
-          content: "Sorry, there was an error processing your request. Please try again.",
-          created_at: new Date().toISOString(),
-        };
-        
-        addOptimisticMessage(errorMessage);
+        addOptimisticMessage(tempUserMessage);
+        addOptimisticMessage(tempAiMessage);
       });
-    }
-  }, [isValidChatId, userId, chatId, addOptimisticMessage, startTransition, serverMessages, queryClient, queryKey]);
+
+      try {
+        const currentMessages = serverMessages.filter(
+          (msg) => !msg.id.startsWith("temp-") && msg.content !== "...",
+        );
+
+        const formattedMessages: { role: "user" | "model"; content: string }[] =
+          currentMessages.map((msg) => ({
+            role: msg.role === "user" ? "user" : "model",
+            content: msg.content,
+          }));
+
+        await sendMessageToGemini(chatId, content, formattedMessages);
+
+        await queryClient.invalidateQueries({
+          queryKey,
+          exact: true,
+        });
+      } catch (error) {
+        console.error("Send message error:", error);
+
+        startTransition(() => {
+          const errorMessage: TypeMessage = {
+            id: `error-${Date.now()}`,
+            chat_id: chatId,
+            role: "assistant",
+            content:
+              "Sorry, there was an error processing your request. Please try again.",
+            created_at: new Date().toISOString(),
+          };
+
+          addOptimisticMessage(errorMessage);
+        });
+      }
+    },
+    [
+      isValidChatId,
+      userId,
+      chatId,
+      addOptimisticMessage,
+      startTransition,
+      serverMessages,
+      queryClient,
+      queryKey,
+    ],
+  );
 
   /** Mutation to create a message directly in the database. */
   const createMessageMutation = useMutation({
-    mutationFn: async (messageData: Omit<TypeMessage, "id" | "created_at">): Promise<TypeMessage> => {
+    mutationFn: async (
+      messageData: Omit<TypeMessage, "id" | "created_at">,
+    ): Promise<TypeMessage> => {
       if (!isValidChatId) throw new Error("No chat ID provided");
       const { data, error } = await supabase
         .from("messages")
@@ -182,7 +204,9 @@ export const useMessages = (chatId: string) => {
     },
     onSuccess: (updatedMessage) => {
       queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) =>
-        oldData.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg))
+        oldData.map((msg) =>
+          msg.id === updatedMessage.id ? updatedMessage : msg,
+        ),
       );
     },
   });
@@ -201,7 +225,7 @@ export const useMessages = (chatId: string) => {
     },
     onSuccess: (deletedMessageId) => {
       queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) =>
-        oldData.filter((msg) => msg.id !== deletedMessageId)
+        oldData.filter((msg) => msg.id !== deletedMessageId),
       );
     },
   });

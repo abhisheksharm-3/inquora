@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 /* eslint-disable react/no-unknown-property */
 import { useRef, useEffect, forwardRef } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
@@ -327,12 +327,12 @@ export default function Dither({
     <div className={`absolute inset-0 ${className}`}>
       <Canvas
         style={{
-          width: '100%',
-          height: '100%',
-          pointerEvents: enableMouseInteraction ? 'auto' : 'none'
+          width: "100%",
+          height: "100%",
+          pointerEvents: enableMouseInteraction ? "auto" : "none",
         }}
         camera={{ position: [0, 0, 6] }}
-        dpr={typeof window !== 'undefined' ? window.devicePixelRatio : 1}
+        dpr={typeof window !== "undefined" ? window.devicePixelRatio : 1}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
       >
         <DitheredWaves

@@ -30,7 +30,10 @@ const ButtonCta = ({
       <Button
         variant={variant}
         size={size}
-        className={cn("cursor-pointer px-8 py-4 text-base transition-colors", className)}
+        className={cn(
+          "cursor-pointer px-8 py-4 text-base transition-colors",
+          className,
+        )}
         {...props}
       >
         {label}

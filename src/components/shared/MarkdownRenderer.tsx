@@ -1,19 +1,19 @@
 // src/components/shared/MarkdownRenderer.tsx
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
-import 'highlight.js/styles/atom-one-dark.css';
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
+import "highlight.js/styles/atom-one-dark.css";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ 
-  content, 
-  className = '' 
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
+  content,
+  className = "",
 }) => {
   return (
     <div className={`prose prose-sm max-w-none dark:prose-invert ${className}`}>
@@ -23,13 +23,19 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         components={{
           // Custom styling for code blocks
           code: ({ children, className, ...props }) => {
-            const isInline = !className?.includes('language-');
+            const isInline = !className?.includes("language-");
             return isInline ? (
-              <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono text-foreground" {...props}>
+              <code
+                className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono text-foreground"
+                {...props}
+              >
                 {children}
               </code>
             ) : (
-              <code className={`${className} block rounded-md bg-muted p-4 text-sm overflow-x-auto text-foreground`} {...props}>
+              <code
+                className={`${className} block rounded-md bg-muted p-4 text-sm overflow-x-auto text-foreground`}
+                {...props}
+              >
                 {children}
               </code>
             );
@@ -60,15 +66,11 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-border px-4 py-2">
-              {children}
-            </td>
+            <td className="border border-border px-4 py-2">{children}</td>
           ),
           // Custom styling for lists
           ul: ({ children }) => (
-            <ul className="list-disc list-inside space-y-1 my-2">
-              {children}
-            </ul>
+            <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
           ),
           ol: ({ children }) => (
             <ol className="list-decimal list-inside space-y-1 my-2">
@@ -98,14 +100,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           ),
           // Custom styling for paragraphs
           p: ({ children }) => (
-            <p className="mb-3 text-foreground leading-relaxed">
-              {children}
-            </p>
+            <p className="mb-3 text-foreground leading-relaxed">{children}</p>
           ),
           // Custom styling for links
           a: ({ href, children }) => (
-            <a 
-              href={href} 
+            <a
+              href={href}
               className="text-primary hover:text-primary/80 underline"
               target="_blank"
               rel="noopener noreferrer"
@@ -114,9 +114,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             </a>
           ),
           // Custom styling for horizontal rules
-          hr: () => (
-            <hr className="my-6 border-border" />
-          ),
+          hr: () => <hr className="my-6 border-border" />,
           // Custom styling for strong text
           strong: ({ children }) => (
             <strong className="font-semibold text-foreground">
@@ -125,9 +123,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           ),
           // Custom styling for emphasis
           em: ({ children }) => (
-            <em className="italic text-foreground">
-              {children}
-            </em>
+            <em className="italic text-foreground">{children}</em>
           ),
         }}
       >

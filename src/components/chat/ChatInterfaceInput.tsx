@@ -5,7 +5,10 @@ import { TypeChatInputProps } from "@/types/TypeChat";
 import { useRef, useCallback, useState, useEffect, memo } from "react";
 
 const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
-  inputValue, setInputValue, onSendMessage, isSending,
+  inputValue,
+  setInputValue,
+  onSendMessage,
+  isSending,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [localValue, setLocalValue] = useState("");
@@ -16,16 +19,19 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
     }
   }, [inputValue]);
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setLocalValue(e.target.value);
-  }, []);
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setLocalValue(e.target.value);
+    },
+    [],
+  );
 
   const sendMessage = useCallback(() => {
     if (!localValue.trim() || isSending) return;
-    
+
     onSendMessage(localValue);
     setLocalValue("");
-    
+
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 50);
@@ -35,12 +41,15 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
     sendMessage();
   }, [sendMessage]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }, [sendMessage]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    },
+    [sendMessage],
+  );
 
   return (
     <div className="border-t border-white/10 p-1">
@@ -69,13 +78,16 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
   );
 };
 
-export const ChatInterfaceInput = memo(ChatInterfaceInputComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.inputValue === nextProps.inputValue &&
-    prevProps.isSending === nextProps.isSending &&
-    prevProps.onSendMessage === nextProps.onSendMessage &&
-    prevProps.setInputValue === nextProps.setInputValue
-  );
-});
+export const ChatInterfaceInput = memo(
+  ChatInterfaceInputComponent,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.inputValue === nextProps.inputValue &&
+      prevProps.isSending === nextProps.isSending &&
+      prevProps.onSendMessage === nextProps.onSendMessage &&
+      prevProps.setInputValue === nextProps.setInputValue
+    );
+  },
+);
 
-ChatInterfaceInput.displayName = 'ChatInterfaceInput';
+ChatInterfaceInput.displayName = "ChatInterfaceInput";

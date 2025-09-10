@@ -17,7 +17,6 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 const API_KEY = process.env.GEMINI_API_KEY;
 const MODEL_NAME = "gemini-2.0-flash";
 
-
 // --- Initialization ---
 let genAI: GoogleGenerativeAI | undefined;
 if (API_KEY) {
@@ -48,7 +47,7 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  */
 const _getSystemInstruction = (
   fileContent?: string,
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
 ): Content | null => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
     return null; // No system prompt needed for images or standard chat
@@ -78,7 +77,7 @@ export const sendMessageToGemini = async (
   messages: { role: "user" | "model"; content: string }[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
     return "Error: Gemini API key is not configured.";
@@ -99,7 +98,7 @@ export const sendMessageToGemini = async (
     }
 
     // Add the rest of the chat history
-    messages.forEach(msg => {
+    messages.forEach((msg) => {
       history.push({ role: msg.role, parts: [{ text: msg.content }] });
     });
 
@@ -112,10 +111,22 @@ export const sendMessageToGemini = async (
         maxOutputTokens: 8192,
       },
       safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
       ],
     };
 

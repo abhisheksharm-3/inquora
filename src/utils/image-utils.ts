@@ -17,7 +17,7 @@
 export const createImageContext = (
   fileName: string,
   userQuery: string,
-  imageUrl?: string
+  imageUrl?: string,
 ): string => {
   let context = `I'm looking at an image file named "${fileName}".`;
 

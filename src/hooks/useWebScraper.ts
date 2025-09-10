@@ -2,42 +2,39 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { validateWebUrl } from "@/utils/web-scraper-utils";
-import { 
-  getWebPageInfo, 
-  processWebPage 
+import {
+  getWebPageInfo,
+  processWebPage,
 } from "@/utils/processors/web-scraper-server";
-import type { 
-  TypeUseWebScrapingReturn
-} from "@/types/TypeWebScraper";
+import type { TypeUseWebScrapingReturn } from "@/types/TypeWebScraper";
 
 /**
  * Custom hook for managing web page scraping operations
- * 
+ *
  * Provides functionality to:
  * - Validate web page URLs
  * - Fetch page information by scraping
  * - Process pages for vectorization
- * 
+ *
  * Uses advanced web scraping with content cleaning and extraction!
  */
 export const useWebScraper = (): TypeUseWebScrapingReturn => {
-  
   // --- Mutations ---
-  
+
   /**
    * Mutation for processing a web page
    */
   const processPageMutation = useMutation({
     mutationFn: async ({ url, fileId }: { url: string; fileId: string }) => {
-      console.log('Processing web page:', { url, fileId });
+      console.log("Processing web page:", { url, fileId });
       return await processWebPage(url, fileId);
     },
     onSuccess: (data) => {
-      console.log('Web page processed successfully:', data);
+      console.log("Web page processed successfully:", data);
     },
     onError: (error) => {
-      console.error('Error processing web page:', error);
-    }
+      console.error("Error processing web page:", error);
+    },
   });
 
   /**
@@ -45,19 +42,19 @@ export const useWebScraper = (): TypeUseWebScrapingReturn => {
    */
   const fetchPageInfoMutation = useMutation({
     mutationFn: async (url: string) => {
-      console.log('Fetching web page info:', url);
+      console.log("Fetching web page info:", url);
       return await getWebPageInfo(url);
     },
     onSuccess: (data) => {
-      console.log('Web page info fetched successfully:', data);
+      console.log("Web page info fetched successfully:", data);
     },
     onError: (error) => {
-      console.error('Error fetching web page info:', error);
-    }
+      console.error("Error fetching web page info:", error);
+    },
   });
 
   // --- Public Interface ---
-  
+
   return {
     validateUrl: validateWebUrl,
     getPageInfo: getWebPageInfo,

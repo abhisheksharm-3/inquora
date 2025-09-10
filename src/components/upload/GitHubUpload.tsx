@@ -3,19 +3,25 @@
 import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Github, 
-  Star, 
-  GitFork, 
-  Calendar, 
-  FileCode, 
-  Loader2, 
-  AlertCircle, 
+import {
+  Github,
+  Star,
+  GitFork,
+  Calendar,
+  FileCode,
+  Loader2,
+  AlertCircle,
   ExternalLink,
   CheckCircle2,
-  Clock
+  Clock,
 } from "lucide-react";
 import { useGitHub } from "@/hooks/useGitHub";
 import { cn } from "@/utils/cn";
@@ -27,15 +33,15 @@ interface GitHubUploadProps {
   autoFocus?: boolean;
 }
 
-const GitHubUpload = ({ 
-  onSuccess, 
-  onError, 
+const GitHubUpload = ({
+  onSuccess,
+  onError,
   className,
-  autoFocus = false 
+  autoFocus = false,
 }: GitHubUploadProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   const {
     repositoryUrl,
     setRepositoryUrl,
@@ -56,10 +62,10 @@ const GitHubUpload = ({
   // Simulate upload progress for better UX
   const simulateProgress = useCallback(() => {
     if (!isUploading) return;
-    
+
     setUploadProgress(0);
     const interval = setInterval(() => {
-      setUploadProgress(prev => {
+      setUploadProgress((prev) => {
         if (prev >= 90) {
           clearInterval(interval);
           return 90;
@@ -76,7 +82,7 @@ const GitHubUpload = ({
       simulateProgress();
       const uploadedFile = await uploadRepository();
       setUploadProgress(100);
-      
+
       setTimeout(() => {
         onSuccess?.(uploadedFile.id);
         clearState();
@@ -84,17 +90,21 @@ const GitHubUpload = ({
       }, 500);
     } catch (error) {
       setUploadProgress(0);
-      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      const errorMessage =
+        error instanceof Error ? error.message : "Upload failed";
       onError?.(errorMessage);
     }
   }, [uploadRepository, onSuccess, onError, clearState, simulateProgress]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey && isValidUrl && !isUploading) {
-      e.preventDefault();
-      handleUpload();
-    }
-  }, [isValidUrl, isUploading, handleUpload]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey && isValidUrl && !isUploading) {
+        e.preventDefault();
+        handleUpload();
+      }
+    },
+    [isValidUrl, isUploading, handleUpload],
+  );
 
   const handleClear = useCallback(() => {
     clearState();
@@ -112,10 +122,12 @@ const GitHubUpload = ({
   const getInputIcon = () => {
     const status = getInputStatus();
     const iconClass = "h-4 w-4";
-    
+
     switch (status) {
       case "loading":
-        return <Loader2 className={cn(iconClass, "animate-spin text-primary")} />;
+        return (
+          <Loader2 className={cn(iconClass, "animate-spin text-primary")} />
+        );
       case "error":
         return <AlertCircle className={cn(iconClass, "text-destructive")} />;
       case "success":
@@ -157,8 +169,9 @@ const GitHubUpload = ({
             onKeyDown={handleKeyDown}
             className={cn(
               "pl-10 pr-4",
-              validationError && "border-destructive focus-visible:ring-destructive",
-              isValidUrl && "border-green-500 focus-visible:ring-green-500"
+              validationError &&
+                "border-destructive focus-visible:ring-destructive",
+              isValidUrl && "border-green-500 focus-visible:ring-green-500",
             )}
             disabled={isUploading}
             autoFocus={autoFocus}
@@ -188,7 +201,9 @@ const GitHubUpload = ({
         {uploadError && (
           <p className="text-sm text-destructive flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            {uploadError instanceof Error ? uploadError.message : "Upload failed"}
+            {uploadError instanceof Error
+              ? uploadError.message
+              : "Upload failed"}
           </p>
         )}
       </div>
@@ -197,11 +212,15 @@ const GitHubUpload = ({
       {isUploading && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Processing repository...</span>
-            <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
+            <span className="text-muted-foreground">
+              Processing repository...
+            </span>
+            <span className="text-muted-foreground">
+              {Math.round(uploadProgress)}%
+            </span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-primary transition-all duration-300 ease-out"
               style={{ width: `${uploadProgress}%` }}
             />
@@ -235,7 +254,7 @@ const GitHubUpload = ({
               </a>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-3">
             {/* Repository Stats */}
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -266,7 +285,7 @@ const GitHubUpload = ({
               <div className="text-sm text-muted-foreground">
                 Ready to analyze repository content
               </div>
-              <Button 
+              <Button
                 onClick={handleUpload}
                 disabled={isUploading || !isValidUrl}
                 size="sm"
@@ -292,7 +311,8 @@ const GitHubUpload = ({
       {/* Helper Text */}
       {!repositoryUrl && !isUploading && (
         <div className="text-center text-sm text-muted-foreground">
-          Enter a GitHub repository URL to analyze its codebase and documentation
+          Enter a GitHub repository URL to analyze its codebase and
+          documentation
         </div>
       )}
     </div>

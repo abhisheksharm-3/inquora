@@ -6,10 +6,13 @@ import { supabaseServerClient } from "@/utils/supabase/server";
  * Extracts form data safely with type casting.
  */
 const extractFormData = (formData: FormData, fields: string[]) => {
-  return fields.reduce((acc, field) => {
-    acc[field] = formData.get(field) as string;
-    return acc;
-  }, {} as Record<string, string>);
+  return fields.reduce(
+    (acc, field) => {
+      acc[field] = formData.get(field) as string;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 };
 
 /**
@@ -84,9 +87,9 @@ export const signInWithGoogle = async () => {
   try {
     // Dynamically determine the correct redirect URL
     const redirectUrl = getAuthRedirectUrl();
-    
+
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: `${redirectUrl}/api/auth/callback`,
       },
@@ -108,26 +111,26 @@ export const signInWithGoogle = async () => {
  */
 function getAuthRedirectUrl(): string {
   // In development, use localhost
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3000';
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
   }
-  
+
   // In production, try to get the URL from various sources
   // First try SITE_URL if it's set
   if (process.env.SITE_URL) {
     return process.env.SITE_URL;
   }
-  
+
   // Try VERCEL_URL for Vercel deployments
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  
+
   // Try NEXT_PUBLIC_SITE_URL as a fallback
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
-  
+
   // Default fallback (you should set this to your actual production domain)
-  return 'https://inquora.vercel.app';
+  return "https://inquora.vercel.app";
 }

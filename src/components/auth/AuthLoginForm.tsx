@@ -76,7 +76,9 @@ export const AuthLoginForm = (): JSX.Element => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">Password</FormLabel>
+                <FormLabel className="text-muted-foreground">
+                  Password
+                </FormLabel>
                 <FormControl>
                   <AuthPasswordInput
                     field={field}

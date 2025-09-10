@@ -27,7 +27,16 @@ const FILE_TYPE_MAP = new Map([
   ["web", "web"],
 ]);
 
-const VALID_CHAT_TYPES = new Set(["pdf", "image", "doc", "video", "sheet", "slides", "github", "web"]);
+const VALID_CHAT_TYPES = new Set([
+  "pdf",
+  "image",
+  "doc",
+  "video",
+  "sheet",
+  "slides",
+  "github",
+  "web",
+]);
 
 const mapFileTypeToChatType = (fileType: string | null): string | null => {
   if (!fileType) return null;
@@ -57,7 +66,9 @@ export const createChat = async (fileId: string, userId?: string) => {
       .single();
 
     if (fileError || !file) {
-      throw new Error(`File not found with ID: ${fileId}. ${fileError?.message || ""}`);
+      throw new Error(
+        `File not found with ID: ${fileId}. ${fileError?.message || ""}`,
+      );
     }
 
     const chatType = mapFileTypeToChatType(file.type);
@@ -85,13 +96,25 @@ export const createChat = async (fileId: string, userId?: string) => {
   }
 };
 
-const RAG_SUPPORTED_TYPES = new Set(["pdf", "doc", "sheet", "slides", "video", "github", "web"]);
+const RAG_SUPPORTED_TYPES = new Set([
+  "pdf",
+  "doc",
+  "sheet",
+  "slides",
+  "video",
+  "github",
+  "web",
+]);
 
 const prepareContextForGemini = async (
   chat: TypeChat & { files: TypeFile },
   userQuery: string,
-  supabase: SupabaseClient
-): Promise<{ fileContent?: string; imageData?: TypeGeminiImageData; error?: string }> => {
+  supabase: SupabaseClient,
+): Promise<{
+  fileContent?: string;
+  imageData?: TypeGeminiImageData;
+  error?: string;
+}> => {
   if (!chat.file_id) return {};
 
   const fileContent = await getFileContent(chat.file_id);
@@ -99,19 +122,19 @@ const prepareContextForGemini = async (
 
   if (fileContent.startsWith("ERROR:")) {
     const errorMessage = fileContent.substring(6).trim();
-    
+
     // Provide more helpful error messages based on the error type
     if (errorMessage.includes("not been processed yet")) {
-      return { 
-        error: `I need a moment to analyze this document before we can chat about it. The document processing wasn't completed during upload. Please try uploading the document again, and I'll process it fully before creating the chat.` 
+      return {
+        error: `I need a moment to analyze this document before we can chat about it. The document processing wasn't completed during upload. Please try uploading the document again, and I'll process it fully before creating the chat.`,
       };
     } else if (errorMessage.includes("Failed to process")) {
-      return { 
-        error: `I had trouble processing this document: ${errorMessage}. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.` 
+      return {
+        error: `I had trouble processing this document: ${errorMessage}. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.`,
       };
     } else {
-      return { 
-        error: `I encountered an issue with this document: ${errorMessage}. Please try uploading it again or contact support if the problem persists.` 
+      return {
+        error: `I encountered an issue with this document: ${errorMessage}. Please try uploading it again or contact support if the problem persists.`,
       };
     }
   }
@@ -119,7 +142,10 @@ const prepareContextForGemini = async (
   if (chat.files?.type === "image") {
     const imageData = await getImageData(supabase, chat.files);
     if (!imageData) {
-      return { error: "I couldn't access the image file. Please try uploading it again." };
+      return {
+        error:
+          "I couldn't access the image file. Please try uploading it again.",
+      };
     }
     return { imageData };
   }
@@ -127,19 +153,23 @@ const prepareContextForGemini = async (
   if (chat.type && RAG_SUPPORTED_TYPES.has(chat.type)) {
     try {
       const relevantDocs = await queryDocuments(userQuery, chat.file_id, 5);
-      
+
       if (!relevantDocs || relevantDocs.length === 0) {
-        return { 
-          error: "I don't have enough information from this document to answer your question. This might mean the document wasn't fully processed or doesn't contain relevant content for your query. Please try rephrasing your question or ensure the document was uploaded correctly." 
+        return {
+          error:
+            "I don't have enough information from this document to answer your question. This might mean the document wasn't fully processed or doesn't contain relevant content for your query. Please try rephrasing your question or ensure the document was uploaded correctly.",
         };
       }
-      
-      const combinedContent = relevantDocs.map((doc) => doc.pageContent).join("\n\n");
+
+      const combinedContent = relevantDocs
+        .map((doc) => doc.pageContent)
+        .join("\n\n");
       return { fileContent: combinedContent };
     } catch (queryError) {
       console.error(`Error querying ${chat.type} content:`, queryError);
-      return { 
-        error: "I'm having trouble accessing the processed document content. Please try asking your question again, or re-upload the document if the issue persists." 
+      return {
+        error:
+          "I'm having trouble accessing the processed document content. Please try asking your question again, or re-upload the document if the issue persists.",
       };
     }
   }
@@ -150,7 +180,7 @@ const prepareContextForGemini = async (
 const saveAssistantMessage = async (
   chatId: string,
   content: string,
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
 ) => {
   const { data, error } = await supabase
     .from("messages")
@@ -167,10 +197,14 @@ const saveAssistantMessage = async (
 export const sendMessage = async (
   chatId: string,
   content: string,
-  messages?: { role: "user" | "model"; content: string }[]
+  messages?: { role: "user" | "model"; content: string }[],
 ) => {
   if (!isGeminiConfigured()) {
-    return saveAssistantMessage(chatId, "Gemini API is not configured.", supabaseBrowserClient());
+    return saveAssistantMessage(
+      chatId,
+      "Gemini API is not configured.",
+      supabaseBrowserClient(),
+    );
   }
 
   const supabase = supabaseBrowserClient();
@@ -185,16 +219,20 @@ export const sendMessage = async (
     if (chatError || !chat) throw new Error("Chat not found.");
 
     // Get user information for context
-    const userContext: { currentDateTime?: string; userName?: string; userEmail?: string } = {
-      currentDateTime: new Date().toLocaleString('en-US', { 
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZoneName: 'short'
-      })
+    const userContext: {
+      currentDateTime?: string;
+      userName?: string;
+      userEmail?: string;
+    } = {
+      currentDateTime: new Date().toLocaleString("en-US", {
+        timeZone: "UTC",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "short",
+      }),
     };
 
     if (chat.user_id) {
@@ -203,14 +241,16 @@ export const sendMessage = async (
         .select("name, email")
         .eq("id", chat.user_id)
         .single();
-      
+
       if (user) {
-        userContext.userName = user.name || 'Anonymous';
-        userContext.userEmail = user.email || '';
+        userContext.userName = user.name || "Anonymous";
+        userContext.userEmail = user.email || "";
       }
     }
 
-    await supabase.from("messages").insert({ chat_id: chatId, role: "user", content });
+    await supabase
+      .from("messages")
+      .insert({ chat_id: chatId, role: "user", content });
 
     const context = await prepareContextForGemini(chat, content, supabase);
     if (context.error) {
@@ -226,13 +266,14 @@ export const sendMessage = async (
       formattedMessages,
       context.fileContent,
       context.imageData,
-      userContext
+      userContext,
     );
 
     return await saveAssistantMessage(chatId, response, supabase);
   } catch (error) {
     console.error("Error in sendMessage:", error);
-    const errorMessage = "I'm sorry, an unexpected error occurred. Please try again.";
+    const errorMessage =
+      "I'm sorry, an unexpected error occurred. Please try again.";
     return await saveAssistantMessage(chatId, errorMessage, supabase);
   }
 };

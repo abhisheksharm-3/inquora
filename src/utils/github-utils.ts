@@ -10,22 +10,24 @@
  * @param {string} url - The GitHub URL.
  * @returns {{ owner: string; repo: string } | null} The owner and repository name or null if not found.
  */
-export const extractGitHubRepoInfo = (url: string): { owner: string; repo: string } | null => {
+export const extractGitHubRepoInfo = (
+  url: string,
+): { owner: string; repo: string } | null => {
   // Handle various GitHub URL formats
   const patterns = [
     /github\.com\/([^\/]+)\/([^\/\?#]+)/i, // Standard GitHub URLs
     /^([^\/]+)\/([^\/\?#]+)$/i, // owner/repo format
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
       const owner = match[1];
-      const repo = match[2].replace(/\.git$/, ''); // Remove .git suffix if present
+      const repo = match[2].replace(/\.git$/, ""); // Remove .git suffix if present
       return { owner, repo };
     }
   }
-  
+
   return null;
 };
 
@@ -65,13 +67,14 @@ export const checkGitHubRepoUrlValidity = async (
     if (!repoInfo) {
       return {
         valid: false,
-        error: "Invalid GitHub URL format. Expected format: https://github.com/owner/repo",
+        error:
+          "Invalid GitHub URL format. Expected format: https://github.com/owner/repo",
       };
     }
 
     // Basic validation of owner and repo names
     const { owner, repo } = repoInfo;
-    
+
     if (owner.length === 0 || repo.length === 0) {
       return {
         valid: false,
@@ -115,7 +118,7 @@ export const generateGitHubChatSystemPrompt = (
   userName?: string,
 ): string => {
   const userGreeting = userName ? `Hello ${userName}! ` : "";
-  
+
   return `${userGreeting}You are a knowledgeable code assistant helping with questions about the ${repositoryName} repository. You have access to the repository's codebase, documentation, README files, and project structure.
 
 Repository Context: ${repositoryName}
@@ -149,7 +152,7 @@ You're here to help understand and work with the ${repositoryName} codebase effe
 export const formatGitHubRepoForDisplay = (url: string): string => {
   const repoInfo = extractGitHubRepoInfo(url);
   if (!repoInfo) return url;
-  
+
   return `${repoInfo.owner}/${repoInfo.repo}`;
 };
 
@@ -161,14 +164,19 @@ export const formatGitHubRepoForDisplay = (url: string): string => {
 export const isGitHubRepositoryUrl = (url: string): boolean => {
   try {
     const urlObj = new URL(url);
-    
+
     // Must be github.com
-    if (urlObj.hostname !== 'github.com' && urlObj.hostname !== 'www.github.com') {
+    if (
+      urlObj.hostname !== "github.com" &&
+      urlObj.hostname !== "www.github.com"
+    ) {
       return false;
     }
-    
+
     // Must have owner/repo pattern
-    const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
+    const pathParts = urlObj.pathname
+      .split("/")
+      .filter((part) => part.length > 0);
     return pathParts.length >= 2; // At least owner and repo
   } catch {
     return false;
@@ -184,14 +192,14 @@ export const getGitHubUrlErrorMessage = (url: string): string => {
   if (!url.trim()) {
     return "Please enter a GitHub repository URL";
   }
-  
-  if (!url.includes('github.com')) {
+
+  if (!url.includes("github.com")) {
     return "Please enter a valid GitHub repository URL (must include github.com)";
   }
-  
+
   if (!isGitHubRepositoryUrl(url)) {
     return "Please enter a complete repository URL (e.g., https://github.com/owner/repository)";
   }
-  
+
   return "Invalid repository URL format";
 };

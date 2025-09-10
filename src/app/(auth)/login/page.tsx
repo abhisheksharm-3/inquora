@@ -25,9 +25,7 @@ const LoginPage = (): JSX.Element => {
             <span className="w-full border-t border-border/70" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="px-2 text-muted-foreground">
-              Or with Email
-            </span>
+            <span className="px-2 text-muted-foreground">Or with Email</span>
           </div>
         </div>
         <AuthLoginForm />

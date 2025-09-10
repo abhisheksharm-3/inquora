@@ -92,7 +92,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                             </div>
                             <Skeleton className="h-3 w-12 bg-gray-700" />
                           </div>
-                          {index < 2 && <Skeleton className="h-px w-full bg-gray-800" />}
+                          {index < 2 && (
+                            <Skeleton className="h-px w-full bg-gray-800" />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -116,7 +118,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                             <Skeleton className="h-4 w-24 bg-gray-700" />
                             <Skeleton className="h-4 w-32 bg-gray-600" />
                           </div>
-                          {index < 2 && <Skeleton className="h-px w-full bg-gray-800" />}
+                          {index < 2 && (
+                            <Skeleton className="h-px w-full bg-gray-800" />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -144,7 +148,10 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                     </div>
                     <div className="space-y-3">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={`mobile-usage-${index}`} className="flex items-center justify-between">
+                        <div
+                          key={`mobile-usage-${index}`}
+                          className="flex items-center justify-between"
+                        >
                           <Skeleton className="h-4 w-24 bg-gray-700" />
                           <Skeleton className="h-4 w-16 bg-gray-600" />
                         </div>
@@ -173,7 +180,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                           </div>
                           <Skeleton className="h-5 w-16 bg-gray-600 rounded-full" />
                         </div>
-                        {index < 1 && <Skeleton className="h-px w-full bg-gray-800" />}
+                        {index < 1 && (
+                          <Skeleton className="h-px w-full bg-gray-800" />
+                        )}
                       </div>
                     ))}
                   </CardContent>
@@ -290,7 +299,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                             </div>
                             <Skeleton className="h-3 w-16 bg-gray-700" />
                           </div>
-                          {index < 2 && <Skeleton className="h-px w-full bg-gray-800" />}
+                          {index < 2 && (
+                            <Skeleton className="h-px w-full bg-gray-800" />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -314,7 +325,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                             <Skeleton className="h-4 w-28 bg-gray-700" />
                             <Skeleton className="h-4 w-36 bg-gray-600" />
                           </div>
-                          {index < 2 && <Skeleton className="h-px w-full bg-gray-800" />}
+                          {index < 2 && (
+                            <Skeleton className="h-px w-full bg-gray-800" />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -345,7 +358,10 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                     </div>
                     <div className="space-y-3">
                       {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={`usage-${index}`} className="flex items-center justify-between">
+                        <div
+                          key={`usage-${index}`}
+                          className="flex items-center justify-between"
+                        >
                           <Skeleton className="h-4 w-24 bg-gray-700" />
                           <Skeleton className="h-4 w-16 bg-gray-600" />
                         </div>
@@ -374,7 +390,9 @@ export const SettingsLoadingSkeleton = ({ isMobile = false }) => {
                           </div>
                           <Skeleton className="h-5 w-16 bg-gray-600 rounded-full" />
                         </div>
-                        {index < 1 && <Skeleton className="h-px w-full bg-gray-800" />}
+                        {index < 1 && (
+                          <Skeleton className="h-px w-full bg-gray-800" />
+                        )}
                       </div>
                     ))}
                   </CardContent>

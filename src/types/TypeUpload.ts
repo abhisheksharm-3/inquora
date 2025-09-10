@@ -60,7 +60,12 @@ export interface TypeUseUploadLogicProps {
   onClose: () => void;
 }
 
-export type TypeUploadStatus = "idle" | "uploading" | "processing" | "uploaded" | "error";
+export type TypeUploadStatus =
+  | "idle"
+  | "uploading"
+  | "processing"
+  | "uploaded"
+  | "error";
 
 export interface TypeUploadState {
   uploadStatus: TypeUploadStatus;

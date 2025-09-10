@@ -61,7 +61,6 @@ export type TypeUnknownError =
   | string
   | unknown;
 
-
 export type TypeAuthAction = "login" | "signup";
 export type TypeAuthFormData = TypeLoginFormData | TypeSignupFormData;
 

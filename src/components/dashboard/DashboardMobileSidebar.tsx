@@ -103,7 +103,9 @@ const UserProfile = ({
         </div>
         <Badge variant="secondary">FREE</Badge>
       </div>
-      <PricingDialog trigger={<Button className="w-full">Upgrade to Pro</Button>} />
+      <PricingDialog
+        trigger={<Button className="w-full">Upgrade to Pro</Button>}
+      />
     </div>
   );
 };
@@ -113,7 +115,7 @@ const UserProfile = ({
  */
 const ThemeSelector = () => {
   const { setTheme, theme } = useTheme();
-  
+
   return (
     <div className="px-4 py-3 border-t border-border">
       <p className="text-sm font-medium text-foreground mb-3">Theme</p>
@@ -178,13 +180,7 @@ export const DashboardMobileSidebar = () => {
       >
         <div className="flex items-center justify-between border-b border-border p-4">
           <Link href="/choose" className="flex items-center gap-2">
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={28}
-              height={28}
-              priority
-            />
+            <Image src="/logo.png" alt="Logo" width={28} height={28} priority />
             <span className="font-semibold text-foreground">Inquora</span>
           </Link>
           <Button

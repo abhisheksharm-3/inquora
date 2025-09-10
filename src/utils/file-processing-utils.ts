@@ -23,7 +23,7 @@ import { extractYoutubeVideoId } from "./youtube-utils";
  * (e.g., 'PDF_CONTENT'), an error message, or null.
  */
 export const getFileContent = async (
-  fileId: string
+  fileId: string,
 ): Promise<string | null> => {
   const supabase = supabaseBrowserClient();
 
@@ -80,7 +80,7 @@ export const getFileContent = async (
  */
 async function _handleProcessableFile(
   file: TypeFile,
-  placeholder: string
+  placeholder: string,
 ): Promise<string> {
   const { id: fileId, processing_status, processing_error } = file;
 
@@ -88,7 +88,7 @@ async function _handleProcessableFile(
   if (processing_status === "failed") {
     console.error(
       `Processing previously failed for file ${fileId}:`,
-      processing_error
+      processing_error,
     );
     return `ERROR: ${processing_error || `Failed to process ${file.type}`}`;
   }
@@ -142,7 +142,10 @@ async function _handleProcessableFile(
         try {
           result = await processGitHubRepositoryWithClone(file.url, fileId);
         } catch (cloneError) {
-          console.warn("Clone-based processing failed, falling back to API method:", cloneError);
+          console.warn(
+            "Clone-based processing failed, falling back to API method:",
+            cloneError,
+          );
           result = await processGitHubRepository(file.url, fileId);
         }
         break;
@@ -164,7 +167,8 @@ async function _handleProcessableFile(
       case "sheets":
       case "slides":
         const docBlob = await getFileBlob(supabase, file);
-        if (!docBlob) throw new Error(`Could not read ${file.type} file from storage`);
+        if (!docBlob)
+          throw new Error(`Could not read ${file.type} file from storage`);
         result = await processGenericDocument(docBlob, fileId, file.type);
         break;
 
@@ -216,7 +220,7 @@ async function _handleProcessableFile(
  */
 const getFileBlob = async (
   supabase: SupabaseClient,
-  file: TypeFile
+  file: TypeFile,
 ): Promise<Blob | null> => {
   // A file URL is required to download the blob from storage.
   if (!file.url) {
@@ -260,7 +264,7 @@ const getFileBlob = async (
  */
 export const getImageData = async (
   supabase: SupabaseClient,
-  file: TypeFile
+  file: TypeFile,
 ): Promise<TypeGeminiImageData | null> => {
   try {
     const fileBlob = await getFileBlob(supabase, file);
@@ -289,7 +293,7 @@ export const updateFileStatus = async (
   supabase: SupabaseClient,
   fileId: string,
   status: "processing" | "failed" | "completed",
-  details: { error?: string; indexedChunks?: number; fullText?: string } = {}
+  details: { error?: string; indexedChunks?: number; fullText?: string } = {},
 ) => {
   return supabase
     .from("files")

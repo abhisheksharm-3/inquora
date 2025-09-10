@@ -6,19 +6,19 @@
  */
 export const validateWebUrl = (url: string): boolean => {
   console.log(`Validating web URL: ${url}`);
-  
-  if (!url || typeof url !== 'string') {
+
+  if (!url || typeof url !== "string") {
     return false;
   }
-  
+
   try {
     const urlObj = new URL(url);
-    
+
     // Must use HTTP or HTTPS protocol
-    if (!urlObj.protocol.startsWith('http')) {
+    if (!urlObj.protocol.startsWith("http")) {
       return false;
     }
-    
+
     // Exclude certain domains/URLs that are typically not scrapeable
     const excludedPatterns = [
       // Social media login/auth pages
@@ -32,15 +32,17 @@ export const validateWebUrl = (url: string): boolean => {
       // Admin panels
       /\/admin\/|\/wp-admin\//i,
     ];
-    
+
     const urlString = url.toLowerCase();
     for (const pattern of excludedPatterns) {
       if (pattern.test(urlString)) {
-        console.log(`URL validation failed - matches excluded pattern: ${pattern}`);
+        console.log(
+          `URL validation failed - matches excluded pattern: ${pattern}`,
+        );
         return false;
       }
     }
-    
+
     console.log(`URL validation passed: ${url}`);
     return true;
   } catch (error) {
@@ -60,9 +62,9 @@ export const isValidWebUrl = validateWebUrl;
 export const getDomainFromUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
-    return urlObj.hostname.replace(/^www\./, '');
+    return urlObj.hostname.replace(/^www\./, "");
   } catch {
-    return 'unknown';
+    return "unknown";
   }
 };
 
@@ -71,7 +73,7 @@ export const getDomainFromUrl = (url: string): string => {
  */
 export const generatePageId = (url: string): string => {
   // Create a simple hash-like ID from the URL
-  const cleanUrl = url.replace(/[^a-zA-Z0-9]/g, '');
+  const cleanUrl = url.replace(/[^a-zA-Z0-9]/g, "");
   const timestamp = Date.now().toString(36);
   return `web_${cleanUrl.slice(-16)}_${timestamp}`;
 };
@@ -83,7 +85,7 @@ export const normalizeUrl = (url: string): string => {
   try {
     const urlObj = new URL(url);
     // Remove fragment and normalize
-    urlObj.hash = '';
+    urlObj.hash = "";
     // Sort query parameters for consistency
     urlObj.searchParams.sort();
     return urlObj.toString();

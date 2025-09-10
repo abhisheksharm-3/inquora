@@ -38,17 +38,24 @@ export const useAuth = () => {
 
   const logAuthError = (action: TypeAuthAction, error: TypeAuthError) => {
     if (process.env.NODE_ENV !== "production") {
-      console.error(`${action.charAt(0).toUpperCase() + action.slice(1)} error:`, {
-        type: error.type,
-        message: error.message,
-        userMessage: error.userMessage,
-        context: error.context,
-        retryable: error.retryable,
-      });
+      console.error(
+        `${action.charAt(0).toUpperCase() + action.slice(1)} error:`,
+        {
+          type: error.type,
+          message: error.message,
+          userMessage: error.userMessage,
+          context: error.context,
+          retryable: error.retryable,
+        },
+      );
     }
   };
 
-  const shouldRetry = (failureCount: number, error: TypeAuthError, action: TypeAuthAction): boolean => {
+  const shouldRetry = (
+    failureCount: number,
+    error: TypeAuthError,
+    action: TypeAuthAction,
+  ): boolean => {
     const maxRetries = action === "login" ? 3 : 2;
 
     if (!error.retryable || failureCount >= maxRetries) {
@@ -59,14 +66,17 @@ export const useAuth = () => {
     if (action === "signup") {
       nonRetryableTypes.push(
         EnumAuthErrorType.VALIDATION_ERROR,
-        EnumAuthErrorType.USER_CREATION_ERROR
+        EnumAuthErrorType.USER_CREATION_ERROR,
       );
     }
 
     return !nonRetryableTypes.includes(error.type);
   };
 
-  const calculateRetryDelay = (attemptIndex: number, error?: TypeAuthError): number => {
+  const calculateRetryDelay = (
+    attemptIndex: number,
+    error?: TypeAuthError,
+  ): number => {
     const baseDelay = 1000;
     const delay = baseDelay * Math.pow(2, attemptIndex);
 
@@ -83,12 +93,15 @@ export const useAuth = () => {
       handleSuccessNavigation(action);
     },
     onError: (error: TypeAuthError) => logAuthError(action, error),
-    retry: (failureCount: number, error: TypeAuthError) => 
+    retry: (failureCount: number, error: TypeAuthError) =>
       shouldRetry(failureCount, error, action),
     retryDelay: calculateRetryDelay,
   });
 
-  const prepareFormData = (data: TypeAuthFormData, type: TypeAuthAction): FormData => {
+  const prepareFormData = (
+    data: TypeAuthFormData,
+    type: TypeAuthAction,
+  ): FormData => {
     const formData = new FormData();
 
     if (type === "login") {
@@ -111,7 +124,8 @@ export const useAuth = () => {
    */
   const createUserProfile = async (signupData: TypeSignupFormData) => {
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
 
       if (sessionError) {
         throw categorizeAuthError(sessionError, {
@@ -129,7 +143,7 @@ export const useAuth = () => {
             step: "createUserProfile",
             sessionExists: !!sessionData.session,
             userExists: !!sessionData.session?.user,
-          }
+          },
         );
       }
 
@@ -173,32 +187,41 @@ export const useAuth = () => {
   const executeAuthAction = async (
     data: TypeAuthFormData,
     action: TypeAuthAction,
-    serverAction: (formData: FormData) => Promise<unknown>
+    serverAction: (formData: FormData) => Promise<unknown>,
   ) => {
     try {
       const formData = prepareFormData(data, action);
       const result = await serverAction(formData);
 
       if (result) {
-        const context = action === "login" 
-          ? { email: (data as TypeLoginFormData).email }
-          : { email: (data as TypeSignupFormData).email, fullName: (data as TypeSignupFormData).fullName };
-        
+        const context =
+          action === "login"
+            ? { email: (data as TypeLoginFormData).email }
+            : {
+                email: (data as TypeSignupFormData).email,
+                fullName: (data as TypeSignupFormData).fullName,
+              };
+
         throw categorizeAuthError(result, { action, ...context });
       }
 
       return { success: true };
     } catch (error) {
-      const context = action === "login"
-        ? { email: (data as TypeLoginFormData).email }
-        : { email: (data as TypeSignupFormData).email, fullName: (data as TypeSignupFormData).fullName };
-      
+      const context =
+        action === "login"
+          ? { email: (data as TypeLoginFormData).email }
+          : {
+              email: (data as TypeSignupFormData).email,
+              fullName: (data as TypeSignupFormData).fullName,
+            };
+
       handleAuthErrors(error, action, context);
     }
   };
 
   const loginMutation = useMutation({
-    mutationFn: (data: TypeLoginFormData) => executeAuthAction(data, "login", signIn),
+    mutationFn: (data: TypeLoginFormData) =>
+      executeAuthAction(data, "login", signIn),
     ...createMutationConfig("login"),
   });
 
@@ -215,7 +238,7 @@ export const useAuth = () => {
   });
 
   const getErrorFromMutation = (
-    mutation: typeof loginMutation | typeof signupMutation
+    mutation: typeof loginMutation | typeof signupMutation,
   ): TypeAuthError | null => {
     const error = mutation.error;
     return error && typeof error === "object" && "type" in error
@@ -263,7 +286,8 @@ export const useAuth = () => {
     resetSignupState: () => signupMutation.reset(),
 
     // Enhanced error utilities
-    getRetryDelay: () => canRetryAfter(loginError) || canRetryAfter(signupError),
+    getRetryDelay: () =>
+      canRetryAfter(loginError) || canRetryAfter(signupError),
     getErrorContext: () => loginError?.context || signupError?.context || null,
     getCurrentErrorType: (): EnumAuthErrorType | null =>
       loginError?.type || signupError?.type || null,

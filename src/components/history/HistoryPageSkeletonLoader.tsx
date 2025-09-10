@@ -10,7 +10,9 @@ const SkeletonElement = ({
   width,
   className = "",
 }: TypeSkeletonConfig) => (
-  <Skeleton className={`${height} ${width} bg-muted/30 rounded-md animate-pulse ${className}`} />
+  <Skeleton
+    className={`${height} ${width} bg-muted/30 rounded-md animate-pulse ${className}`}
+  />
 );
 
 /**

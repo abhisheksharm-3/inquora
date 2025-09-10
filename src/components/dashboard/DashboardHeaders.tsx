@@ -63,7 +63,13 @@ export const DashboardMobileHeader = () => {
         <PanelLeft className="h-5 w-5" />
         <span className="sr-only">Open Sidebar</span>
       </Button>
-      <PricingDialog trigger={<Button size="sm" className="cursor-pointer">Upgrade</Button>} />
+      <PricingDialog
+        trigger={
+          <Button size="sm" className="cursor-pointer">
+            Upgrade
+          </Button>
+        }
+      />
     </header>
   );
 };
@@ -87,7 +93,9 @@ export const DashboardDesktopHeader = () => {
   return (
     <header className="hidden h-16 shrink-0 items-center justify-between px-6 md:flex">
       <div className="flex items-center gap-2">
-        {!isHistoryPage && <ActiveTab chat={chat ?? null} file={file || null} />}
+        {!isHistoryPage && (
+          <ActiveTab chat={chat ?? null} file={file || null} />
+        )}
         {!isHistoryPage && <AddTabButton />}
       </div>
       <div className="flex items-center gap-3">

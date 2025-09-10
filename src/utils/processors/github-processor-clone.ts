@@ -7,10 +7,10 @@ import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
 import { Document } from "langchain/document";
 import { supabaseBrowserClient } from "../supabase/client";
 import { updateFileStatus } from "../file-processing-utils";
-import type { 
-  TypeGitHubRepositoryInfo, 
-  TypeGitHubProcessResult, 
-  TypeGitHubParseResult 
+import type {
+  TypeGitHubRepositoryInfo,
+  TypeGitHubProcessResult,
+  TypeGitHubParseResult,
 } from "@/types/TypeGitHub";
 import { promises as fs } from "fs";
 import path from "path";
@@ -29,19 +29,81 @@ const MAX_FILE_SIZE = 1024 * 1024; // 1MB limit per file
 
 // File extensions to include in processing
 const PROCESSABLE_EXTENSIONS = new Set([
-  ".md", ".txt", ".js", ".ts", ".jsx", ".tsx", ".py", ".java", ".cpp", ".c", ".h", 
-  ".cs", ".php", ".rb", ".go", ".rs", ".kt", ".swift", ".sql", ".json", ".yaml", 
-  ".yml", ".xml", ".html", ".css", ".scss", ".sass", ".less", ".sh", ".bat", 
-  ".ps1", ".r", ".m", ".scala", ".clj", ".hs", ".elm", ".dart", ".lua", ".pl", 
-  ".vim", ".config", ".env", ".gitignore", ".dockerfile", "dockerfile", "makefile", "readme"
+  ".md",
+  ".txt",
+  ".js",
+  ".ts",
+  ".jsx",
+  ".tsx",
+  ".py",
+  ".java",
+  ".cpp",
+  ".c",
+  ".h",
+  ".cs",
+  ".php",
+  ".rb",
+  ".go",
+  ".rs",
+  ".kt",
+  ".swift",
+  ".sql",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".xml",
+  ".html",
+  ".css",
+  ".scss",
+  ".sass",
+  ".less",
+  ".sh",
+  ".bat",
+  ".ps1",
+  ".r",
+  ".m",
+  ".scala",
+  ".clj",
+  ".hs",
+  ".elm",
+  ".dart",
+  ".lua",
+  ".pl",
+  ".vim",
+  ".config",
+  ".env",
+  ".gitignore",
+  ".dockerfile",
+  "dockerfile",
+  "makefile",
+  "readme",
 ]);
 
 // Directories to skip
 const SKIP_DIRECTORIES = new Set([
-  "node_modules", ".git", ".github", "dist", "build", "out", ".next", 
-  "coverage", ".nyc_output", "vendor", "target", ".vscode", ".idea", 
-  "__pycache__", ".pytest_cache", ".cache", "tmp", "temp", ".DS_Store",
-  "logs", "*.log", ".env.local", ".env.production"
+  "node_modules",
+  ".git",
+  ".github",
+  "dist",
+  "build",
+  "out",
+  ".next",
+  "coverage",
+  ".nyc_output",
+  "vendor",
+  "target",
+  ".vscode",
+  ".idea",
+  "__pycache__",
+  ".pytest_cache",
+  ".cache",
+  "tmp",
+  "temp",
+  ".DS_Store",
+  "logs",
+  "*.log",
+  ".env.local",
+  ".env.production",
 ]);
 
 /**
@@ -50,23 +112,23 @@ const SKIP_DIRECTORIES = new Set([
  */
 const _parseGitHubUrl = (url: string): TypeGitHubParseResult | null => {
   console.log(`Parsing GitHub URL: ${url}`);
-  
+
   // Handle various GitHub URL formats
   const patterns = [
     /github\.com\/([^\/]+)\/([^\/\?#]+)/i, // Standard GitHub URLs
     /^([^\/]+)\/([^\/\?#]+)$/i, // owner/repo format
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
       const owner = match[1];
-      const repo = match[2].replace(/\.git$/, ''); // Remove .git suffix if present
+      const repo = match[2].replace(/\.git$/, ""); // Remove .git suffix if present
       console.log(`Extracted: owner=${owner}, repo=${repo}`);
       return { owner, repo };
     }
   }
-  
+
   console.error(`Failed to parse GitHub URL: ${url}`);
   return null;
 };
@@ -90,9 +152,15 @@ interface RepositoryInfo {
  * Extracts repository information from cloned repository
  * @private
  */
-const _extractRepositoryInfoFromFS = async (repoPath: string, owner: string, repo: string): Promise<RepositoryInfo> => {
-  console.log(`Extracting repository info from filesystem for ${owner}/${repo}...`);
-  
+const _extractRepositoryInfoFromFS = async (
+  repoPath: string,
+  owner: string,
+  repo: string,
+): Promise<RepositoryInfo> => {
+  console.log(
+    `Extracting repository info from filesystem for ${owner}/${repo}...`,
+  );
+
   const repoInfo: RepositoryInfo = {
     name: repo,
     full_name: `${owner}/${repo}`,
@@ -102,22 +170,22 @@ const _extractRepositoryInfoFromFS = async (repoPath: string, owner: string, rep
     forks_count: 0,
     size: 0,
     updated_at: new Date().toISOString(),
-    default_branch: 'main'
+    default_branch: "main",
   };
 
   try {
     // Try to read README for description
-    const readmeFiles = ['README.md', 'README.txt', 'README.rst', 'README'];
+    const readmeFiles = ["README.md", "README.txt", "README.rst", "README"];
     for (const readmeFile of readmeFiles) {
       try {
         const readmePath = path.join(repoPath, readmeFile);
-        const readmeContent = await fs.readFile(readmePath, 'utf-8');
+        const readmeContent = await fs.readFile(readmePath, "utf-8");
         // Extract first line or first paragraph as description
-        const lines = readmeContent.split('\n').filter(line => line.trim());
+        const lines = readmeContent.split("\n").filter((line) => line.trim());
         if (lines.length > 0) {
-          let description = lines[0].replace(/^#+\s*/, '').trim(); // Remove markdown headers
+          let description = lines[0].replace(/^#+\s*/, "").trim(); // Remove markdown headers
           if (description.length > 100) {
-            description = description.substring(0, 97) + '...';
+            description = description.substring(0, 97) + "...";
           }
           repoInfo.description = description;
           break;
@@ -130,7 +198,7 @@ const _extractRepositoryInfoFromFS = async (repoPath: string, owner: string, rep
     // Try to detect primary language from file extensions
     const files = await _walkDirectory(repoPath, repoPath);
     const languageCount: Record<string, number> = {};
-    
+
     for (const filePath of files) {
       const ext = path.extname(filePath).toLowerCase();
       const language = getLanguageFromExtension(ext);
@@ -141,26 +209,41 @@ const _extractRepositoryInfoFromFS = async (repoPath: string, owner: string, rep
 
     // Find most common language
     if (Object.keys(languageCount).length > 0) {
-      const topLanguage = Object.entries(languageCount)
-        .sort(([,a], [,b]) => b - a)[0][0];
+      const topLanguage = Object.entries(languageCount).sort(
+        ([, a], [, b]) => b - a,
+      )[0][0];
       repoInfo.language = topLanguage;
     }
 
     // Get repository size (approximate)
     try {
-      const { stdout } = await execAsync('du -sh .', { cwd: repoPath, timeout: 10000 });
+      const { stdout } = await execAsync("du -sh .", {
+        cwd: repoPath,
+        timeout: 10000,
+      });
       const sizeMatch = stdout.match(/^(\d+(?:\.\d+)?)\s*([KMGT]?)/);
       if (sizeMatch) {
         const [, size, unit] = sizeMatch;
-        const multipliers = { '': 1, 'K': 1024, 'M': 1024*1024, 'G': 1024*1024*1024, 'T': 1024*1024*1024*1024 };
-        repoInfo.size = Math.round(parseFloat(size) * (multipliers[unit as keyof typeof multipliers] || 1));
+        const multipliers = {
+          "": 1,
+          K: 1024,
+          M: 1024 * 1024,
+          G: 1024 * 1024 * 1024,
+          T: 1024 * 1024 * 1024 * 1024,
+        };
+        repoInfo.size = Math.round(
+          parseFloat(size) *
+            (multipliers[unit as keyof typeof multipliers] || 1),
+        );
       }
     } catch {
       // Size calculation failed, keep default 0
     }
-
   } catch (error) {
-    console.warn('Error extracting repository metadata from filesystem:', error);
+    console.warn(
+      "Error extracting repository metadata from filesystem:",
+      error,
+    );
   }
 
   return repoInfo;
@@ -172,43 +255,43 @@ const _extractRepositoryInfoFromFS = async (repoPath: string, owner: string, rep
  */
 const getLanguageFromExtension = (ext: string): string | null => {
   const languageMap: Record<string, string> = {
-    '.js': 'JavaScript',
-    '.jsx': 'JavaScript',
-    '.ts': 'TypeScript',
-    '.tsx': 'TypeScript',
-    '.py': 'Python',
-    '.java': 'Java',
-    '.cpp': 'C++',
-    '.c': 'C',
-    '.h': 'C',
-    '.cs': 'C#',
-    '.php': 'PHP',
-    '.rb': 'Ruby',
-    '.go': 'Go',
-    '.rs': 'Rust',
-    '.kt': 'Kotlin',
-    '.swift': 'Swift',
-    '.sql': 'SQL',
-    '.html': 'HTML',
-    '.css': 'CSS',
-    '.scss': 'SCSS',
-    '.sass': 'Sass',
-    '.less': 'Less',
-    '.sh': 'Shell',
-    '.bat': 'Batch',
-    '.ps1': 'PowerShell',
-    '.r': 'R',
-    '.m': 'MATLAB',
-    '.scala': 'Scala',
-    '.clj': 'Clojure',
-    '.hs': 'Haskell',
-    '.elm': 'Elm',
-    '.dart': 'Dart',
-    '.lua': 'Lua',
-    '.pl': 'Perl',
-    '.vim': 'Vim script'
+    ".js": "JavaScript",
+    ".jsx": "JavaScript",
+    ".ts": "TypeScript",
+    ".tsx": "TypeScript",
+    ".py": "Python",
+    ".java": "Java",
+    ".cpp": "C++",
+    ".c": "C",
+    ".h": "C",
+    ".cs": "C#",
+    ".php": "PHP",
+    ".rb": "Ruby",
+    ".go": "Go",
+    ".rs": "Rust",
+    ".kt": "Kotlin",
+    ".swift": "Swift",
+    ".sql": "SQL",
+    ".html": "HTML",
+    ".css": "CSS",
+    ".scss": "SCSS",
+    ".sass": "Sass",
+    ".less": "Less",
+    ".sh": "Shell",
+    ".bat": "Batch",
+    ".ps1": "PowerShell",
+    ".r": "R",
+    ".m": "MATLAB",
+    ".scala": "Scala",
+    ".clj": "Clojure",
+    ".hs": "Haskell",
+    ".elm": "Elm",
+    ".dart": "Dart",
+    ".lua": "Lua",
+    ".pl": "Perl",
+    ".vim": "Vim script",
   };
-  
+
   return languageMap[ext] || null;
 };
 
@@ -217,7 +300,10 @@ const getLanguageFromExtension = (ext: string): string | null => {
  * @private
  */
 const _createTempDir = async (prefix: string): Promise<string> => {
-  const tempDir = path.join(os.tmpdir(), `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const tempDir = path.join(
+    os.tmpdir(),
+    `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+  );
   await fs.mkdir(tempDir, { recursive: true });
   console.log(`📁 Created temporary directory: ${tempDir}`);
   return tempDir;
@@ -229,10 +315,10 @@ const _createTempDir = async (prefix: string): Promise<string> => {
  */
 const _checkGitAvailability = async (): Promise<boolean> => {
   try {
-    await execAsync('git --version', { timeout: 5000 });
+    await execAsync("git --version", { timeout: 5000 });
     return true;
   } catch (error) {
-    console.warn('Git is not available on the system:', error);
+    console.warn("Git is not available on the system:", error);
     return false;
   }
 };
@@ -241,28 +327,36 @@ const _checkGitAvailability = async (): Promise<boolean> => {
  * Clones a GitHub repository to a temporary directory
  * @private
  */
-const _cloneRepository = async (owner: string, repo: string, tempDir: string): Promise<string> => {
+const _cloneRepository = async (
+  owner: string,
+  repo: string,
+  tempDir: string,
+): Promise<string> => {
   const repoPath = path.join(tempDir, repo);
   const cloneUrl = `https://github.com/${owner}/${repo}.git`;
-  
+
   console.log(`Cloning repository ${owner}/${repo} to ${repoPath}...`);
-  
+
   // Check if git is available
   const gitAvailable = await _checkGitAvailability();
   if (!gitAvailable) {
-    throw new Error('Git is not available on the system. Please install Git to use clone-based processing.');
+    throw new Error(
+      "Git is not available on the system. Please install Git to use clone-based processing.",
+    );
   }
-  
+
   try {
     // Use git clone with depth 1 for faster cloning (only latest commit)
     const cloneCommand = `git clone --depth 1 "${cloneUrl}" "${repoPath}"`;
     await execAsync(cloneCommand, { timeout: 300000 }); // 5 minute timeout
-    
+
     console.log(`Successfully cloned repository to ${repoPath}`);
     return repoPath;
   } catch (error) {
     console.error(`Failed to clone repository:`, error);
-    throw new Error(`Failed to clone repository ${owner}/${repo}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to clone repository ${owner}/${repo}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 };
 
@@ -270,40 +364,50 @@ const _cloneRepository = async (owner: string, repo: string, tempDir: string): P
  * Recursively walks through directory and finds processable files
  * @private
  */
-const _walkDirectory = async (dirPath: string, basePath: string): Promise<string[]> => {
+const _walkDirectory = async (
+  dirPath: string,
+  basePath: string,
+): Promise<string[]> => {
   const files: string[] = [];
-  
+
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    
+
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
       const relativePath = path.relative(basePath, fullPath);
-      
+
       if (entry.isDirectory()) {
         // Skip certain directories
         if (SKIP_DIRECTORIES.has(entry.name)) {
           continue;
         }
-        
+
         // Recursively walk subdirectories
         const subFiles = await _walkDirectory(fullPath, basePath);
         files.push(...subFiles);
       } else if (entry.isFile()) {
         // Check if file should be processed
         const stats = await fs.stat(fullPath);
-        
+
         // Skip large files
         if (stats.size > MAX_FILE_SIZE) {
-          console.log(`Skipping large file: ${relativePath} (${stats.size} bytes)`);
+          console.log(
+            `Skipping large file: ${relativePath} (${stats.size} bytes)`,
+          );
           continue;
         }
-        
+
         // Check file extension or name
         const fileName = entry.name.toLowerCase();
-        const extension = fileName.includes('.') ? '.' + fileName.split('.').pop() : fileName;
-        
-        if (PROCESSABLE_EXTENSIONS.has(extension) || PROCESSABLE_EXTENSIONS.has(fileName)) {
+        const extension = fileName.includes(".")
+          ? "." + fileName.split(".").pop()
+          : fileName;
+
+        if (
+          PROCESSABLE_EXTENSIONS.has(extension) ||
+          PROCESSABLE_EXTENSIONS.has(fileName)
+        ) {
           files.push(fullPath);
         }
       }
@@ -311,7 +415,7 @@ const _walkDirectory = async (dirPath: string, basePath: string): Promise<string
   } catch (error) {
     console.warn(`Error walking directory ${dirPath}:`, error);
   }
-  
+
   return files;
 };
 
@@ -321,7 +425,7 @@ const _walkDirectory = async (dirPath: string, basePath: string): Promise<string
  */
 const _readFileContent = async (filePath: string): Promise<string | null> => {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(filePath, "utf-8");
     return content;
   } catch (error) {
     console.warn(`Failed to read file ${filePath}:`, error);
@@ -337,32 +441,34 @@ const _processRepositoryFilesFromFS = async (
   repoPath: string,
   owner: string,
   repo: string,
-  repositoryUrl: string
+  repositoryUrl: string,
 ): Promise<Document[]> => {
   console.log(`Processing files from cloned repository at ${repoPath}...`);
-  
+
   // Get all processable files
   const files = await _walkDirectory(repoPath, repoPath);
   console.log(`Found ${files.length} processable files`);
-  
+
   const documents: Document[] = [];
   let processedCount = 0;
-  
+
   for (const filePath of files) {
     try {
       const content = await _readFileContent(filePath);
       if (!content || content.trim().length === 0) {
         continue;
       }
-      
+
       // Get relative path for metadata
-      const relativePath = path.relative(repoPath, filePath).replace(/\\/g, '/');
+      const relativePath = path
+        .relative(repoPath, filePath)
+        .replace(/\\/g, "/");
       const fileName = path.basename(filePath);
       const fileExtension = path.extname(filePath);
-      
+
       // Get file stats
       const stats = await fs.stat(filePath);
-      
+
       // Create document with rich metadata
       const document = new Document({
         pageContent: content,
@@ -378,20 +484,21 @@ const _processRepositoryFilesFromFS = async (
           lastModified: stats.mtime.toISOString(),
         },
       });
-      
+
       documents.push(document);
       processedCount++;
-      
+
       if (processedCount % 25 === 0) {
         console.log(`Processed ${processedCount}/${files.length} files...`);
       }
-      
     } catch (error) {
       console.warn(`Failed to process file ${filePath}:`, error);
     }
   }
-  
-  console.log(`Successfully processed ${documents.length} files from filesystem`);
+
+  console.log(
+    `Successfully processed ${documents.length} files from filesystem`,
+  );
   return documents;
 };
 
@@ -402,12 +509,14 @@ const _processRepositoryFilesFromFS = async (
 const _cleanupTempDir = async (tempDir: string): Promise<void> => {
   try {
     console.log(`Starting cleanup of temporary directory: ${tempDir}`);
-    
+
     // Check if directory exists before attempting cleanup
     try {
       await fs.access(tempDir);
     } catch {
-      console.log(`Temporary directory ${tempDir} does not exist, no cleanup needed`);
+      console.log(
+        `Temporary directory ${tempDir} does not exist, no cleanup needed`,
+      );
       return;
     }
 
@@ -415,26 +524,37 @@ const _cleanupTempDir = async (tempDir: string): Promise<void> => {
     // Try multiple attempts with small delays
     let attempts = 0;
     const maxAttempts = 3;
-    
+
     while (attempts < maxAttempts) {
       try {
-        await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
-        console.log(`✅ Successfully cleaned up temporary directory: ${tempDir}`);
+        await fs.rm(tempDir, {
+          recursive: true,
+          force: true,
+          maxRetries: 3,
+          retryDelay: 100,
+        });
+        console.log(
+          `✅ Successfully cleaned up temporary directory: ${tempDir}`,
+        );
         return;
       } catch (error) {
         attempts++;
-        console.warn(`Cleanup attempt ${attempts}/${maxAttempts} failed for ${tempDir}:`, error);
-        
+        console.warn(
+          `Cleanup attempt ${attempts}/${maxAttempts} failed for ${tempDir}:`,
+          error,
+        );
+
         if (attempts < maxAttempts) {
           // Wait a bit before retrying (in case files are temporarily locked)
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       }
     }
-    
+
     // If all attempts failed, log a warning but don't throw
-    console.error(`❌ Failed to cleanup temporary directory ${tempDir} after ${maxAttempts} attempts. Manual cleanup may be required.`);
-    
+    console.error(
+      `❌ Failed to cleanup temporary directory ${tempDir} after ${maxAttempts} attempts. Manual cleanup may be required.`,
+    );
   } catch (error) {
     console.error(`Unexpected error during cleanup of ${tempDir}:`, error);
   }
@@ -446,13 +566,13 @@ const _cleanupTempDir = async (tempDir: string): Promise<void> => {
  */
 const _splitDocuments = async (documents: Document[]): Promise<Document[]> => {
   console.log(`Splitting ${documents.length} documents into chunks...`);
-  
+
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: CHUNK_SIZE,
     chunkOverlap: CHUNK_OVERLAP,
     separators: ["\n\n", "\n", " ", ""], // Prioritize natural breaks
   });
-  
+
   const chunkedDocs = await splitter.splitDocuments(documents);
   console.log(`Documents split into ${chunkedDocs.length} chunks`);
   return chunkedDocs;
@@ -469,7 +589,9 @@ const _storeDocsInPinecone = async (
   console.log("Creating Gemini embeddings...");
   const embeddings = await createGeminiEmbeddings();
   if (!embeddings) {
-    throw new Error("Failed to create embeddings. Gemini API may not be configured properly.");
+    throw new Error(
+      "Failed to create embeddings. Gemini API may not be configured properly.",
+    );
   }
 
   const pineconeIndex = await getPineconeIndex();
@@ -477,44 +599,53 @@ const _storeDocsInPinecone = async (
     throw new Error("Pinecone index is not initialized.");
   }
 
-  console.log(`Storing ${docs.length} chunks in Pinecone with namespace: ${namespace}...`);
+  console.log(
+    `Storing ${docs.length} chunks in Pinecone with namespace: ${namespace}...`,
+  );
   let retries = 0;
-  
+
   while (retries < MAX_RETRIES) {
     try {
       // Process in batches to avoid overwhelming Pinecone
       const batchSize = 100;
       for (let i = 0; i < docs.length; i += batchSize) {
         const batch = docs.slice(i, i + batchSize);
-        console.log(`Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(docs.length / batchSize)}...`);
-        
+        console.log(
+          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(docs.length / batchSize)}...`,
+        );
+
         await PineconeStore.fromDocuments(batch, embeddings, {
           pineconeIndex,
           namespace,
         });
-        
+
         // Small delay between batches
         if (i + batchSize < docs.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
-      
+
       console.log("Successfully stored all repository chunks in Pinecone.");
       return;
     } catch (error) {
       retries++;
-      console.error(`Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`, error);
+      console.error(
+        `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
+        error,
+      );
       if (retries >= MAX_RETRIES) {
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * retries));
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_DELAY_MS * retries),
+      );
     }
   }
 };
 
 /**
  * Main function to process a GitHub repository using git clone
- * 
+ *
  * @param repositoryUrl The URL of the GitHub repository
  * @param namespace The unique ID (and Pinecone namespace) for the file
  * @returns A promise that resolves with the outcome of the processing
@@ -523,17 +654,23 @@ export const processGitHubRepositoryWithClone = async (
   repositoryUrl: string,
   namespace: string,
 ): Promise<TypeGitHubProcessResult> => {
-  console.log(`Starting GitHub repository processing with clone for namespace: ${namespace}`);
-  
+  console.log(
+    `Starting GitHub repository processing with clone for namespace: ${namespace}`,
+  );
+
   if (!(await isPineconeConfigured())) {
-    throw new Error("Pinecone is not configured. Please check environment variables.");
+    throw new Error(
+      "Pinecone is not configured. Please check environment variables.",
+    );
   }
 
   const supabase = supabaseBrowserClient();
   const parsedRepo = _parseGitHubUrl(repositoryUrl);
-  
+
   if (!parsedRepo) {
-    throw new Error("Invalid GitHub URL. Could not extract repository information.");
+    throw new Error(
+      "Invalid GitHub URL. Could not extract repository information.",
+    );
   }
 
   const { owner, repo } = parsedRepo;
@@ -546,7 +683,7 @@ export const processGitHubRepositoryWithClone = async (
     // Step 1: Check if git is available first
     const gitAvailable = await _checkGitAvailability();
     if (!gitAvailable) {
-      throw new Error('CLONE_UNAVAILABLE: Git is not available on the system');
+      throw new Error("CLONE_UNAVAILABLE: Git is not available on the system");
     }
 
     // Step 2: Create temporary directory and clone repository
@@ -554,16 +691,29 @@ export const processGitHubRepositoryWithClone = async (
     repoPath = await _cloneRepository(owner, repo, tempDir);
 
     // Step 3: Extract repository information from filesystem
-    const repositoryInfo = await _extractRepositoryInfoFromFS(repoPath, owner, repo);
+    const repositoryInfo = await _extractRepositoryInfoFromFS(
+      repoPath,
+      owner,
+      repo,
+    );
     console.log(`Repository: ${repositoryInfo.full_name}`);
-    console.log(`Description: ${repositoryInfo.description || 'No description'}`);
-    console.log(`Language: ${repositoryInfo.language || 'Unknown'}`);
+    console.log(
+      `Description: ${repositoryInfo.description || "No description"}`,
+    );
+    console.log(`Language: ${repositoryInfo.language || "Unknown"}`);
 
     // Step 4: Process files from filesystem
-    const documents = await _processRepositoryFilesFromFS(repoPath, owner, repo, repositoryUrl);
-    
+    const documents = await _processRepositoryFilesFromFS(
+      repoPath,
+      owner,
+      repo,
+      repositoryUrl,
+    );
+
     if (documents.length === 0) {
-      throw new Error("No content could be extracted from the repository files.");
+      throw new Error(
+        "No content could be extracted from the repository files.",
+      );
     }
 
     // Step 5: Split documents into chunks
@@ -575,8 +725,8 @@ export const processGitHubRepositoryWithClone = async (
     // Step 7: Update file status with summary information
     const repositorySummary = [
       `Repository: ${repositoryInfo.full_name}`,
-      `Description: ${repositoryInfo.description || 'No description available'}`,
-      `Language: ${repositoryInfo.language || 'Unknown'}`,
+      `Description: ${repositoryInfo.description || "No description available"}`,
+      `Language: ${repositoryInfo.language || "Unknown"}`,
       `Stars: ${repositoryInfo.stargazers_count}`,
       `Forks: ${repositoryInfo.forks_count}`,
       `Files processed: ${documents.length}`,
@@ -584,7 +734,7 @@ export const processGitHubRepositoryWithClone = async (
       `Last updated: ${repositoryInfo.updated_at}`,
       `Processing method: Clone-based (filesystem)`,
       `Temporary files: Will be cleaned up automatically`,
-    ].join('\n');
+    ].join("\n");
 
     await updateFileStatus(supabase, namespace, "completed", {
       indexedChunks: chunkedDocs.length,
@@ -592,23 +742,32 @@ export const processGitHubRepositoryWithClone = async (
     });
 
     return { numDocs: chunkedDocs.length, success: true };
-    
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Clone-based processing failed for namespace ${namespace}:`, errorMessage);
+    console.error(
+      `Clone-based processing failed for namespace ${namespace}:`,
+      errorMessage,
+    );
 
     // Don't update status to failed here if it's a clone-specific error
     // Let the fallback mechanism handle it
-    if (errorMessage.includes('CLONE_UNAVAILABLE') || errorMessage.includes('Failed to clone')) {
+    if (
+      errorMessage.includes("CLONE_UNAVAILABLE") ||
+      errorMessage.includes("Failed to clone")
+    ) {
       throw error; // Re-throw to trigger fallback
     }
 
-    await updateFileStatus(supabase, namespace, "failed", { error: errorMessage });
+    await updateFileStatus(supabase, namespace, "failed", {
+      error: errorMessage,
+    });
     return { numDocs: 0, success: false, error: errorMessage };
   } finally {
     // Always cleanup temporary directory
     if (tempDir) {
-      console.log(`🧹 Cleaning up temporary files for repository processing...`);
+      console.log(
+        `🧹 Cleaning up temporary files for repository processing...`,
+      );
       await _cleanupTempDir(tempDir);
     }
   }
@@ -616,37 +775,45 @@ export const processGitHubRepositoryWithClone = async (
 
 /**
  * Retrieves basic information about a GitHub repository without processing
- * 
+ *
  * @param repositoryUrl The URL of the GitHub repository
  * @returns A promise that resolves to the repository's information
  */
 export const getGitHubRepositoryInfo = async (
-  repositoryUrl: string
+  repositoryUrl: string,
 ): Promise<TypeGitHubRepositoryInfo> => {
   const parsedRepo = _parseGitHubUrl(repositoryUrl);
-  
+
   if (!parsedRepo) {
-    throw new Error("Invalid GitHub URL. Could not extract repository information.");
+    throw new Error(
+      "Invalid GitHub URL. Could not extract repository information.",
+    );
   }
 
   const { owner, repo } = parsedRepo;
   let tempDir: string | null = null;
   let repoPath: string | null = null;
-  
+
   try {
     // Check if git is available
     const gitAvailable = await _checkGitAvailability();
     if (!gitAvailable) {
-      throw new Error('Git is not available on the system. Cannot retrieve repository information.');
+      throw new Error(
+        "Git is not available on the system. Cannot retrieve repository information.",
+      );
     }
 
     // Clone repository to temporary location
     tempDir = await _createTempDir(`inquora-info-${owner}-${repo}`);
     repoPath = await _cloneRepository(owner, repo, tempDir);
-    
+
     // Extract repository information from filesystem
-    const repositoryInfo = await _extractRepositoryInfoFromFS(repoPath, owner, repo);
-    
+    const repositoryInfo = await _extractRepositoryInfoFromFS(
+      repoPath,
+      owner,
+      repo,
+    );
+
     return {
       name: repositoryInfo.name,
       fullName: repositoryInfo.full_name,
@@ -663,7 +830,9 @@ export const getGitHubRepositoryInfo = async (
   } finally {
     // Always cleanup temporary directory
     if (tempDir) {
-      console.log(`🧹 Cleaning up temporary files for repository info extraction...`);
+      console.log(
+        `🧹 Cleaning up temporary files for repository info extraction...`,
+      );
       await _cleanupTempDir(tempDir);
     }
   }
@@ -678,44 +847,52 @@ export const cleanupOrphanedTempDirectories = async (): Promise<void> => {
   try {
     const tempBaseDir = os.tmpdir();
     const entries = await fs.readdir(tempBaseDir, { withFileTypes: true });
-    
-    const inquoraTempDirs = entries.filter(entry => 
-      entry.isDirectory() && 
-      (entry.name.startsWith('inquora-repo-') || entry.name.startsWith('inquora-info-'))
+
+    const inquoraTempDirs = entries.filter(
+      (entry) =>
+        entry.isDirectory() &&
+        (entry.name.startsWith("inquora-repo-") ||
+          entry.name.startsWith("inquora-info-")),
     );
-    
+
     if (inquoraTempDirs.length === 0) {
-      console.log('No orphaned Inquora temporary directories found');
+      console.log("No orphaned Inquora temporary directories found");
       return;
     }
-    
-    console.log(`Found ${inquoraTempDirs.length} potential orphaned temporary directories`);
-    
+
+    console.log(
+      `Found ${inquoraTempDirs.length} potential orphaned temporary directories`,
+    );
+
     for (const dir of inquoraTempDirs) {
       const fullPath = path.join(tempBaseDir, dir.name);
       try {
         // Check if directory is older than 1 hour (indicating it might be orphaned)
         const stats = await fs.stat(fullPath);
         const ageInMinutes = (Date.now() - stats.mtime.getTime()) / (1000 * 60);
-        
+
         if (ageInMinutes > 60) {
-          console.log(`Cleaning up orphaned directory: ${dir.name} (age: ${Math.round(ageInMinutes)} minutes)`);
+          console.log(
+            `Cleaning up orphaned directory: ${dir.name} (age: ${Math.round(ageInMinutes)} minutes)`,
+          );
           await _cleanupTempDir(fullPath);
         } else {
-          console.log(`Skipping recent directory: ${dir.name} (age: ${Math.round(ageInMinutes)} minutes)`);
+          console.log(
+            `Skipping recent directory: ${dir.name} (age: ${Math.round(ageInMinutes)} minutes)`,
+          );
         }
       } catch (error) {
         console.warn(`Error processing directory ${dir.name}:`, error);
       }
     }
   } catch (error) {
-    console.error('Error during orphaned directory cleanup:', error);
+    console.error("Error during orphaned directory cleanup:", error);
   }
 };
 
 /**
  * Validates if a URL is a valid GitHub repository URL
- * 
+ *
  * @param url The URL to validate
  * @returns True if the URL is a valid GitHub repository URL
  */
@@ -726,11 +903,13 @@ export const isValidGitHubUrl = async (url: string): Promise<boolean> => {
 
 /**
  * Extracts the repository identifier from a GitHub URL
- * 
+ *
  * @param url The GitHub repository URL
  * @returns The repository identifier in the format "owner/repo"
  */
-export const extractGitHubRepoId = async (url: string): Promise<string | null> => {
+export const extractGitHubRepoId = async (
+  url: string,
+): Promise<string | null> => {
   const parsed = _parseGitHubUrl(url);
   return parsed ? `${parsed.owner}/${parsed.repo}` : null;
 };

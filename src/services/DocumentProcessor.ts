@@ -1,6 +1,6 @@
 /**
  * DocumentProcessor Service
- * 
+ *
  * Centralized service for handling document processing operations.
  * Provides a clean interface for processing different types of documents
  * with proper error handling, status tracking, and retry mechanisms.
@@ -18,10 +18,17 @@ import {
   processGenericDocument,
   checkNamespaceExists,
 } from "@/utils/processors";
-import { ProcessingProgress, ProcessingResult, ProcessingStatus } from "@/types/TypeDocumentProcessor";
+import {
+  ProcessingProgress,
+  ProcessingResult,
+  ProcessingStatus,
+} from "@/types/TypeDocumentProcessor";
 export class DocumentProcessor {
   private supabase: SupabaseClient;
-  private progressCallbacks: Map<string, (progress: ProcessingProgress) => void> = new Map();
+  private progressCallbacks: Map<
+    string,
+    (progress: ProcessingProgress) => void
+  > = new Map();
 
   constructor(supabase?: SupabaseClient) {
     this.supabase = supabase || supabaseBrowserClient();
@@ -30,7 +37,10 @@ export class DocumentProcessor {
   /**
    * Register a callback to receive processing progress updates
    */
-  onProgress(fileId: string, callback: (progress: ProcessingProgress) => void): void {
+  onProgress(
+    fileId: string,
+    callback: (progress: ProcessingProgress) => void,
+  ): void {
     this.progressCallbacks.set(fileId, callback);
   }
 
@@ -57,7 +67,7 @@ export class DocumentProcessor {
   private async updateFileStatus(
     fileId: string,
     status: ProcessingStatus,
-    details: { error?: string; indexedChunks?: number } = {}
+    details: { error?: string; indexedChunks?: number } = {},
   ): Promise<void> {
     const updateData: {
       processing_status: ProcessingStatus;
@@ -107,7 +117,10 @@ export class DocumentProcessor {
       .download(path);
 
     if (error) {
-      console.error(`Failed to download blob from path: ${path}`, error.message);
+      console.error(
+        `Failed to download blob from path: ${path}`,
+        error.message,
+      );
       return null;
     }
 
@@ -162,7 +175,7 @@ export class DocumentProcessor {
           success: true,
           status: "completed",
         };
-        
+
         this.emitProgress({
           fileId,
           status: "completed",
@@ -175,7 +188,11 @@ export class DocumentProcessor {
       // Update status to processing
       await this.updateFileStatus(fileId, "processing");
 
-      let processingResult: { success: boolean; error?: string; numDocs?: number };
+      let processingResult: {
+        success: boolean;
+        error?: string;
+        numDocs?: number;
+      };
 
       // Process based on file type
       switch (type) {
@@ -190,9 +207,15 @@ export class DocumentProcessor {
           if (!url) throw new Error("GitHub URL is required");
           this.emitProgress({ fileId, status: "processing", progress: 25 });
           try {
-            processingResult = await processGitHubRepositoryWithClone(url, fileId);
+            processingResult = await processGitHubRepositoryWithClone(
+              url,
+              fileId,
+            );
           } catch (cloneError) {
-            console.warn("Clone-based processing failed, falling back to API method:", cloneError);
+            console.warn(
+              "Clone-based processing failed, falling back to API method:",
+              cloneError,
+            );
             processingResult = await processGitHubRepository(url, fileId);
           }
           break;
@@ -217,8 +240,13 @@ export class DocumentProcessor {
         case "slides":
           this.emitProgress({ fileId, status: "processing", progress: 25 });
           const docBlob = await this.getFileBlob(file);
-          if (!docBlob) throw new Error(`Could not read ${type} file from storage`);
-          processingResult = await processGenericDocument(docBlob, fileId, type);
+          if (!docBlob)
+            throw new Error(`Could not read ${type} file from storage`);
+          processingResult = await processGenericDocument(
+            docBlob,
+            fileId,
+            type,
+          );
           break;
 
         case "image":
@@ -227,7 +255,7 @@ export class DocumentProcessor {
             success: true,
             status: "completed",
           };
-          
+
           await this.updateFileStatus(fileId, "completed");
           this.emitProgress({
             fileId,
@@ -266,10 +294,10 @@ export class DocumentProcessor {
       });
 
       return finalResult;
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // Update status to failed
       await this.updateFileStatus(fileId, "failed", { error: errorMessage });
 
@@ -294,15 +322,15 @@ export class DocumentProcessor {
    */
   async processDocuments(
     files: TypeFile[],
-    concurrency: number = 3
+    concurrency: number = 3,
   ): Promise<ProcessingResult[]> {
     const results: ProcessingResult[] = [];
-    
+
     // Process files in batches to control concurrency
     for (let i = 0; i < files.length; i += concurrency) {
       const batch = files.slice(i, i + concurrency);
       const batchResults = await Promise.all(
-        batch.map(file => this.processDocument(file))
+        batch.map((file) => this.processDocument(file)),
       );
       results.push(...batchResults);
     }
@@ -316,7 +344,7 @@ export class DocumentProcessor {
   async retryProcessing(file: TypeFile): Promise<ProcessingResult> {
     // Reset the processing status
     await this.updateFileStatus(file.id, "idle");
-    
+
     // Process again
     return this.processDocument(file);
   }

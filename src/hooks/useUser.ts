@@ -32,7 +32,10 @@ export const useUser = () => {
   } = useQuery({
     queryKey: USER_QUERY_KEY,
     queryFn: async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
       if (!session?.user) return { session: null, profile: null };
 
@@ -46,7 +49,7 @@ export const useUser = () => {
       if (profileError && profileError.code !== "PGRST116") {
         throw profileError;
       }
-      
+
       return { session, profile };
     },
   });
@@ -66,7 +69,7 @@ export const useUser = () => {
         .eq("id", userData.session.user.id)
         .select()
         .single<TypeUser>();
-        
+
       if (updateError) throw updateError;
       return data;
     },
@@ -74,10 +77,12 @@ export const useUser = () => {
       // Optimistically update the cache with the new profile data.
       queryClient.setQueryData(
         USER_QUERY_KEY,
-        (oldData: { session: Session | null; profile: TypeUser | null } | null) => ({
+        (
+          oldData: { session: Session | null; profile: TypeUser | null } | null,
+        ) => ({
           ...oldData,
           profile: updatedProfile,
-        })
+        }),
       );
     },
   });
@@ -107,7 +112,8 @@ export const useUser = () => {
         id: userData.session.user.id,
         email: userData.session.user.email ?? "",
         name: userData.session.user.user_metadata?.full_name ?? "",
-        created_at: userData.session.user.created_at ?? new Date().toISOString(),
+        created_at:
+          userData.session.user.created_at ?? new Date().toISOString(),
       }
     : null;
 

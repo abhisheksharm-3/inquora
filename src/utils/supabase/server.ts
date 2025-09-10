@@ -24,7 +24,7 @@ export const supabaseServerClient = async () => {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch (error) {
             // The `setAll` method was called from a Server Component.
@@ -33,7 +33,7 @@ export const supabaseServerClient = async () => {
           }
         },
       },
-    }
+    },
   );
 };
 
@@ -54,7 +54,7 @@ export const getUserDetails = async (): Promise<TypeUser | null> => {
       console.error("Error fetching user details:", error.message);
       return null;
     }
-    
+
     return userDetails;
   } catch (error) {
     console.error("An unexpected error occurred in getUserDetails:", error);

@@ -122,8 +122,8 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               Coming Soon
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {fileTypeConfig.name} uploads are coming soon. We&apos;re working hard
-              to bring this feature to you!
+              {fileTypeConfig.name} uploads are coming soon. We&apos;re working
+              hard to bring this feature to you!
             </p>
           </DialogHeader>
           <DialogFooter>
@@ -175,7 +175,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
 
           {/* Upload progress */}
           {uploadStatus === "uploading" && <UploadModalProgress />}
-          
+
           {/* Document processing progress */}
           {uploadStatus === "processing" && (
             <DocumentProcessingProgress
@@ -188,7 +188,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               canRetry={error?.retryable}
             />
           )}
-          
+
           {/* Upload success */}
           {uploadStatus === "uploaded" && (
             <UploadModalSuccess
@@ -196,7 +196,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               handleRemoveFile={handleRemoveFile}
             />
           )}
-          
+
           {/* Upload error */}
           {uploadStatus === "error" && (
             <UploadModalError
@@ -250,15 +250,15 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               className="flex-1 cursor-pointer"
               disabled={isUploading || isProcessing}
             >
-              {(isUploading || isProcessing) ? "Processing..." : "Cancel"}
+              {isUploading || isProcessing ? "Processing..." : "Cancel"}
             </Button>
             <Button
               onClick={handleSubmit}
               className="flex-1 cursor-pointer"
               disabled={
-                isUploading || 
+                isUploading ||
                 isProcessing ||
-                uploadStatus === "uploaded" || 
+                uploadStatus === "uploaded" ||
                 uploadStatus === "processing" ||
                 (!selectedFile && !url?.trim())
               }

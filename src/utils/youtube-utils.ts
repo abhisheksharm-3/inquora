@@ -11,8 +11,7 @@
  * @returns {string | null} The 11-character video ID or null if not found.
  */
 export const extractYoutubeVideoId = (url: string): string | null => {
-  const regExp =
-    /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return match && match[2].length === 11 ? match[2] : null;
 };
@@ -66,13 +65,15 @@ export const checkYoutubeTranscriptAvailability = async (
  */
 export const createYoutubeSystemPrompt = (
   transcriptContent: string,
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string }
+  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
 ): string => {
-  const contextInfo = context ? `
+  const contextInfo = context
+    ? `
 
 **Current Context:**
-- Date/Time: ${context.currentDateTime || 'Not available'}
-- User: ${context.userName || 'Anonymous'} (${context.userEmail || 'No email provided'})` : '';
+- Date/Time: ${context.currentDateTime || "Not available"}
+- User: ${context.userName || "Anonymous"} (${context.userEmail || "No email provided"})`
+    : "";
 
   return `You are a helpful assistant that answers questions about a YouTube video based on its transcript.${contextInfo}
 

@@ -57,7 +57,7 @@ export const AuthPasswordInput = ({
           size={16}
           className={cn(
             "transition-colors",
-            disabled ? "text-gray-300" : "text-gray-400 hover:text-gray-600"
+            disabled ? "text-gray-300" : "text-gray-400 hover:text-gray-600",
           )}
         />
       </Button>

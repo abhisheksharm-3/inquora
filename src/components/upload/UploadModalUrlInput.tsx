@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 /**
  * A controlled input component for submitting a URL for processing.
  *
- * It features an enhanced submit button with proper theming and displays 
+ * It features an enhanced submit button with proper theming and displays
  * contextual messages when YouTube URLs are detected. Uses shadcn theming
  * for consistent design across light/dark modes.
  *
@@ -40,7 +40,11 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
     const checkUrls = async () => {
       setIsYouTube(!!extractYoutubeVideoId(url));
       setIsGitHub(await isValidGitHubUrl(url));
-      setIsWebPage(isValidWebUrl(url) && !extractYoutubeVideoId(url) && !(await isValidGitHubUrl(url)));
+      setIsWebPage(
+        isValidWebUrl(url) &&
+          !extractYoutubeVideoId(url) &&
+          !(await isValidGitHubUrl(url)),
+      );
     };
     checkUrls();
   }, [url]);
@@ -70,8 +74,8 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
           size="icon"
           variant={url.trim() ? "default" : "ghost"}
           className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-all duration-200 ${
-            url.trim() 
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm" 
+            url.trim()
+              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-muted"
           }`}
           onClick={handleUrlSubmit}
@@ -87,8 +91,9 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
         <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
           <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <span className="font-medium">YouTube video detected:</span> Only videos with available captions can be processed. 
-            Private or auto-generated captions may not work reliably.
+            <span className="font-medium">YouTube video detected:</span> Only
+            videos with available captions can be processed. Private or
+            auto-generated captions may not work reliably.
           </AlertDescription>
         </Alert>
       )}
@@ -98,8 +103,9 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
         <Alert className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/20">
           <AlertCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
           <AlertDescription className="text-purple-800 dark:text-purple-200">
-            <span className="font-medium">GitHub repository detected:</span> Only public repositories can be processed. 
-            Large repositories may take several minutes to analyze.
+            <span className="font-medium">GitHub repository detected:</span>{" "}
+            Only public repositories can be processed. Large repositories may
+            take several minutes to analyze.
           </AlertDescription>
         </Alert>
       )}
@@ -109,8 +115,9 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
         <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
           <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
           <AlertDescription className="text-green-800 dark:text-green-200">
-            <span className="font-medium">Web page detected:</span> The page content will be extracted and processed for chat. 
-            Pages requiring authentication or heavy JavaScript may not work reliably.
+            <span className="font-medium">Web page detected:</span> The page
+            content will be extracted and processed for chat. Pages requiring
+            authentication or heavy JavaScript may not work reliably.
           </AlertDescription>
         </Alert>
       )}

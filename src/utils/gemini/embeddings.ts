@@ -17,7 +17,7 @@ export const createGeminiEmbeddings =
 
     if (!apiKey) {
       throw new Error(
-        "Gemini API key is missing. Please provide it via the `apiKey` parameter or set the GEMINI_API_KEY environment variable."
+        "Gemini API key is missing. Please provide it via the `apiKey` parameter or set the GEMINI_API_KEY environment variable.",
       );
     }
 

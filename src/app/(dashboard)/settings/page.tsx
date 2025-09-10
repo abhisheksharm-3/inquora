@@ -17,21 +17,21 @@ import { useChats } from "@/hooks/useChats";
 import { useFiles } from "@/hooks/useFiles";
 import { SettingsLoadingSkeleton } from "@/components/settings/SettingsLoadingSkeleton";
 import { MobileSettingsSections } from "@/constants/SettingsData";
-import { 
-  User, 
-  Crown, 
-  Shield, 
-  LogOut, 
-  MessageSquare, 
-  FileText, 
-  Activity, 
-  Calendar, 
-  TrendingUp, 
-  Clock, 
+import {
+  User,
+  Crown,
+  Shield,
+  LogOut,
+  MessageSquare,
+  FileText,
+  Activity,
+  Calendar,
+  TrendingUp,
+  Clock,
   Zap,
   Settings,
   Palette,
-  Bell
+  Bell,
 } from "lucide-react";
 import avatarImage from "@/assets/images/avatar.svg";
 import { getUserInitials } from "@/utils/dashboard-utils";
@@ -49,37 +49,43 @@ const SettingsPage = () => {
   // Calculate usage statistics
   const stats = useMemo(() => {
     if (chatsLoading || filesLoading) return null;
-    
+
     const totalChats = chats.length;
     const totalFiles = files.length;
-    
+
     // Calculate total messages across all chats (approximation since we don't have all messages)
     const estimatedMessages = chats.length * 5; // Rough estimate
-    
+
     // Calculate recent activity (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const recentChats = chats.filter(chat => 
-      new Date(chat.created_at) > sevenDaysAgo
+
+    const recentChats = chats.filter(
+      (chat) => new Date(chat.created_at) > sevenDaysAgo,
     ).length;
-    
-    const recentFiles = files.filter(file => 
-      new Date(file.uploaded_at) > sevenDaysAgo
+
+    const recentFiles = files.filter(
+      (file) => new Date(file.uploaded_at) > sevenDaysAgo,
     ).length;
-    
+
     // Get file types breakdown
-    const fileTypes = files.reduce((acc, file) => {
-      const type = file.type || 'unknown';
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+    const fileTypes = files.reduce(
+      (acc, file) => {
+        const type = file.type || "unknown";
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     // Get account age in days
-    const accountAge = user?.created_at 
-      ? Math.floor((new Date().getTime() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24))
+    const accountAge = user?.created_at
+      ? Math.floor(
+          (new Date().getTime() - new Date(user.created_at).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
       : 0;
-    
+
     return {
       totalChats,
       totalFiles,
@@ -88,33 +94,36 @@ const SettingsPage = () => {
       recentFiles,
       fileTypes,
       accountAge,
-      mostActiveDay: 'Today' // Simplified for now
+      mostActiveDay: "Today", // Simplified for now
     };
   }, [chats, files, chatsLoading, filesLoading, user]);
 
   // Get recent activity items
   const recentActivity = useMemo(() => {
     if (chatsLoading || filesLoading) return [];
-    
+
     const activities = [
-      ...chats.slice(0, 3).map(chat => ({
+      ...chats.slice(0, 3).map((chat) => ({
         id: chat.id,
-        type: 'chat' as const,
-        title: chat.title || 'New Chat',
+        type: "chat" as const,
+        title: chat.title || "New Chat",
         timestamp: chat.created_at,
-        icon: MessageSquare
+        icon: MessageSquare,
       })),
-      ...files.slice(0, 3).map(file => ({
+      ...files.slice(0, 3).map((file) => ({
         id: file.id,
-        type: 'file' as const,
+        type: "file" as const,
         title: file.name,
         timestamp: file.uploaded_at,
-        icon: FileText
-      }))
+        icon: FileText,
+      })),
     ];
-    
+
     return activities
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
       .slice(0, 5);
   }, [chats, files, chatsLoading, filesLoading]);
 
@@ -136,7 +145,8 @@ const SettingsPage = () => {
                     Account Settings
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-2xl">
-                    Manage your profile, track your activity, and customize your Inquora experience.
+                    Manage your profile, track your activity, and customize your
+                    Inquora experience.
                   </p>
                 </div>
                 <div className="hidden md:flex items-center space-x-2">
@@ -161,8 +171,12 @@ const SettingsPage = () => {
                       <MessageSquare className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{stats?.totalChats || 0}</p>
-                      <p className="text-sm text-muted-foreground">Total Chats</p>
+                      <p className="text-2xl font-bold">
+                        {stats?.totalChats || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Total Chats
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center text-xs text-muted-foreground">
@@ -179,8 +193,12 @@ const SettingsPage = () => {
                       <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{stats?.totalFiles || 0}</p>
-                      <p className="text-sm text-muted-foreground">Files Uploaded</p>
+                      <p className="text-2xl font-bold">
+                        {stats?.totalFiles || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Files Uploaded
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center text-xs text-muted-foreground">
@@ -197,8 +215,12 @@ const SettingsPage = () => {
                       <Zap className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{stats?.estimatedMessages || 0}</p>
-                      <p className="text-sm text-muted-foreground">Messages Sent</p>
+                      <p className="text-2xl font-bold">
+                        {stats?.estimatedMessages || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Messages Sent
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center text-xs text-muted-foreground">
@@ -215,8 +237,12 @@ const SettingsPage = () => {
                       <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">{stats?.accountAge || 0}</p>
-                      <p className="text-sm text-muted-foreground">Days Active</p>
+                      <p className="text-2xl font-bold">
+                        {stats?.accountAge || 0}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Days Active
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center text-xs text-muted-foreground">
@@ -259,7 +285,13 @@ const SettingsPage = () => {
                             Free Plan
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Recently'}
+                            Member since{" "}
+                            {user?.created_at
+                              ? new Date(user.created_at).toLocaleDateString(
+                                  "en-US",
+                                  { month: "short", year: "numeric" },
+                                )
+                              : "Recently"}
                           </Badge>
                         </div>
                       </div>
@@ -289,11 +321,13 @@ const SettingsPage = () => {
                         recentActivity.map((activity, index) => (
                           <div key={activity.id}>
                             <div className="flex items-center space-x-4 py-3">
-                              <div className={`p-2 rounded-full ${
-                                activity.type === 'chat' 
-                                  ? 'bg-primary/20 text-primary' 
-                                  : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                              }`}>
+                              <div
+                                className={`p-2 rounded-full ${
+                                  activity.type === "chat"
+                                    ? "bg-primary/20 text-primary"
+                                    : "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400"
+                                }`}
+                              >
                                 <activity.icon className="h-4 w-4" />
                               </div>
                               <div className="flex-1 space-y-1">
@@ -301,13 +335,21 @@ const SettingsPage = () => {
                                   {activity.title}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {activity.type === 'chat' ? 'Started chat' : 'Uploaded file'} • {new Date(activity.timestamp).toLocaleDateString()}
+                                  {activity.type === "chat"
+                                    ? "Started chat"
+                                    : "Uploaded file"}{" "}
+                                  •{" "}
+                                  {new Date(
+                                    activity.timestamp,
+                                  ).toLocaleDateString()}
                                 </p>
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(activity.timestamp).toLocaleTimeString('en-US', { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit' 
+                                {new Date(
+                                  activity.timestamp,
+                                ).toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
                                 })}
                               </div>
                             </div>
@@ -318,7 +360,10 @@ const SettingsPage = () => {
                         <div className="text-center py-8 text-muted-foreground">
                           <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p className="text-sm">No recent activity</p>
-                          <p className="text-xs">Start a chat or upload a file to see your activity here</p>
+                          <p className="text-xs">
+                            Start a chat or upload a file to see your activity
+                            here
+                          </p>
                         </div>
                       )}
                     </div>
@@ -376,7 +421,9 @@ const SettingsPage = () => {
                   <CardContent className="space-y-6">
                     <div className="flex items-center justify-between rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 p-4">
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-primary">Free Plan</p>
+                        <p className="text-sm font-bold text-primary">
+                          Free Plan
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           Full access during beta
                         </p>
@@ -388,22 +435,36 @@ const SettingsPage = () => {
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Chats used</span>
-                        <span className="font-medium">{stats?.totalChats || 0} / ∞</span>
+                        <span className="text-muted-foreground">
+                          Chats used
+                        </span>
+                        <span className="font-medium">
+                          {stats?.totalChats || 0} / ∞
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Files uploaded</span>
-                        <span className="font-medium">{stats?.totalFiles || 0} / ∞</span>
+                        <span className="text-muted-foreground">
+                          Files uploaded
+                        </span>
+                        <span className="font-medium">
+                          {stats?.totalFiles || 0} / ∞
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Storage used</span>
+                        <span className="text-muted-foreground">
+                          Storage used
+                        </span>
                         <span className="font-medium">Unlimited</span>
                       </div>
                     </div>
-                    
+
                     <PricingDialog
                       trigger={
-                        <Button variant="outline" className="w-full cursor-pointer" size="lg">
+                        <Button
+                          variant="outline"
+                          className="w-full cursor-pointer"
+                          size="lg"
+                        >
                           <Crown className="mr-2 h-4 w-4" />
                           View Plan Details
                         </Button>
@@ -419,9 +480,7 @@ const SettingsPage = () => {
                       <Settings className="h-5 w-5 text-muted-foreground" />
                       <CardTitle>Preferences</CardTitle>
                     </div>
-                    <CardDescription>
-                      Customize your experience
-                    </CardDescription>
+                    <CardDescription>Customize your experience</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between py-2">
@@ -437,7 +496,9 @@ const SettingsPage = () => {
                     <div className="flex items-center justify-between py-2">
                       <div className="flex items-center space-x-3">
                         <Bell className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Notifications</span>
+                        <span className="text-sm font-medium">
+                          Notifications
+                        </span>
                       </div>
                       <Badge variant="outline" className="text-xs">
                         Enabled
@@ -451,7 +512,9 @@ const SettingsPage = () => {
                   <CardHeader>
                     <div className="flex items-center space-x-2">
                       <Shield className="h-5 w-5 text-destructive" />
-                      <CardTitle className="text-destructive">Account Actions</CardTitle>
+                      <CardTitle className="text-destructive">
+                        Account Actions
+                      </CardTitle>
                     </div>
                     <CardDescription>
                       Critical account management options.
@@ -460,9 +523,9 @@ const SettingsPage = () => {
                   <CardContent>
                     <LogoutDialog
                       trigger={
-                        <Button 
-                          variant="destructive" 
-                          className="w-full cursor-pointer" 
+                        <Button
+                          variant="destructive"
+                          className="w-full cursor-pointer"
                           size="lg"
                         >
                           <LogOut className="mr-2 h-4 w-4" />
