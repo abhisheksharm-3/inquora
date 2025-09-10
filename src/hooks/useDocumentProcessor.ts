@@ -7,8 +7,9 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { documentProcessor, ProcessingProgress, ProcessingResult } from "@/services/DocumentProcessor";
+import { documentProcessor } from "@/services/DocumentProcessor";
 import { TypeFile } from "@/types/TypeSupabase";
+import { ProcessingProgress, ProcessingResult } from "@/types/TypeDocumentProcessor";
 
 export interface UseDocumentProcessorState {
   isProcessing: boolean;

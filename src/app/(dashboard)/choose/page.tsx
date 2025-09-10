@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import UploadModal from "@/components/upload/UploadModal";
 import { Metadata } from "next";
 import { FileTypes } from "@/constants/FileTypes";
@@ -32,68 +33,58 @@ const ChoosePage = () => {
           Choose a source from below to begin uploading your data and chat with
           our intelligent AI.
         </p>
+        
+        {/* Compact Status Bar with Popover */}
         <div className="mx-auto mt-6 max-w-2xl">
-          <details className="group">
-            <summary className="flex cursor-pointer items-center justify-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors list-none py-2 px-4 rounded-lg hover:bg-accent/50">
-              <div className="inline-flex items-center gap-2">
-                <div className="flex h-2 w-2 items-center justify-center">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                </div>
-                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20">
-                  PDF, Word, Images working great
-                </Badge>
-              </div>
-              <div className="h-1 w-1 bg-muted-foreground/50 rounded-full"></div>
-              <div className="inline-flex items-center gap-2">
-                <div className="flex h-2 w-2 items-center justify-center">
-                  <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
-                </div>
-                <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20">
-                  Slides, YouTube, Excel having issues
-                </Badge>
-              </div>
-              <svg className="h-4 w-4 transition-transform group-open:rotate-180 ml-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
+          <div className="flex items-center justify-center gap-4 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 px-6 py-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-muted-foreground">All formats working great</span>
+            </div>
+            <div className="h-3 w-px bg-border"></div>
             
-            <Card className="mt-4 border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/10 mt-0.5">
-                    <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-foreground">Working perfectly</h4>
-                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20 text-xs">
-                        STABLE
-                      </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="flex items-center gap-2 cursor-pointer text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">
+                  <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
+                  <span>XLS files processing slowly</span>
+                  <svg className="h-3 w-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="center">
+                <Card className="border-0 shadow-none">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="text-left">
+                      <h4 className="font-medium text-sm text-foreground mb-2">Current Status</h4>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full"></div>
+                          <span className="text-muted-foreground">PDF, Word, Images, XLSX, YouTube, GitHub, Web - Working perfectly</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="h-1.5 w-1.5 bg-amber-500 rounded-full mt-1 flex-shrink-0"></div>
+                          <div>
+                            <span className="text-muted-foreground">XLS files - Processing issues</span>
+                            <div className="mt-1 p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                              <span className="text-amber-700 dark:text-amber-300 font-medium">Tip:</span>
+                              <span className="text-amber-600 dark:text-amber-400 ml-1">Consider converting XLS to XLSX for better performance</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground text-left">PDF, Word documents, images, and Excel spreadsheets process reliably</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 mt-0.5">
-                    <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-foreground">Currently buggy</h4>
-                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 text-xs">
-                        FIXING
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground text-left">Slides have issues with their XML format, YouTube API is acting up. We&apos;re fixing these soon.</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </details>
+                  </CardContent>
+                </Card>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
-      <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:max-w-4xl lg:gap-6">
+
+      {/* Main File Upload Grid */}
+      <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:max-w-4xl lg:gap-6">
         {FileTypes.map((fileType) => {
           const IconComponent = fileType.icon;
           

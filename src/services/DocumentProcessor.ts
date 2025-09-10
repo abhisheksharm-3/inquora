@@ -18,24 +18,7 @@ import {
   processGenericDocument,
   checkNamespaceExists,
 } from "@/utils/processors";
-
-export type ProcessingStatus = "idle" | "processing" | "completed" | "failed";
-
-export interface ProcessingResult {
-  success: boolean;
-  error?: string;
-  numDocs?: number;
-  status: ProcessingStatus;
-}
-
-export interface ProcessingProgress {
-  fileId: string;
-  status: ProcessingStatus;
-  progress?: number;
-  error?: string;
-  numDocs?: number;
-}
-
+import { ProcessingProgress, ProcessingResult, ProcessingStatus } from "@/types/TypeDocumentProcessor";
 export class DocumentProcessor {
   private supabase: SupabaseClient;
   private progressCallbacks: Map<string, (progress: ProcessingProgress) => void> = new Map();

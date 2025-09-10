@@ -154,7 +154,10 @@ export const useUploadLogic = ({
         fileId: uploadedFile.id,
         fileData: { url: urlToUpload },
       });
-      return uploadedFile;
+      
+      // Update the file object with the URL for processing
+      const updatedFile = { ...uploadedFile, url: urlToUpload };
+      return updatedFile;
     },
     [uploadFileAsync, updateFileAsync, fileType]
   );
