@@ -134,10 +134,10 @@ const _parseGitHubUrl = (url: string): TypeGitHubParseResult | null => {
  * Makes authenticated GitHub API requests with rate limiting
  * @private
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const _makeGitHubApiRequest = async (
   url: string,
   options: RequestInit = {},
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
