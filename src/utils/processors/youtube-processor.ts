@@ -2,6 +2,7 @@
 
 import { YoutubeTranscript } from "youtube-transcript";
 import { YoutubeTranscript as DanielYoutubeTranscript } from "@danielxceron/youtube-transcript";
+import { fetchTranscript } from 'youtube-transcript-plus';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
@@ -24,7 +25,23 @@ const RETRY_DELAY_MS = 1000;
 const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
   console.log(`Fetching transcript for YouTube video: ${videoId}`);
 
-  // Method 1: Try danielxceron/youtube-transcript (primary)
+  // Method 1: Try youtube-transcript-plus (primary)
+  try {
+    console.log("Attempting with youtube-transcript-plus...");
+    const transcriptParts = await fetchTranscript(videoId);
+
+    if (transcriptParts && transcriptParts.length > 0) {
+      const transcriptText = transcriptParts.map((item) => item.text).join(" ");
+      console.log(
+        `Successfully extracted transcript with ${transcriptText.length} characters using youtube-transcript-plus.`,
+      );
+      return transcriptText;
+    }
+  } catch (error) {
+    console.warn("youtube-transcript-plus failed:", error);
+  }
+
+  // Method 2: Try danielxceron/youtube-transcript (fallback 1)
   try {
     console.log("Attempting with @danielxceron/youtube-transcript...");
     const transcriptParts =
@@ -41,7 +58,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("danielxceron/youtube-transcript failed:", error);
   }
 
-  // Method 2: Try original youtube-transcript (fallback 1)
+  // Method 3: Try original youtube-transcript (fallback 2)
   try {
     console.log("Attempting with original youtube-transcript...");
     const transcriptParts = await YoutubeTranscript.fetchTranscript(videoId);
@@ -57,7 +74,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("Original youtube-transcript failed:", error);
   }
 
-  // Method 3: Try alternative API approach (fallback 2)
+  // Method 4: Try alternative API approach (fallback 3)
   try {
     console.log("Attempting alternative YouTube API approach...");
     const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
