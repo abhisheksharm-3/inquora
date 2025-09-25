@@ -1,5 +1,21 @@
 "use server";
 
+/**
+ * GitHub Repository Processor with Multiple Download Methods
+ * 
+ * This processor supports two methods for downloading GitHub repositories:
+ * 1. Git Clone (preferred): Uses git clone command for full repository access
+ * 2. ZIP Download (fallback): Downloads repository as ZIP archive via GitHub API
+ * 
+ * The ZIP download method is automatically used when:
+ * - Running in Vercel, Netlify, or other serverless environments
+ * - Git is not available on the system
+ * - DISABLE_GIT environment variable is set
+ * 
+ * This ensures the processor works in both development and production environments
+ * while avoiding GitHub API rate limits by preferring direct git access when possible.
+ */
+
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
@@ -17,6 +33,7 @@ import path from "path";
 import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
+import JSZip from "jszip";
 
 const execAsync = promisify(exec);
 
@@ -217,26 +234,52 @@ const _extractRepositoryInfoFromFS = async (
 
     // Get repository size (approximate)
     try {
-      const { stdout } = await execAsync("du -sh .", {
-        cwd: repoPath,
-        timeout: 10000,
-      });
-      const sizeMatch = stdout.match(/^(\d+(?:\.\d+)?)\s*([KMGT]?)/);
-      if (sizeMatch) {
-        const [, size, unit] = sizeMatch;
-        const multipliers = {
-          "": 1,
-          K: 1024,
-          M: 1024 * 1024,
-          G: 1024 * 1024 * 1024,
-          T: 1024 * 1024 * 1024 * 1024,
+      // Use cross-platform approach for getting directory size
+      if (process.platform === 'win32' || process.env.VERCEL || process.env.NETLIFY) {
+        // On Windows or serverless environments, calculate size manually
+        const calculateDirectorySize = async (dirPath: string): Promise<number> => {
+          let totalSize = 0;
+          try {
+            const entries = await fs.readdir(dirPath, { withFileTypes: true });
+            for (const entry of entries) {
+              const fullPath = path.join(dirPath, entry.name);
+              if (entry.isDirectory()) {
+                totalSize += await calculateDirectorySize(fullPath);
+              } else {
+                const stats = await fs.stat(fullPath);
+                totalSize += stats.size;
+              }
+            }
+          } catch (error) {
+            console.warn(`Error calculating size for ${dirPath}:`, error);
+          }
+          return totalSize;
         };
-        repoInfo.size = Math.round(
-          parseFloat(size) *
-            (multipliers[unit as keyof typeof multipliers] || 1),
-        );
+        repoInfo.size = await calculateDirectorySize(repoPath);
+      } else {
+        // Unix-like systems
+        const { stdout } = await execAsync("du -sh .", {
+          cwd: repoPath,
+          timeout: 10000,
+        });
+        const sizeMatch = stdout.match(/^(\d+(?:\.\d+)?)\s*([KMGT]?)/);
+        if (sizeMatch) {
+          const [, size, unit] = sizeMatch;
+          const multipliers = {
+            "": 1,
+            K: 1024,
+            M: 1024 * 1024,
+            G: 1024 * 1024 * 1024,
+            T: 1024 * 1024 * 1024 * 1024,
+          };
+          repoInfo.size = Math.round(
+            parseFloat(size) *
+              (multipliers[unit as keyof typeof multipliers] || 1),
+          );
+        }
       }
-    } catch {
+    } catch (error) {
+      console.warn("Size calculation failed:", error);
       // Size calculation failed, keep default 0
     }
   } catch (error) {
@@ -314,20 +357,127 @@ const _createTempDir = async (prefix: string): Promise<string> => {
  * @private
  */
 const _checkGitAvailability = async (): Promise<boolean> => {
+  // Skip git check in serverless environments where it's typically not available
+  if (process.env.VERCEL || process.env.NETLIFY || process.env.DISABLE_GIT) {
+    console.log("Skipping git availability check in serverless environment");
+    return false;
+  }
+  
   try {
     await execAsync("git --version", { timeout: 5000 });
+    console.log("Git is available for repository cloning");
     return true;
   } catch (error) {
-    console.warn("Git is not available on the system:", error);
+    console.warn("Git is not available on the system, will use ZIP download fallback:", error);
     return false;
   }
 };
 
 /**
- * Clones a GitHub repository to a temporary directory
+ * Downloads and extracts GitHub repository using ZIP archive API
+ * This is a fallback method when git is not available
  * @private
  */
-const _cloneRepository = async (
+const _downloadAndExtractZip = async (
+  owner: string,
+  repo: string,
+  tempDir: string,
+  branch: string = "main"
+): Promise<string> => {
+  const repoPath = path.join(tempDir, repo);
+  const zipUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
+  
+  console.log(`Downloading repository ${owner}/${repo} as ZIP from ${zipUrl}...`);
+
+  try {
+    // Download the ZIP file
+    const response = await fetch(zipUrl);
+    
+    if (!response.ok) {
+      // Try with 'master' branch if 'main' fails
+      if (branch === "main") {
+        console.log(`Branch 'main' not found, trying 'master'...`);
+        return await _downloadAndExtractZip(owner, repo, tempDir, "master");
+      }
+      throw new Error(`Failed to download repository: ${response.status} ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    
+    console.log(`Extracting ZIP archive to ${repoPath}...`);
+    await fs.mkdir(repoPath, { recursive: true });
+
+    // Extract all files from the ZIP
+    const promises: Promise<void>[] = [];
+    
+    zip.forEach((relativePath, file) => {
+      // Skip the root directory (usually repo-name-branch/)
+      const pathParts = relativePath.split('/');
+      if (pathParts.length <= 1) return;
+      
+      // Remove the first part (root directory) to get the actual file path
+      const actualPath = pathParts.slice(1).join('/');
+      if (!actualPath) return;
+      
+      const fullPath = path.join(repoPath, actualPath);
+      
+      if (file.dir) {
+        // Create directory
+        promises.push(fs.mkdir(fullPath, { recursive: true }).then(() => {}));
+      } else {
+        // Extract file
+        promises.push(
+          file.async('nodebuffer').then(async (content) => {
+            const dirPath = path.dirname(fullPath);
+            await fs.mkdir(dirPath, { recursive: true });
+            await fs.writeFile(fullPath, content);
+          })
+        );
+      }
+    });
+
+    await Promise.all(promises);
+    console.log(`Successfully extracted repository to ${repoPath}`);
+    return repoPath;
+    
+  } catch (error) {
+    console.error(`Failed to download/extract ZIP:`, error);
+    throw new Error(
+      `Failed to download repository ${owner}/${repo} as ZIP: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+};
+
+/**
+ * Downloads a GitHub repository to a temporary directory
+ * Uses git clone if available, otherwise falls back to ZIP download
+ * @private
+ */
+const _downloadRepository = async (
+  owner: string,
+  repo: string,
+  tempDir: string,
+): Promise<string> => {
+  console.log(`Downloading repository ${owner}/${repo}...`);
+
+  // Check if git is available
+  const gitAvailable = await _checkGitAvailability();
+  
+  if (gitAvailable) {
+    console.log("Using git clone method...");
+    return await _cloneWithGit(owner, repo, tempDir);
+  } else {
+    console.log("Git not available, using ZIP download method...");
+    return await _downloadAndExtractZip(owner, repo, tempDir);
+  }
+};
+
+/**
+ * Clones a GitHub repository using git (original method)
+ * @private
+ */
+const _cloneWithGit = async (
   owner: string,
   repo: string,
   tempDir: string,
@@ -336,14 +486,6 @@ const _cloneRepository = async (
   const cloneUrl = `https://github.com/${owner}/${repo}.git`;
 
   console.log(`Cloning repository ${owner}/${repo} to ${repoPath}...`);
-
-  // Check if git is available
-  const gitAvailable = await _checkGitAvailability();
-  if (!gitAvailable) {
-    throw new Error(
-      "Git is not available on the system. Please install Git to use clone-based processing.",
-    );
-  }
 
   try {
     // Use git clone with depth 1 for faster cloning (only latest commit)
@@ -644,7 +786,8 @@ const _storeDocsInPinecone = async (
 };
 
 /**
- * Main function to process a GitHub repository using git clone
+ * Main function to process a GitHub repository by downloading it locally
+ * Uses git clone if available, otherwise falls back to ZIP download
  *
  * @param repositoryUrl The URL of the GitHub repository
  * @param namespace The unique ID (and Pinecone namespace) for the file
@@ -686,11 +829,14 @@ export const processGitHubRepositoryWithClone = async (
       throw new Error("CLONE_UNAVAILABLE: Git is not available on the system");
     }
 
-    // Step 2: Create temporary directory and clone repository
+    // Step 2: Create temporary directory and download repository
     tempDir = await _createTempDir(`inquora-repo-${owner}-${repo}`);
-    repoPath = await _cloneRepository(owner, repo, tempDir);
+    repoPath = await _downloadRepository(owner, repo, tempDir);
 
     // Step 3: Extract repository information from filesystem
+    if (!repoPath) {
+      throw new Error("Repository download failed - no path returned");
+    }
     const repositoryInfo = await _extractRepositoryInfoFromFS(
       repoPath,
       owner,
@@ -723,6 +869,9 @@ export const processGitHubRepositoryWithClone = async (
     await _storeDocsInPinecone(chunkedDocs, namespace);
 
     // Step 7: Update file status with summary information
+    const wasGitUsed = await _checkGitAvailability();
+    const processingMethod = wasGitUsed ? "Git clone (filesystem)" : "ZIP download (filesystem)";
+    
     const repositorySummary = [
       `Repository: ${repositoryInfo.full_name}`,
       `Description: ${repositoryInfo.description || "No description available"}`,
@@ -732,7 +881,7 @@ export const processGitHubRepositoryWithClone = async (
       `Files processed: ${documents.length}`,
       `Chunks created: ${chunkedDocs.length}`,
       `Last updated: ${repositoryInfo.updated_at}`,
-      `Processing method: Clone-based (filesystem)`,
+      `Processing method: ${processingMethod}`,
       `Temporary files: Will be cleaned up automatically`,
     ].join("\n");
 
@@ -745,19 +894,25 @@ export const processGitHubRepositoryWithClone = async (
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
-      `Clone-based processing failed for namespace ${namespace}:`,
+      `Repository processing failed for namespace ${namespace}:`,
       errorMessage,
     );
 
-    // Don't update status to failed here if it's a clone-specific error
-    // Let the fallback mechanism handle it
-    if (
+    // Check if this is a recoverable error that should trigger API fallback
+    const isRecoverableError = (
       errorMessage.includes("CLONE_UNAVAILABLE") ||
-      errorMessage.includes("Failed to clone")
-    ) {
-      throw error; // Re-throw to trigger fallback
+      errorMessage.includes("Failed to clone") ||
+      errorMessage.includes("Failed to download") ||
+      errorMessage.includes("git: command not found") ||
+      errorMessage.includes("Git is not available")
+    );
+
+    if (isRecoverableError) {
+      console.log("Repository processing error is recoverable, will trigger API fallback");
+      throw error; // Re-throw to trigger fallback mechanism
     }
 
+    // For non-recoverable errors, mark as failed
     await updateFileStatus(supabase, namespace, "failed", {
       error: errorMessage,
     });
@@ -803,11 +958,14 @@ export const getGitHubRepositoryInfo = async (
       );
     }
 
-    // Clone repository to temporary location
+    // Download repository to temporary location
     tempDir = await _createTempDir(`inquora-info-${owner}-${repo}`);
-    repoPath = await _cloneRepository(owner, repo, tempDir);
+    repoPath = await _downloadRepository(owner, repo, tempDir);
 
     // Extract repository information from filesystem
+    if (!repoPath) {
+      throw new Error("Repository download failed - no path returned");
+    }
     const repositoryInfo = await _extractRepositoryInfoFromFS(
       repoPath,
       owner,
