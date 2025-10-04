@@ -23,6 +23,6 @@ export const createGeminiEmbeddings =
 
     return new GoogleGenerativeAIEmbeddings({
       apiKey,
-      model: "text-embedding-004",
+      model: "gemini-embedding-001",
     });
   };

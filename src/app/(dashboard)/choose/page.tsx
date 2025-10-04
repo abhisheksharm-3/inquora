@@ -8,6 +8,7 @@ import {
 import UploadModal from "@/components/upload/UploadModal";
 import { Metadata } from "next";
 import { FileTypes } from "@/constants/FileTypes";
+import { AlertCircle, Zap, Clock } from "lucide-react";
 
 /**
  * @description SEO metadata for the new chat/dashboard page.
@@ -28,7 +29,74 @@ export const metadata: Metadata = {
  */
 const ChoosePage = () => {
   return (
-    <div className="flex h-full flex-col items-center justify-center">
+    <div className="flex h-full flex-col items-center justify-center px-4">
+      {/* Migration Announcement Banner */}
+      <div className="w-full max-w-4xl mb-8">
+        <Card className="border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              
+              <div className="flex-1 space-y-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+                      System Upgrade in Progress
+                    </h3>
+                    <Badge className="bg-amber-500 text-white border-0">
+                      Important
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    We&apos;re upgrading to a more powerful AI embedding model to serve you better!
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-black/20">
+                    <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-sm text-amber-900 dark:text-amber-100 mb-1">
+                        What&apos;s Improving
+                      </h4>
+                      <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                        <li>• 4x larger embedding dimensions (768 → 3072)</li>
+                        <li>• Better understanding of your documents</li>
+                        <li>• More accurate search results</li>
+                        <li>• Higher processing rate limits</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-black/20">
+                    <Clock className="h-5 w-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-sm text-amber-900 dark:text-amber-100 mb-1">
+                        What to Expect
+                      </h4>
+                      <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                        <li>• Old chats may be temporarily unavailable</li>
+                        <li>• New chats use the upgraded model immediately</li>
+                        <li>• All data will be preserved</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <strong>Need help?</strong> If you experience any issues during this transition, 
+                    please contact our support team. We appreciate your patience as we make Inquora even better!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="text-center">
         <h1 className="text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-foreground to-muted-foreground md:text-6xl">
           Start a New Conversation
