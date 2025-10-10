@@ -2,7 +2,7 @@
 
 import { analyzeQuery, expandQuery } from "./query-analysis";
 import { retrieveRelevantDocuments } from "./retrieval-engine";
-import { createSystemPrompt, createAgenticRagPrompt } from "./prompt-engineering";
+import { createSystemPrompt } from "./prompt-engineering";
 import { prepareConversationContext, analyzeConversation } from "./context-manager";
 import { executeAgenticReasoning } from "./agentic-reasoning";
 import { sendMessageToGemini } from "../gemini/client";

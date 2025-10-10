@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { redirect } from "next/navigation";
 import { supabaseServerClient } from "@/utils/supabase/server";
 
 /**

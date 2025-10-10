@@ -72,6 +72,14 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     return unsubscribe;
   }, [subscribeToMessages]);
 
+  // Extract complex expressions for dependency array
+  const lastMessage = useMemo(
+    () => messages[messages.length - 1],
+    [messages]
+  );
+  const lastMessageContent = lastMessage?.content;
+  const lastMessageId = lastMessage?.id;
+
   useEffect(() => {
     if (messages.length > 0) {
       const scrollToBottom = () => {
@@ -87,11 +95,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
       const timeoutId = setTimeout(scrollToBottom, 50);
       return () => clearTimeout(timeoutId);
     }
-  }, [
-    messages.length,
-    messages[messages.length - 1]?.content,
-    messages[messages.length - 1]?.id,
-  ]);
+  }, [messages.length, lastMessageContent, lastMessageId]);
 
   const isLegacyChat = useMemo(
     () => (chat?.created_at ? VersionConfig.isLegacyChat(chat.created_at) : false),

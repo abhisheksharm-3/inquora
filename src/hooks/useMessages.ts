@@ -67,7 +67,11 @@ export const useMessages = (chatId: string) => {
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
   });
 
-  const serverMessages = messagesQuery.data || [];
+  // Wrap in useMemo to prevent dependency changes on every render
+  const serverMessages = useMemo(
+    () => messagesQuery.data || [],
+    [messagesQuery.data]
+  );
 
   const optimisticReducer = useCallback(
     (state: TypeMessage[], newMessage: TypeMessage) => {
