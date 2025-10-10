@@ -10,7 +10,7 @@ import {
   Part,
 } from "@google/generative-ai";
 import { createYoutubeSystemPrompt } from "../youtube-utils";
-import { createRagSystemPrompt } from "../query-utils";
+import { createAgenticRagPrompt } from "../rag/prompt-engineering";
 import { TypeGeminiImageData } from "@/types/TypeContent";
 
 // --- Configuration ---
@@ -45,18 +45,32 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  * Determines the appropriate system instruction based on file content.
  * @private
  */
-const _getSystemInstruction = (
+const _getSystemInstruction = async (
   fileContent?: string,
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
-): Content | null => {
+  context?: { 
+    currentDateTime?: string; 
+    userName?: string; 
+    userEmail?: string;
+    chatId?: string;
+    userQuery?: string;
+    conversationHistory?: Array<{role: string, content: string}>;
+    documentType?: string;
+    namespace?: string;
+    isAdvancedRAG?: boolean;
+  },
+): Promise<Content | null> => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
     return null; // No system prompt needed for images or standard chat
   }
 
-  const promptText =
-    fileContent === "YOUTUBE_TRANSCRIPT"
-      ? createYoutubeSystemPrompt(fileContent, context)
-      : createRagSystemPrompt(fileContent, context);
+  let promptText: string;
+
+  if (fileContent === "YOUTUBE_TRANSCRIPT") {
+    promptText = createYoutubeSystemPrompt(fileContent, context);
+  } else {
+    // Always use advanced RAG prompt
+    promptText = await createAgenticRagPrompt(fileContent, context);
+  }
 
   return {
     role: "user",
@@ -77,7 +91,17 @@ export const sendMessageToGemini = async (
   messages: { role: "user" | "model"; content: string }[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
-  context?: { currentDateTime?: string; userName?: string; userEmail?: string },
+  context?: { 
+    currentDateTime?: string; 
+    userName?: string; 
+    userEmail?: string;
+    chatId?: string;
+    userQuery?: string;
+    conversationHistory?: Array<{role: string, content: string}>;
+    documentType?: string;
+    namespace?: string;
+    isAdvancedRAG?: boolean;
+  },
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
     return "Error: Gemini API key is not configured.";
@@ -92,7 +116,7 @@ export const sendMessageToGemini = async (
 
     // Construct the chat history, including the system prompt if applicable.
     const history: Content[] = [];
-    const systemInstruction = _getSystemInstruction(fileContent, context);
+    const systemInstruction = await _getSystemInstruction(fileContent, context);
     if (systemInstruction) {
       history.push(systemInstruction);
     }

@@ -2,9 +2,9 @@
 
 import { Pinecone, Index } from "@pinecone-database/pinecone";
 
-// Singleton instances for the Pinecone client and index.
+// Singleton instances for the Pinecone client and index cache
 let pineconeClientInstance: Pinecone | null = null;
-let pineconeIndexInstance: Index | null = null;
+const pineconeIndexCache: Map<string, Index> = new Map();
 
 /**
  * Retrieves the singleton Pinecone client instance.
@@ -35,31 +35,49 @@ export const getPineconeClient = async (): Promise<Pinecone> => {
 };
 
 /**
- * Retrieves the singleton Pinecone index instance.
- * Initializes the index on the first call.
+ * Gets all configured Pinecone index names (current + legacy)
+ * @returns {Promise<string[]>} Array of index names to check
+ */
+export const getAllIndexNames = async (): Promise<string[]> => {
+  const currentIndex = process.env.PINECONE_INDEX_NAME;
+  const legacyIndexes = process.env.PINECONE_LEGACY_INDEX_NAMES?.split(',').map(name => name.trim()) || [];
+  
+  const allIndexes = currentIndex ? [currentIndex, ...legacyIndexes] : legacyIndexes;
+  return [...new Set(allIndexes)]; // Remove duplicates
+};
+
+/**
+ * Retrieves a Pinecone index instance by name (with caching).
+ * @param {string} indexName - Optional specific index name. Defaults to PINECONE_INDEX_NAME env var.
  * @returns {Promise<Index>} A promise that resolves to the Pinecone index instance.
- * @throws {Error} If the PINECONE_INDEX_NAME environment variable is not set.
+ * @throws {Error} If the index name is not provided or found in env.
  * @throws {Error} If the Pinecone index fails to initialize.
  */
-export const getPineconeIndex = async (): Promise<Index> => {
-  if (pineconeIndexInstance) {
-    return pineconeIndexInstance;
+export const getPineconeIndex = async (indexName?: string): Promise<Index> => {
+  const targetIndexName = indexName || process.env.PINECONE_INDEX_NAME;
+  
+  if (!targetIndexName) {
+    throw new Error("PINECONE_INDEX_NAME environment variable is not set and no index name provided.");
   }
 
-  const indexName = process.env.PINECONE_INDEX_NAME;
-  if (!indexName) {
-    throw new Error("PINECONE_INDEX_NAME environment variable is not set.");
+  // Check cache first
+  if (pineconeIndexCache.has(targetIndexName)) {
+    return pineconeIndexCache.get(targetIndexName)!;
   }
 
   try {
     const client = await getPineconeClient();
-    console.log(`Getting Pinecone index: ${indexName}`);
-    pineconeIndexInstance = client.Index(indexName);
-    console.log("Pinecone index retrieved successfully.");
-    return pineconeIndexInstance;
+    console.log(`Getting Pinecone index: ${targetIndexName}`);
+    const index = client.Index(targetIndexName);
+    
+    // Cache the index instance
+    pineconeIndexCache.set(targetIndexName, index);
+    
+    console.log(`Pinecone index ${targetIndexName} retrieved and cached successfully.`);
+    return index;
   } catch (error) {
-    console.error("Failed to initialize Pinecone index:", error);
-    throw new Error("Failed to initialize Pinecone index.");
+    console.error(`Failed to initialize Pinecone index ${targetIndexName}:`, error);
+    throw new Error(`Failed to initialize Pinecone index ${targetIndexName}.`);
   }
 };
 
@@ -71,4 +89,57 @@ export const isPineconeConfigured = async (): Promise<boolean> => {
   const apiKey = process.env.PINECONE_API_KEY;
   const indexName = process.env.PINECONE_INDEX_NAME;
   return !!apiKey && !!indexName;
+};
+
+/**
+ * Attempts to find which index contains the given namespace.
+ * Checks current index first, then falls back to legacy indexes.
+ * @param {string} namespace - The namespace to search for
+ * @returns {Promise<{indexName: string, index: Index} | null>} The index info if found, null otherwise
+ */
+export const findIndexForNamespace = async (
+  namespace: string
+): Promise<{indexName: string, index: Index} | null> => {
+  const allIndexNames = await getAllIndexNames();
+  
+  if (allIndexNames.length === 0) {
+    console.warn("No Pinecone indexes configured");
+    return null;
+  }
+
+  // Try current index first
+  const currentIndexName = process.env.PINECONE_INDEX_NAME;
+  if (currentIndexName) {
+    try {
+      const currentIndex = await getPineconeIndex(currentIndexName);
+      const stats = await currentIndex.describeIndexStats();
+      
+      if (stats.namespaces?.[namespace]?.recordCount ?? 0 > 0) {
+        console.log(`Found namespace "${namespace}" in current index: ${currentIndexName}`);
+        return { indexName: currentIndexName, index: currentIndex };
+      }
+    } catch (error) {
+      console.warn(`Error checking current index ${currentIndexName}:`, error);
+    }
+  }
+
+  // Try legacy indexes
+  const legacyIndexes = allIndexNames.filter(name => name !== currentIndexName);
+  
+  for (const legacyIndexName of legacyIndexes) {
+    try {
+      const legacyIndex = await getPineconeIndex(legacyIndexName);
+      const stats = await legacyIndex.describeIndexStats();
+      
+      if (stats.namespaces?.[namespace]?.recordCount ?? 0 > 0) {
+        console.log(`Found namespace "${namespace}" in legacy index: ${legacyIndexName}`);
+        return { indexName: legacyIndexName, index: legacyIndex };
+      }
+    } catch (error) {
+      console.warn(`Error checking legacy index ${legacyIndexName}:`, error);
+    }
+  }
+
+  console.log(`Namespace "${namespace}" not found in any configured index`);
+  return null;
 };

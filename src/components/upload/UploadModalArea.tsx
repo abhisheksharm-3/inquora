@@ -59,7 +59,6 @@ const UploadModalArea: React.FC<{
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={() => document.getElementById("file-upload")?.click()}
     >
       <label htmlFor="file-upload" className="cursor-pointer block space-y-3">
         <input

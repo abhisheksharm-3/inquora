@@ -8,6 +8,9 @@ import { queryDocuments } from "../processors";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TypeChat, TypeFile } from "@/types/TypeSupabase";
 import { TypeGeminiImageData } from "@/types/TypeContent";
+import { processRAGRequest } from "../rag/orchestrator";
+import { TypeRAGRequest, TypeConversationTurn } from "@/types/TypeRag";
+import { VersionConfig } from "@/constants/VersionConfig";
 
 const FILE_TYPE_MAP = new Map([
   ["youtube", "video"],
@@ -110,10 +113,17 @@ const prepareContextForGemini = async (
   chat: TypeChat & { files: TypeFile },
   userQuery: string,
   supabase: SupabaseClient,
+  conversationHistory?: Array<{role: string, content: string}>,
+  userContext?: {
+    currentDateTime?: string;
+    userName?: string;
+    userEmail?: string;
+  }
 ): Promise<{
   fileContent?: string;
   imageData?: TypeGeminiImageData;
   error?: string;
+  isAdvancedRAG?: boolean;
 }> => {
   if (!chat.file_id) return {};
 
@@ -152,6 +162,69 @@ const prepareContextForGemini = async (
 
   if (chat.type && RAG_SUPPORTED_TYPES.has(chat.type)) {
     try {
+      // Try advanced RAG system first
+      if (chat.file_id && conversationHistory) {
+        try {
+          const ragRequest: TypeRAGRequest = {
+            query: userQuery,
+            chatId: chat.id,
+            namespace: chat.file_id,
+            conversationHistory: conversationHistory.map((msg, index) => ({
+              id: `turn-${index}`,
+              timestamp: new Date().toISOString(),
+              userQuery: msg.role === 'user' ? msg.content : '',
+              aiResponse: msg.role === 'assistant' || msg.role === 'model' ? msg.content : '',
+              confidence: 0.8
+            } as TypeConversationTurn)).filter(turn => turn.userQuery || turn.aiResponse),
+            userContext: {
+              name: userContext?.userName,
+              email: userContext?.userEmail,
+              expertise_level: 'intermediate',
+              preferences: {
+                response_style: 'detailed',
+                include_sources: true,
+                include_reasoning: true
+              }
+            },
+            documentContext: {
+              type: chat.type || 'general',
+              domain: 'general',
+              contentSource: {
+                type: (chat.type as 'pdf' | 'youtube' | 'website' | 'github' | 'doc' | 'sheet' | 'slides' | 'image') || 'document',
+                format: 'extracted_text',
+                extractionMethod: 'automatic_processing',
+                confidence: 0.8,
+                qualityMetrics: {
+                  readability: 'standard',
+                  completeness: 'complete',
+                  accuracy: 0.85
+                }
+              },
+              processingQuality: 'high',
+              metadata: {
+                contentLength: fileContent.length,
+                timestamp: userContext?.currentDateTime
+              }
+            }
+          };
+
+          const ragResponse = await processRAGRequest(ragRequest);
+          
+          if (ragResponse.retrievedSources && ragResponse.retrievedSources.length > 0) {
+            const combinedContent = ragResponse.retrievedSources
+              .map((result: { document: { pageContent: string } }) => result.document.pageContent)
+              .join("\n\n");
+            return { 
+              fileContent: combinedContent, 
+              isAdvancedRAG: true 
+            };
+          }
+        } catch (advancedRAGError) {
+          console.warn("Advanced RAG failed, falling back to basic retrieval:", advancedRAGError);
+        }
+      }
+
+      // Fallback to basic RAG
       const relevantDocs = await queryDocuments(userQuery, chat.file_id, 5);
 
       if (!relevantDocs || relevantDocs.length === 0) {
@@ -218,6 +291,15 @@ export const sendMessage = async (
 
     if (chatError || !chat) throw new Error("Chat not found.");
 
+    // Check if this is a legacy chat (read-only)
+    if (VersionConfig.isLegacyChat(chat.created_at)) {
+      return saveAssistantMessage(
+        chatId,
+        VersionConfig.LEGACY_CHAT_MESSAGE,
+        supabase,
+      );
+    }
+
     // Get user information for context
     const userContext: {
       currentDateTime?: string;
@@ -252,7 +334,20 @@ export const sendMessage = async (
       .from("messages")
       .insert({ chat_id: chatId, role: "user", content });
 
-    const context = await prepareContextForGemini(chat, content, supabase);
+    // Prepare conversation history for advanced RAG
+    const conversationHistory = messages?.map(msg => ({
+      role: msg.role === "model" ? "assistant" : msg.role,
+      content: msg.content
+    })) || [];
+
+    const context = await prepareContextForGemini(
+      chat, 
+      content, 
+      supabase, 
+      conversationHistory,
+      userContext
+    );
+    
     if (context.error) {
       return await saveAssistantMessage(chatId, context.error, supabase);
     }
@@ -262,11 +357,22 @@ export const sendMessage = async (
       { role: "user", content },
     ];
 
+    // Enhanced context information for Gemini
+    const enhancedUserContext = {
+      ...userContext,
+      chatId,
+      userQuery: content,
+      conversationHistory,
+      documentType: chat.type,
+      namespace: chat.file_id,
+      isAdvancedRAG: context.isAdvancedRAG
+    };
+
     const response = await sendMessageToGemini(
       formattedMessages,
       context.fileContent,
       context.imageData,
-      userContext,
+      enhancedUserContext,
     );
 
     return await saveAssistantMessage(chatId, response, supabase);

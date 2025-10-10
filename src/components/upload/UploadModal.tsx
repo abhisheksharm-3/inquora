@@ -10,9 +10,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { X, CircleAlert, Lock, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { X, CircleAlert, Lock, Clock, Upload, Link } from "lucide-react";
 import { useUploadLogic } from "@/hooks/useUpload";
 import { getFileTypeConfig } from "@/constants/FileTypes";
 import { useUser } from "@/hooks/useUser";
@@ -163,122 +163,183 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="px-6 pb-6 space-y-6">
-          {/* File upload area - only show if not URL-only and in idle state */}
-          {!isUrlOnly && uploadStatus === "idle" && (
-            <UploadModalArea
-              fileTypeConfig={fileTypeConfig}
-              selectedFile={selectedFile}
-              handleFileChange={handleFileChange}
-            />
-          )}
+        <div className="px-6 pb-6">
+          {/* Show tabs only in idle state, otherwise show status screens */}
+          {uploadStatus === "idle" ? (
+            <Tabs defaultValue={isUrlOnly ? "url" : "file"} className="w-full">
+              {/* Only show tabs if not URL-only */}
+              {!isUrlOnly && (
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="file" className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload File
+                  </TabsTrigger>
+                  <TabsTrigger value="url" className="gap-2">
+                    <Link className="h-4 w-4" />
+                    Import URL
+                  </TabsTrigger>
+                </TabsList>
+              )}
 
-          {/* Upload progress */}
-          {uploadStatus === "uploading" && <UploadModalProgress />}
+              {/* File Upload Tab */}
+              {!isUrlOnly && (
+                <TabsContent value="file" className="space-y-4 mt-0">
+                  <UploadModalArea
+                    fileTypeConfig={fileTypeConfig}
+                    selectedFile={selectedFile}
+                    handleFileChange={handleFileChange}
+                  />
+                  {/* File type specific status message */}
+                  {fileTypeConfig.statusMessage && (
+                    <Alert
+                      className={
+                        fileTypeConfig.statusType === "warning"
+                          ? "border-amber-500/30 bg-amber-500/5"
+                          : "border-blue-500/30 bg-blue-500/5"
+                      }
+                    >
+                      <CircleAlert
+                        className={`h-4 w-4 ${
+                          fileTypeConfig.statusType === "warning"
+                            ? "text-amber-400"
+                            : "text-blue-400"
+                        }`}
+                      />
+                      <AlertDescription
+                        className={`text-sm ${
+                          fileTypeConfig.statusType === "warning"
+                            ? "text-amber-200/90"
+                            : "text-blue-200/90"
+                        }`}
+                      >
+                        {fileTypeConfig.statusMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </TabsContent>
+              )}
 
-          {/* Document processing progress */}
-          {uploadStatus === "processing" && (
-            <DocumentProcessingProgress
-              fileName={fileName || selectedFile?.name || "Document"}
-              fileType={fileType}
-              status="processing"
-              progress={processingProgress}
-              error={processingError}
-              onRetry={handleRetry}
-              canRetry={error?.retryable}
-            />
-          )}
+              {/* URL Import Tab */}
+              <TabsContent value="url" className="space-y-4 mt-0">
+                <UploadModalUrlInput
+                  url={url}
+                  fileTypeConfig={fileTypeConfig}
+                  isUrlOnly={isUrlOnly}
+                  handleUrlChange={handleUrlChange}
+                  handleUrlSubmit={handleSubmit}
+                  handleKeyDown={handleKeyDown}
+                  isUploading={isUploading}
+                />
 
-          {/* Upload success */}
-          {uploadStatus === "uploaded" && (
-            <UploadModalSuccess
-              fileName={fileName}
-              handleRemoveFile={handleRemoveFile}
-            />
-          )}
+                {/* Access warning alert */}
+                <Alert className="border-primary/20 bg-primary/5">
+                  <CircleAlert className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-sm font-medium text-primary">
+                    Please make sure the link can be accessed directly
+                  </AlertDescription>
+                </Alert>
 
-          {/* Upload error */}
-          {uploadStatus === "error" && (
-            <UploadModalError
-              error={error}
-              handleRetry={handleRetry}
-              onDismiss={handleDismissError}
-            />
-          )}
-
-          {/* Separator between file upload and URL input - only show if not URL-only and in idle state */}
-          {!isUrlOnly && uploadStatus === "idle" && (
-            <div className="relative">
-              <Separator />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="bg-background px-3 text-xs text-muted-foreground font-medium">
-                  OR
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* URL input section - only show in idle state */}
-          {uploadStatus === "idle" && (
+                {/* File type specific status message */}
+                {fileTypeConfig.statusMessage && (
+                  <Alert
+                    className={
+                      fileTypeConfig.statusType === "warning"
+                        ? "border-amber-500/30 bg-amber-500/5"
+                        : "border-blue-500/30 bg-blue-500/5"
+                    }
+                  >
+                    <CircleAlert
+                      className={`h-4 w-4 ${
+                        fileTypeConfig.statusType === "warning"
+                          ? "text-amber-400"
+                          : "text-blue-400"
+                      }`}
+                    />
+                    <AlertDescription
+                      className={`text-sm ${
+                        fileTypeConfig.statusType === "warning"
+                          ? "text-amber-200/90"
+                          : "text-blue-200/90"
+                      }`}
+                    >
+                      {fileTypeConfig.statusMessage}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            /* Status screens when not in idle state */
             <div className="space-y-4">
-              <UploadModalUrlInput
-                url={url}
-                fileTypeConfig={fileTypeConfig}
-                isUrlOnly={isUrlOnly}
-                handleUrlChange={handleUrlChange}
-                handleUrlSubmit={handleSubmit}
-                handleKeyDown={handleKeyDown}
-                isUploading={isUploading}
-              />
+              {/* Upload progress */}
+              {uploadStatus === "uploading" && <UploadModalProgress />}
 
-              {/* Access warning alert */}
-              <Alert className="border-primary/20 bg-primary/5">
-                <CircleAlert className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-sm font-medium text-primary">
-                  Please make sure the link can be accessed directly
-                </AlertDescription>
-              </Alert>
+              {/* Document processing progress */}
+              {uploadStatus === "processing" && (
+                <DocumentProcessingProgress
+                  fileName={fileName || selectedFile?.name || "Document"}
+                  fileType={fileType}
+                  status="processing"
+                  progress={processingProgress}
+                  error={processingError}
+                  onRetry={handleRetry}
+                  canRetry={error?.retryable}
+                />
+              )}
+
+              {/* Upload success */}
+              {uploadStatus === "uploaded" && (
+                <UploadModalSuccess
+                  fileName={fileName}
+                  handleRemoveFile={handleRemoveFile}
+                />
+              )}
+
+              {/* Upload error */}
+              {uploadStatus === "error" && (
+                <UploadModalError
+                  error={error}
+                  handleRetry={handleRetry}
+                  onDismiss={handleDismissError}
+                />
+              )}
             </div>
           )}
         </div>
 
-        <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
-          <div className="flex w-full gap-3">
+        {/* Hide footer during active processing to reduce clutter */}
+        {uploadStatus === "idle" && (
+          <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
+            <div className="flex w-full gap-3">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1 cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                className="flex-1 cursor-pointer"
+                disabled={!selectedFile && !url?.trim()}
+              >
+                Upload & Process
+              </Button>
+            </div>
+          </DialogFooter>
+        )}
+
+        {/* Show simplified footer with only close option during/after processing */}
+        {(uploadStatus === "uploaded" || uploadStatus === "error") && (
+          <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
             <Button
-              variant="outline"
               onClick={handleClose}
-              className="flex-1 cursor-pointer"
-              disabled={isUploading || isProcessing}
+              className="w-full cursor-pointer"
             >
-              {isUploading || isProcessing ? "Processing..." : "Cancel"}
+              Close
             </Button>
-            <Button
-              onClick={handleSubmit}
-              className="flex-1 cursor-pointer"
-              disabled={
-                isUploading ||
-                isProcessing ||
-                uploadStatus === "uploaded" ||
-                uploadStatus === "processing" ||
-                (!selectedFile && !url?.trim())
-              }
-            >
-              {isUploading ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Uploading...
-                </div>
-              ) : isProcessing ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Processing...
-                </div>
-              ) : (
-                "Upload & Process"
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

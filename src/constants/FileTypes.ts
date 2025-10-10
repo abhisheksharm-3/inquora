@@ -26,6 +26,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     iconColor: "#DC2626", // Red for PDF
     accept: ".pdf,application/pdf",
     maxSize: 10 * 1024 * 1024, // 10MB
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "doc",
@@ -35,6 +38,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     maxSize: 10 * 1024 * 1024, // 10MB
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "image",
@@ -43,6 +49,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     iconColor: "#16A34A", // Green for images
     accept: ".jpg,.jpeg,.png,image/jpeg,image/png",
     maxSize: 5 * 1024 * 1024, // 5MB
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "sheet",
@@ -52,6 +61,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     maxSize: 10 * 1024 * 1024, // 10MB
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "slides",
@@ -61,6 +73,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation",
     maxSize: 10 * 1024 * 1024, // 10MB
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "video",
@@ -70,6 +85,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
+    statusMessage:
+      "Note: YouTube may block requests aggressively. A native in-house fix is in development and will launch soon. Chats created before September 15, 2025 are view-only.",
+    statusType: "warning",
   },
   {
     type: "github",
@@ -79,6 +97,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
   {
     type: "web",
@@ -88,6 +109,9 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
+    statusMessage:
+      "Chats created before September 15, 2025 are view-only and won't support new messages.",
+    statusType: "info",
   },
 ];
 

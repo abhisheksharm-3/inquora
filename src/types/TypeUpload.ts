@@ -9,6 +9,8 @@ export interface TypeFileTypeConfig {
   maxSize: number;
   comingSoon?: boolean;
   urlOnly?: boolean;
+  statusMessage?: string;
+  statusType?: "info" | "warning";
 }
 
 export interface TypeFileType {

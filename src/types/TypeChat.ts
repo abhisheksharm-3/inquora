@@ -5,6 +5,7 @@ export interface TypeChatInterfaceMessagesProps {
   messagesLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   isSending?: boolean;
+  isLegacyChat?: boolean;
 }
 
 export interface TypeChatInputProps {
@@ -14,6 +15,8 @@ export interface TypeChatInputProps {
   isSending?: boolean;
   onKeyPress?: (e: React.KeyboardEvent) => void;
   className?: string;
+  isLegacyChat?: boolean;
+  legacyMessage?: string;
 }
 
 export interface TypeChatInterfaceDocumentViewerProps {
@@ -64,4 +67,6 @@ export interface TypeUseChatInterfaceReturn {
   isFileError: boolean;
   isSending: boolean;
   handleSendMessage: (messageContent?: string) => Promise<void>;
+  isLegacyChat: boolean;
+  legacyMessage: string;
 }

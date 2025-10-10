@@ -29,12 +29,14 @@ Inquora is a modern AI-powered application that enables users to have intelligen
 - **GitHub Repositories** - Code analysis and discussion (coming soon)
 - **Web Pages** - Content extraction and scraping from any webpage
 
-### 🤖 AI-Powered Capabilities
-- **Intelligent Document Processing** - Automatic text extraction and vector indexing
-- **Conversational AI Assistant** - Context-aware chat with document content
-- **Real-time Chat Interface** - Seamless conversation experience
-- **Document Viewer** - Integrated viewing with chat functionality
-- **Vector Search** - Pinecone-powered semantic search capabilities
+### 🤖 Inquora AI Agent
+- **Advanced RAG System** - Multi-source retrieval with source awareness
+- **Agentic Reasoning** - 4 reasoning frameworks (Chain of Thought, Tree of Thought, ReAct, Reflexion)
+- **Anti-Hallucination** - Strict source fidelity, never fabricates information
+- **Multi-Modal Intelligence** - Specialized processing for PDFs, videos, code, web content
+- **Confidence Calibration** - Transparent confidence levels for all responses
+- **Professional Output** - Structured, hierarchical, enterprise-grade responses
+- **Vector Search** - Pinecone-powered semantic search with multi-index support
 
 ### 🎨 Modern User Interface
 - **Responsive Design** - Works seamlessly on desktop and mobile
@@ -102,8 +104,17 @@ GEMINI_API_KEY=your_gemini_api_key
 
 # Pinecone Vector Database
 PINECONE_API_KEY=your_pinecone_api_key
-PINECONE_INDEX_NAME=your_pinecone_index_name
+PINECONE_INDEX_NAME=your_current_index_name
+
+# Optional: Legacy Pinecone indexes for backward compatibility
+# Comma-separated list of old index names
+PINECONE_LEGACY_INDEX_NAMES=old-index-1,old-index-2
+
+# Site Configuration
+SITE_URL=http://localhost:3000
 ```
+
+> **Note on Pinecone Indexes:** Inquora supports multiple Pinecone indexes for backward compatibility. New data will be written to `PINECONE_INDEX_NAME`, but queries will automatically check legacy indexes if a namespace isn't found in the current index. This allows seamless migration to new indexes without data loss.
 
 4. **Start the development server:**
 ```bash

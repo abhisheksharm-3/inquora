@@ -37,6 +37,8 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
     isFileError,
     isSending,
     handleSendMessage,
+    isLegacyChat,
+    legacyMessage,
   } = useChatInterface({ chatId });
 
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
@@ -118,6 +120,8 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
             setInputValue={setInputValue}
             onSendMessage={handleSendMessage}
             isSending={isSending}
+            isLegacyChat={isLegacyChat}
+            legacyMessage={legacyMessage}
           />
         </div>
       </Card>
@@ -130,6 +134,8 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
       inputValue,
       setInputValue,
       handleSendMessage,
+      isLegacyChat,
+      legacyMessage,
     ],
   );
 

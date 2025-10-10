@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
 import { useChats } from "@/hooks/useChats";
 import { useFileById } from "@/hooks/useFiles";
+import { VersionConfig } from "@/constants/VersionConfig";
 
 const REDIRECT_DELAY_MS = 2000;
 
@@ -92,6 +93,11 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     messages[messages.length - 1]?.id,
   ]);
 
+  const isLegacyChat = useMemo(
+    () => (chat?.created_at ? VersionConfig.isLegacyChat(chat.created_at) : false),
+    [chat?.created_at],
+  );
+
   return {
     inputValue,
     setInputValue,
@@ -107,5 +113,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
     isFileError,
     isSending,
     handleSendMessage,
+    isLegacyChat,
+    legacyMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
   };
 };
