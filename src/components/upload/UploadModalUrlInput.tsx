@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Send, AlertCircle, Link } from "lucide-react";
 import { TypeUploadModalUrlInputProps } from "@/types/TypeUpload";
 import { extractYoutubeVideoId } from "@/utils/youtube-utils";
-import { isValidGitHubUrl } from "@/utils/processors/github-processor-orchestrator";
+import { isValidGitHubUrl } from "@/utils/github-utils";
 import { isValidWebUrl } from "@/utils/web-scraper-utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -37,16 +37,13 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
    * Checks if the entered URL is a YouTube link, GitHub repository, or web page to conditionally show help messages.
    */
   useEffect(() => {
-    const checkUrls = async () => {
-      setIsYouTube(!!extractYoutubeVideoId(url));
-      setIsGitHub(await isValidGitHubUrl(url));
-      setIsWebPage(
-        isValidWebUrl(url) &&
-          !extractYoutubeVideoId(url) &&
-          !(await isValidGitHubUrl(url)),
-      );
-    };
-    checkUrls();
+    setIsYouTube(!!extractYoutubeVideoId(url));
+    setIsGitHub(isValidGitHubUrl(url));
+    setIsWebPage(
+      isValidWebUrl(url) &&
+        !extractYoutubeVideoId(url) &&
+        !isValidGitHubUrl(url),
+    );
   }, [url]);
 
   return (

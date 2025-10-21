@@ -24,8 +24,14 @@
  */
 
 import { processGitHubRepositoryWithClone } from "./github-processor-clone";
-import { processGitHubRepository as processGitHubRepositoryWithAPI } from "./github-processor";
-import type { TypeGitHubProcessResult } from "@/types/TypeGitHub";
+import { 
+  processGitHubRepository as processGitHubRepositoryWithAPI,
+  getGitHubRepositoryInfo as getGitHubRepositoryInfoFromAPI,
+  isValidGitHubUrl as isValidGitHubUrlFromAPI,
+  extractGitHubRepoId as extractGitHubRepoIdFromAPI,
+} from "./github-processor";
+import { cleanupOrphanedTempDirectories as cleanupOrphanedTempDirectoriesFromClone } from "./github-processor-clone";
+import type { TypeGitHubProcessResult, TypeGitHubRepositoryInfo } from "@/types/TypeGitHub";
 
 /**
  * Determines if an error is recoverable and should trigger a fallback
@@ -203,12 +209,49 @@ export const processGitHubRepositoryWithFallback = async (
 export const processGitHubRepository = processGitHubRepositoryWithFallback;
 
 /**
- * Re-export other utilities from the processors
+ * Retrieves basic information about a GitHub repository without processing
+ * This is an async wrapper for use in server context
+ * 
+ * @param repositoryUrl The URL of the GitHub repository
+ * @returns A promise that resolves to the repository's information
  */
-export {
-  getGitHubRepositoryInfo,
-  isValidGitHubUrl,
-  extractGitHubRepoId,
-} from "./github-processor";
+export const getGitHubRepositoryInfo = async (
+  repositoryUrl: string,
+): Promise<TypeGitHubRepositoryInfo> => {
+  return getGitHubRepositoryInfoFromAPI(repositoryUrl);
+};
 
-export { cleanupOrphanedTempDirectories } from "./github-processor-clone";
+/**
+ * Validates if a URL is a valid GitHub repository URL
+ * This is an async wrapper for use in server context
+ * 
+ * @param url The URL to validate
+ * @returns True if the URL is a valid GitHub repository URL
+ */
+export const isValidGitHubUrl = async (url: string): Promise<boolean> => {
+  return isValidGitHubUrlFromAPI(url);
+};
+
+/**
+ * Extracts the repository identifier from a GitHub URL
+ * This is an async wrapper for use in server context
+ * 
+ * @param url The GitHub repository URL
+ * @returns The repository identifier in the format "owner/repo"
+ */
+export const extractGitHubRepoId = async (
+  url: string,
+): Promise<string | null> => {
+  return extractGitHubRepoIdFromAPI(url);
+};
+
+/**
+ * Cleans up any orphaned temporary directories created by the GitHub processor
+ * This can be called periodically to clean up any directories that might have been left behind
+ * 
+ * @returns A promise that resolves when cleanup is complete
+ */
+export const cleanupOrphanedTempDirectories = async (): Promise<void> => {
+  return cleanupOrphanedTempDirectoriesFromClone();
+};
+
