@@ -15,7 +15,7 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 
 // --- Configuration ---
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = "gemini-2.0-flash";
+const MODEL_NAME = "gemini-2.5-flash";
 
 // --- Initialization ---
 let genAI: GoogleGenerativeAI | undefined;
