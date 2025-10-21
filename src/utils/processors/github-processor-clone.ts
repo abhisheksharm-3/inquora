@@ -823,14 +823,10 @@ export const processGitHubRepositoryWithClone = async (
   try {
     await updateFileStatus(supabase, namespace, "processing");
 
-    // Step 1: Check if git is available first
-    const gitAvailable = await _checkGitAvailability();
-    if (!gitAvailable) {
-      throw new Error("CLONE_UNAVAILABLE: Git is not available on the system");
-    }
-
-    // Step 2: Create temporary directory and download repository
+    // Step 1: Create temporary directory
     tempDir = await _createTempDir(`inquora-repo-${owner}-${repo}`);
+    
+    // Step 2: Download repository (will automatically try git clone, then ZIP)
     repoPath = await _downloadRepository(owner, repo, tempDir);
 
     // Step 3: Extract repository information from filesystem
