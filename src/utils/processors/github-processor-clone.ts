@@ -716,8 +716,20 @@ const _splitDocuments = async (documents: Document[]): Promise<Document[]> => {
   });
 
   const chunkedDocs = await splitter.splitDocuments(documents);
-  console.log(`Documents split into ${chunkedDocs.length} chunks`);
-  return chunkedDocs;
+  
+  // Filter out empty or whitespace-only chunks
+  const validChunks = chunkedDocs.filter(doc => {
+    const content = doc.pageContent?.trim();
+    return content && content.length > 0;
+  });
+  
+  const filteredCount = chunkedDocs.length - validChunks.length;
+  if (filteredCount > 0) {
+    console.log(`Filtered out ${filteredCount} empty chunks`);
+  }
+  
+  console.log(`Documents split into ${validChunks.length} valid chunks`);
+  return validChunks;
 };
 
 /**
@@ -728,6 +740,24 @@ const _storeDocsInPinecone = async (
   docs: Document[],
   namespace: string,
 ): Promise<void> => {
+  // Final validation: ensure all documents have non-empty content
+  const validDocs = docs.filter(doc => {
+    const content = doc.pageContent?.trim();
+    const isValid = content && content.length > 0;
+    if (!isValid) {
+      console.warn('Filtering out document with empty content:', doc.metadata);
+    }
+    return isValid;
+  });
+
+  if (validDocs.length === 0) {
+    throw new Error("No valid documents to store after filtering empty content");
+  }
+
+  if (validDocs.length < docs.length) {
+    console.log(`Filtered ${docs.length - validDocs.length} documents with empty content`);
+  }
+
   console.log("Creating Gemini embeddings...");
   const embeddings = await createGeminiEmbeddings();
   if (!embeddings) {
@@ -742,7 +772,7 @@ const _storeDocsInPinecone = async (
   }
 
   console.log(
-    `Storing ${docs.length} chunks in Pinecone with namespace: ${namespace}...`,
+    `Storing ${validDocs.length} chunks in Pinecone with namespace: ${namespace}...`,
   );
   let retries = 0;
 
@@ -750,10 +780,10 @@ const _storeDocsInPinecone = async (
     try {
       // Process in batches to avoid overwhelming Pinecone
       const batchSize = 100;
-      for (let i = 0; i < docs.length; i += batchSize) {
-        const batch = docs.slice(i, i + batchSize);
+      for (let i = 0; i < validDocs.length; i += batchSize) {
+        const batch = validDocs.slice(i, i + batchSize);
         console.log(
-          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(docs.length / batchSize)}...`,
+          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(validDocs.length / batchSize)}...`,
         );
 
         await PineconeStore.fromDocuments(batch, embeddings, {
@@ -762,7 +792,7 @@ const _storeDocsInPinecone = async (
         });
 
         // Small delay between batches
-        if (i + batchSize < docs.length) {
+        if (i + batchSize < validDocs.length) {
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }

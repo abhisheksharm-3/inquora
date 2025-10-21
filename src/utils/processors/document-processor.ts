@@ -34,7 +34,19 @@ const _processAndStoreDocuments = async (
     chunkOverlap: CHUNK_OVERLAP,
   });
   const chunkedDocs = await textSplitter.splitDocuments(docs);
-  console.log(`Document split into ${chunkedDocs.length} chunks.`);
+  
+  // Filter out empty or whitespace-only chunks
+  const validChunks = chunkedDocs.filter(doc => {
+    const content = doc.pageContent?.trim();
+    return content && content.length > 0;
+  });
+  
+  const filteredCount = chunkedDocs.length - validChunks.length;
+  if (filteredCount > 0) {
+    console.log(`Filtered out ${filteredCount} empty chunks`);
+  }
+  
+  console.log(`Document split into ${validChunks.length} valid chunks.`);
 
   // 2. Create embeddings
   console.log("Creating Gemini embeddings...");
@@ -55,12 +67,22 @@ const _processAndStoreDocuments = async (
   let retries = 0;
   while (retries < MAX_RETRIES) {
     try {
-      await PineconeStore.fromDocuments(chunkedDocs, embeddings, {
+      // Final validation before storing
+      const finalValidChunks = validChunks.filter(doc => {
+        const content = doc.pageContent?.trim();
+        return content && content.length > 0;
+      });
+
+      if (finalValidChunks.length === 0) {
+        throw new Error("No valid chunks to store after filtering");
+      }
+
+      await PineconeStore.fromDocuments(finalValidChunks, embeddings, {
         pineconeIndex,
         namespace,
       });
       console.log("Successfully stored document chunks in Pinecone.");
-      return { numDocs: chunkedDocs.length };
+      return { numDocs: finalValidChunks.length };
     } catch (error) {
       retries++;
       console.error(

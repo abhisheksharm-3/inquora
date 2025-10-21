@@ -403,14 +403,23 @@ export const processWebPage = async (
 
     // Split the content into chunks
     const texts = await textSplitter.splitText(pageContent.content);
-    console.log(`Split content into ${texts.length} chunks`);
+    
+    // Filter out empty or whitespace-only chunks
+    const validTexts = texts.filter(text => text && text.trim().length > 0);
+    
+    const filteredCount = texts.length - validTexts.length;
+    if (filteredCount > 0) {
+      console.log(`Filtered out ${filteredCount} empty text chunks`);
+    }
+    
+    console.log(`Split content into ${validTexts.length} valid chunks`);
 
-    if (texts.length === 0) {
-      throw new Error("No content found after text splitting");
+    if (validTexts.length === 0) {
+      throw new Error("No content found after text splitting and filtering");
     }
 
     // Create documents with enhanced metadata for better AI understanding
-    const documents = texts.map((text, index) => {
+    const documents = validTexts.map((text, index) => {
       // Enhance each chunk with context
       let enhancedText = text;
 
@@ -446,7 +455,7 @@ export const processWebPage = async (
           author: pageContent.metadata.author,
           publishDate: pageContent.metadata.publishDate,
           chunkIndex: index,
-          totalChunks: texts.length,
+          totalChunks: validTexts.length,
           timestamp: new Date().toISOString(),
           // Additional context for AI
           contentType: "webpage",
@@ -461,8 +470,18 @@ export const processWebPage = async (
     const embeddings = await createGeminiEmbeddings();
     const pineconeIndex = await getPineconeIndex();
 
-    console.log(`Storing ${documents.length} documents in Pinecone...`);
-    await PineconeStore.fromDocuments(documents, embeddings, {
+    // Final validation before storing
+    const validDocuments = documents.filter(doc => {
+      const content = doc.pageContent?.trim();
+      return content && content.length > 0;
+    });
+
+    if (validDocuments.length === 0) {
+      throw new Error("No valid documents to store after final filtering");
+    }
+
+    console.log(`Storing ${validDocuments.length} documents in Pinecone...`);
+    await PineconeStore.fromDocuments(validDocuments, embeddings, {
       pineconeIndex,
       namespace: fileId, // Use fileId as namespace for consistency with other processors
     });
@@ -471,7 +490,7 @@ export const processWebPage = async (
     await updateFileStatus(supabase, fileId, "completed");
 
     const result: TypeWebScrapingResult = {
-      numDocs: documents.length,
+      numDocs: validDocuments.length,
       success: true,
     };
 
