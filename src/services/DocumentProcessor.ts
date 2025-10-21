@@ -12,7 +12,6 @@ import { supabaseBrowserClient } from "@/utils/supabase/client";
 import {
   processYoutubeVideo,
   processGitHubRepository,
-  processGitHubRepositoryWithClone,
   processWebPage,
   processPdfDocument,
   processGenericDocument,
@@ -206,18 +205,8 @@ export class DocumentProcessor {
         case "github":
           if (!url) throw new Error("GitHub URL is required");
           this.emitProgress({ fileId, status: "processing", progress: 25 });
-          try {
-            processingResult = await processGitHubRepositoryWithClone(
-              url,
-              fileId,
-            );
-          } catch (cloneError) {
-            console.warn(
-              "Clone-based processing failed, falling back to API method:",
-              cloneError,
-            );
-            processingResult = await processGitHubRepository(url, fileId);
-          }
+          // Orchestrator automatically handles fallback: Clone → ZIP → API
+          processingResult = await processGitHubRepository(url, fileId);
           break;
 
         case "web":

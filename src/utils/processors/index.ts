@@ -13,14 +13,19 @@ export * from "./youtube-processor";
 // Export query processor and utilities
 export * from "./query-processor";
 
-// Export GitHub processor and utilities
-export * from "./github-processor";
-
-// Export GitHub processor with clone functionality
+// Export GitHub processor orchestrator with fallback strategy (RECOMMENDED)
+// This automatically tries: Clone → ZIP → API
 export {
-  processGitHubRepositoryWithClone,
+  processGitHubRepository,
+  getGitHubRepositoryInfo,
+  isValidGitHubUrl,
+  extractGitHubRepoId,
   cleanupOrphanedTempDirectories,
-} from "./github-processor-clone";
+} from "./github-processor-orchestrator";
+
+// Export individual GitHub processors for advanced use cases
+export { processGitHubRepository as processGitHubRepositoryWithAPI } from "./github-processor";
+export { processGitHubRepositoryWithClone } from "./github-processor-clone";
 
 // Export web scraping processor and utilities
 export { processWebPage, getWebPageInfo } from "./web-scraper-server";

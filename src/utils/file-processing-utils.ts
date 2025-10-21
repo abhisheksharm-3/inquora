@@ -4,7 +4,6 @@ import {
   processPdfDocument,
   processGenericDocument,
   processGitHubRepository,
-  processGitHubRepositoryWithClone,
   processWebPage,
 } from "@/utils/processors";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -139,15 +138,8 @@ async function _handleProcessableFile(
 
       case "github":
         if (!file.url) throw new Error("GitHub URL is required");
-        try {
-          result = await processGitHubRepositoryWithClone(file.url, fileId);
-        } catch (cloneError) {
-          console.warn(
-            "Clone-based processing failed, falling back to API method:",
-            cloneError,
-          );
-          result = await processGitHubRepository(file.url, fileId);
-        }
+        // Orchestrator automatically handles fallback: Clone → ZIP → API
+        result = await processGitHubRepository(file.url, fileId);
         break;
 
       case "web":

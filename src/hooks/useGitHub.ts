@@ -7,7 +7,7 @@ import {
   isValidGitHubUrl,
   extractGitHubRepoId,
   processGitHubRepository,
-} from "@/utils/processors/github-processor";
+} from "@/utils/processors/github-processor-orchestrator";
 import {
   isValidGitHubUrl as isValidGitHubUrlSync,
   extractGitHubRepoInfo,

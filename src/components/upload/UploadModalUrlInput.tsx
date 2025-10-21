@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Send, AlertCircle, Link } from "lucide-react";
 import { TypeUploadModalUrlInputProps } from "@/types/TypeUpload";
 import { extractYoutubeVideoId } from "@/utils/youtube-utils";
-import { isValidGitHubUrl } from "@/utils/processors/github-processor";
+import { isValidGitHubUrl } from "@/utils/processors/github-processor-orchestrator";
 import { isValidWebUrl } from "@/utils/web-scraper-utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";

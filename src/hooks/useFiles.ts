@@ -9,7 +9,6 @@ import {
   processGenericDocument,
   processYoutubeVideo,
   processGitHubRepository,
-  processGitHubRepositoryWithClone,
   processWebPage,
 } from "@/utils/processors";
 import {
@@ -118,10 +117,8 @@ export const useFiles = () => {
           processor = processYoutubeVideo(newFile.url, newFile.id);
           break;
         case "github":
-          processor = processGitHubRepositoryWithClone(
-            newFile.url,
-            newFile.id,
-          ).catch(() => processGitHubRepository(newFile.url!, newFile.id));
+          // Orchestrator automatically handles fallback: Clone → ZIP → API
+          processor = processGitHubRepository(newFile.url!, newFile.id);
           break;
         case "web":
           processor = processWebPage(newFile.url, newFile.id);
