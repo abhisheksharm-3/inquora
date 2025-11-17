@@ -80,7 +80,7 @@ const ChoosePage = () => {
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full flex-shrink-0"></div>
                           <span className="text-muted-foreground">
-                            PDF, Word, Images, XLSX, GitHub, Web - Working perfectly
+                            PDF, Word, Images, XLSX, Web - Working perfectly
                           </span>
                         </div>
                         
@@ -113,6 +113,23 @@ const ChoosePage = () => {
                               </span>
                               <span className="text-blue-600 dark:text-blue-400 ml-1">
                                 YouTube blocks IPs aggressively. A native in-house fix is in development and will launch soon.
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-2">
+                          <div className="h-1.5 w-1.5 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                          <div className="space-y-2">
+                            <span className="text-muted-foreground">
+                              GitHub Issues
+                            </span>
+                            <div className="p-2 rounded bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-blupurle-800">
+                              <span className="text-purple-700 dark:text-purple-300 font-medium">
+                                Note:
+                              </span>
+                              <span className="text-purple-600 dark:text-purple-400 ml-1">
+                                We&apos;re Having Some Issues with GitHub Repos, issue is acknowledged and fix is in works.
                               </span>
                             </div>
                           </div>
