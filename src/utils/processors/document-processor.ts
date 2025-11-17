@@ -34,18 +34,18 @@ const _processAndStoreDocuments = async (
     chunkOverlap: CHUNK_OVERLAP,
   });
   const chunkedDocs = await textSplitter.splitDocuments(docs);
-  
+
   // Filter out empty or whitespace-only chunks
-  const validChunks = chunkedDocs.filter(doc => {
+  const validChunks = chunkedDocs.filter((doc) => {
     const content = doc.pageContent?.trim();
     return content && content.length > 0;
   });
-  
+
   const filteredCount = chunkedDocs.length - validChunks.length;
   if (filteredCount > 0) {
     console.log(`Filtered out ${filteredCount} empty chunks`);
   }
-  
+
   console.log(`Document split into ${validChunks.length} valid chunks.`);
 
   // 2. Create embeddings
@@ -54,6 +54,27 @@ const _processAndStoreDocuments = async (
   if (!embeddings) {
     throw new Error(
       "Failed to create embeddings. Gemini API may not be configured properly.",
+    );
+  }
+
+  // Test embeddings with a simple string to ensure they work
+  console.log("Testing embeddings generation...");
+  try {
+    const testEmbedding = await embeddings.embedQuery("test");
+    if (!testEmbedding || testEmbedding.length === 0) {
+      throw new Error("Embeddings test failed: returned empty vector");
+    }
+    console.log(
+      `Embeddings test successful. Vector dimension: ${testEmbedding.length}`,
+    );
+  } catch (error) {
+    console.error("Embeddings test failed:", error);
+    throw new Error(
+      `Failed to generate embeddings. This could be due to:
+      1. Invalid or missing GEMINI_API_KEY
+      2. Gemini API rate limiting or quota exceeded
+      3. Network connectivity issues
+      Original error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
@@ -68,7 +89,7 @@ const _processAndStoreDocuments = async (
   while (retries < MAX_RETRIES) {
     try {
       // Final validation before storing
-      const finalValidChunks = validChunks.filter(doc => {
+      const finalValidChunks = validChunks.filter((doc) => {
         const content = doc.pageContent?.trim();
         return content && content.length > 0;
       });
@@ -77,22 +98,71 @@ const _processAndStoreDocuments = async (
         throw new Error("No valid chunks to store after filtering");
       }
 
-      await PineconeStore.fromDocuments(finalValidChunks, embeddings, {
-        pineconeIndex,
-        namespace,
-      });
+      // Process in batches to avoid rate limits
+      // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
+      const batchSize = 5;
+      for (let i = 0; i < finalValidChunks.length; i += batchSize) {
+        const batch = finalValidChunks.slice(i, i + batchSize);
+        console.log(
+          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(finalValidChunks.length / batchSize)}...`,
+        );
+
+        // Log first document in batch for debugging
+        if (i === 0 && batch.length > 0) {
+          console.log(
+            `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
+          );
+        }
+
+        await PineconeStore.fromDocuments(batch, embeddings, {
+          pineconeIndex,
+          namespace,
+        });
+
+        // 5 second delay between batches to stay under API rate limits
+        // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
+        if (i + batchSize < finalValidChunks.length) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
+
       console.log("Successfully stored document chunks in Pinecone.");
       return { numDocs: finalValidChunks.length };
     } catch (error) {
       retries++;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error(
         `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
         error,
       );
+
+      // Check if this is a rate limit error
+      if (
+        errorMessage.includes("Vector dimension 0") ||
+        errorMessage.includes("rate limit")
+      ) {
+        console.warn(
+          "⚠️ Rate limit detected. This typically happens with large documents on free API tiers.",
+        );
+        console.warn(
+          "💡 Solutions: 1) Use smaller documents, 2) Upgrade Gemini API quota, 3) Wait and retry",
+        );
+      }
+
       if (retries >= MAX_RETRIES) {
+        if (errorMessage.includes("Vector dimension 0")) {
+          throw new Error(
+            `Failed to process document due to API rate limits. Large documents (${validChunks.length} chunks) require upgraded API quotas. Please try a smaller document or upgrade your Gemini API tier.`,
+          );
+        }
         throw error; // Re-throw after final attempt
       }
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+
+      // Longer delay on retry to let rate limits reset
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
+      );
     }
   }
 

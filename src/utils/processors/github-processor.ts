@@ -137,7 +137,7 @@ const _parseGitHubUrl = (url: string): TypeGitHubParseResult | null => {
 const _makeGitHubApiRequest = async (
   url: string,
   options: RequestInit = {},
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
@@ -358,18 +358,18 @@ const _splitDocuments = async (documents: Document[]): Promise<Document[]> => {
   });
 
   const chunkedDocs = await splitter.splitDocuments(documents);
-  
+
   // Filter out empty or whitespace-only chunks
-  const validChunks = chunkedDocs.filter(doc => {
+  const validChunks = chunkedDocs.filter((doc) => {
     const content = doc.pageContent?.trim();
     return content && content.length > 0;
   });
-  
+
   const filteredCount = chunkedDocs.length - validChunks.length;
   if (filteredCount > 0) {
     console.log(`Filtered out ${filteredCount} empty chunks`);
   }
-  
+
   console.log(`Documents split into ${validChunks.length} valid chunks`);
   return validChunks;
 };
@@ -383,21 +383,25 @@ const _storeDocsInPinecone = async (
   namespace: string,
 ): Promise<void> => {
   // Final validation: ensure all documents have non-empty content
-  const validDocs = docs.filter(doc => {
+  const validDocs = docs.filter((doc) => {
     const content = doc.pageContent?.trim();
     const isValid = content && content.length > 0;
     if (!isValid) {
-      console.warn('Filtering out document with empty content:', doc.metadata);
+      console.warn("Filtering out document with empty content:", doc.metadata);
     }
     return isValid;
   });
 
   if (validDocs.length === 0) {
-    throw new Error("No valid documents to store after filtering empty content");
+    throw new Error(
+      "No valid documents to store after filtering empty content",
+    );
   }
 
   if (validDocs.length < docs.length) {
-    console.log(`Filtered ${docs.length - validDocs.length} documents with empty content`);
+    console.log(
+      `Filtered ${docs.length - validDocs.length} documents with empty content`,
+    );
   }
 
   console.log("Creating Gemini embeddings...");
@@ -420,22 +424,31 @@ const _storeDocsInPinecone = async (
 
   while (retries < MAX_RETRIES) {
     try {
-      // Process in batches to avoid overwhelming Pinecone
-      const batchSize = 100;
+      // Process in batches to avoid overwhelming Pinecone and API rate limits
+      // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
+      const batchSize = 5;
       for (let i = 0; i < validDocs.length; i += batchSize) {
         const batch = validDocs.slice(i, i + batchSize);
         console.log(
           `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(validDocs.length / batchSize)}...`,
         );
 
+        // Log first document in batch for debugging
+        if (i === 0 && batch.length > 0) {
+          console.log(
+            `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
+          );
+        }
+
         await PineconeStore.fromDocuments(batch, embeddings, {
           pineconeIndex,
           namespace,
         });
 
-        // Small delay between batches
+        // 5 second delay between batches to stay under API rate limits
+        // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
         if (i + batchSize < validDocs.length) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       }
 
@@ -443,15 +456,38 @@ const _storeDocsInPinecone = async (
       return;
     } catch (error) {
       retries++;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error(
         `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
         error,
       );
+
+      // Check if this is a rate limit error
+      if (
+        errorMessage.includes("Vector dimension 0") ||
+        errorMessage.includes("rate limit")
+      ) {
+        console.warn(
+          "⚠️ Rate limit detected. This typically happens with large repositories on free API tiers.",
+        );
+        console.warn(
+          "💡 Solutions: 1) Use smaller repos (<50 files), 2) Upgrade Gemini API quota, 3) Wait and retry",
+        );
+      }
+
       if (retries >= MAX_RETRIES) {
+        if (errorMessage.includes("Vector dimension 0")) {
+          throw new Error(
+            `Failed to process repository due to API rate limits. Large repositories (${validDocs.length} chunks) require upgraded API quotas. Please try a smaller repository or upgrade your Gemini API tier.`,
+          );
+        }
         throw error;
       }
+
+      // Longer delay on retry to let rate limits reset
       await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY_MS * retries),
+        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
       );
     }
   }

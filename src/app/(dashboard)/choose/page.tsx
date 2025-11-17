@@ -83,7 +83,7 @@ const ChoosePage = () => {
                             PDF, Word, Images, XLSX, Web - Working perfectly
                           </span>
                         </div>
-                        
+
                         <div className="flex items-start gap-2">
                           <div className="h-1.5 w-1.5 bg-amber-500 rounded-full mt-1 flex-shrink-0"></div>
                           <div className="space-y-2">
@@ -112,24 +112,28 @@ const ChoosePage = () => {
                                 Note:
                               </span>
                               <span className="text-blue-600 dark:text-blue-400 ml-1">
-                                YouTube blocks IPs aggressively. A native in-house fix is in development and will launch soon.
+                                YouTube blocks IPs aggressively. A native
+                                in-house fix is in development and will launch
+                                soon.
                               </span>
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-start gap-2">
-                          <div className="h-1.5 w-1.5 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                          <div className="h-1.5 w-1.5 bg-amber-500 rounded-full mt-1 flex-shrink-0"></div>
                           <div className="space-y-2">
                             <span className="text-muted-foreground">
-                              GitHub Issues
+                              GitHub Repositories - Rate Limit Warnings
                             </span>
-                            <div className="p-2 rounded bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-blupurle-800">
-                              <span className="text-purple-700 dark:text-purple-300 font-medium">
-                                Note:
+                            <div className="p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                              <span className="text-amber-700 dark:text-amber-300 font-medium">
+                                Important:
                               </span>
-                              <span className="text-purple-600 dark:text-purple-400 ml-1">
-                                We&apos;re Having Some Issues with GitHub Repos, issue is acknowledged and fix is in works.
+                              <span className="text-amber-600 dark:text-amber-400 ml-1">
+                                Large repositories (100+ files) may fail due to
+                                free API tier rate limits. For best results, use
+                                smaller repos. We are working on bypassing these limits.
                               </span>
                             </div>
                           </div>
@@ -146,7 +150,9 @@ const ChoosePage = () => {
                                 Important:
                               </span>
                               <span className="text-red-600 dark:text-red-400 ml-1">
-                                New messages not supported on older chats due to embedding model upgrade. Create a new chat to continue.
+                                New messages not supported on older chats due to
+                                embedding model upgrade. Create a new chat to
+                                continue.
                               </span>
                             </div>
                           </div>

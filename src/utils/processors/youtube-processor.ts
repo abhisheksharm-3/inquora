@@ -2,7 +2,7 @@
 
 import { YoutubeTranscript } from "youtube-transcript";
 import { YoutubeTranscript as DanielYoutubeTranscript } from "@danielxceron/youtube-transcript";
-import { fetchTranscript } from 'youtube-transcript-plus';
+import { fetchTranscript } from "youtube-transcript-plus";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
@@ -144,18 +144,18 @@ const _splitTranscriptToDocs = async (
     metadata: { source: videoUrl, type: "youtube" },
   });
   const chunkedDocs = await splitter.splitDocuments([doc]);
-  
+
   // Filter out empty or whitespace-only chunks
-  const validChunks = chunkedDocs.filter(doc => {
+  const validChunks = chunkedDocs.filter((doc) => {
     const content = doc.pageContent?.trim();
     return content && content.length > 0;
   });
-  
+
   const filteredCount = chunkedDocs.length - validChunks.length;
   if (filteredCount > 0) {
     console.log(`Filtered out ${filteredCount} empty chunks`);
   }
-  
+
   console.log(`Transcript split into ${validChunks.length} valid chunks.`);
   return validChunks;
 };
@@ -166,21 +166,25 @@ const _splitTranscriptToDocs = async (
  */
 const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
   // Final validation: ensure all documents have non-empty content
-  const validDocs = docs.filter(doc => {
+  const validDocs = docs.filter((doc) => {
     const content = doc.pageContent?.trim();
     const isValid = content && content.length > 0;
     if (!isValid) {
-      console.warn('Filtering out document with empty content:', doc.metadata);
+      console.warn("Filtering out document with empty content:", doc.metadata);
     }
     return isValid;
   });
 
   if (validDocs.length === 0) {
-    throw new Error("No valid documents to store after filtering empty content");
+    throw new Error(
+      "No valid documents to store after filtering empty content",
+    );
   }
 
   if (validDocs.length < docs.length) {
-    console.log(`Filtered ${docs.length - validDocs.length} documents with empty content`);
+    console.log(
+      `Filtered ${docs.length - validDocs.length} documents with empty content`,
+    );
   }
 
   console.log("Creating Gemini embeddings...");
@@ -188,6 +192,27 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
   if (!embeddings) {
     throw new Error(
       "Failed to create embeddings. Gemini API may not be configured properly.",
+    );
+  }
+
+  // Test embeddings with a simple string to ensure they work
+  console.log("Testing embeddings generation...");
+  try {
+    const testEmbedding = await embeddings.embedQuery("test");
+    if (!testEmbedding || testEmbedding.length === 0) {
+      throw new Error("Embeddings test failed: returned empty vector");
+    }
+    console.log(
+      `Embeddings test successful. Vector dimension: ${testEmbedding.length}`,
+    );
+  } catch (error) {
+    console.error("Embeddings test failed:", error);
+    throw new Error(
+      `Failed to generate embeddings. This could be due to:
+      1. Invalid or missing GEMINI_API_KEY
+      2. Gemini API rate limiting or quota exceeded
+      3. Network connectivity issues
+      Original error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
@@ -202,22 +227,71 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
   let retries = 0;
   while (retries < MAX_RETRIES) {
     try {
-      await PineconeStore.fromDocuments(validDocs, embeddings, {
-        pineconeIndex,
-        namespace,
-      });
+      // Process in batches to avoid rate limits
+      // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
+      const batchSize = 5;
+      for (let i = 0; i < validDocs.length; i += batchSize) {
+        const batch = validDocs.slice(i, i + batchSize);
+        console.log(
+          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(validDocs.length / batchSize)}...`,
+        );
+
+        // Log first document in batch for debugging
+        if (i === 0 && batch.length > 0) {
+          console.log(
+            `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
+          );
+        }
+
+        await PineconeStore.fromDocuments(batch, embeddings, {
+          pineconeIndex,
+          namespace,
+        });
+
+        // 5 second delay between batches to stay under API rate limits
+        // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
+        if (i + batchSize < validDocs.length) {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
+
       console.log("Successfully stored transcript chunks in Pinecone.");
       return; // Success
     } catch (error) {
       retries++;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error(
         `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
         error,
       );
+
+      // Check if this is a rate limit error
+      if (
+        errorMessage.includes("Vector dimension 0") ||
+        errorMessage.includes("rate limit")
+      ) {
+        console.warn(
+          "⚠️ Rate limit detected. This typically happens with large content on free API tiers.",
+        );
+        console.warn(
+          "💡 Solutions: 1) Use shorter videos, 2) Upgrade Gemini API quota, 3) Wait and retry",
+        );
+      }
+
       if (retries >= MAX_RETRIES) {
+        if (errorMessage.includes("Vector dimension 0")) {
+          throw new Error(
+            `Failed to process video due to API rate limits. Large transcripts (${validDocs.length} chunks) require upgraded API quotas. Please try a shorter video or upgrade your Gemini API tier.`,
+          );
+        }
         throw error; // Re-throw after final attempt
       }
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+
+      // Longer delay on retry to let rate limits reset
+      await new Promise((resolve) =>
+        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
+      );
     }
   }
 };

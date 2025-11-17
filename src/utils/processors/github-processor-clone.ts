@@ -2,16 +2,16 @@
 
 /**
  * GitHub Repository Processor with Multiple Download Methods
- * 
+ *
  * This processor supports two methods for downloading GitHub repositories:
  * 1. Git Clone (preferred): Uses git clone command for full repository access
  * 2. ZIP Download (fallback): Downloads repository as ZIP archive via GitHub API
- * 
+ *
  * The ZIP download method is automatically used when:
  * - Running in Vercel, Netlify, or other serverless environments
  * - Git is not available on the system
  * - DISABLE_GIT environment variable is set
- * 
+ *
  * This ensures the processor works in both development and production environments
  * while avoiding GitHub API rate limits by preferring direct git access when possible.
  */
@@ -235,9 +235,15 @@ const _extractRepositoryInfoFromFS = async (
     // Get repository size (approximate)
     try {
       // Use cross-platform approach for getting directory size
-      if (process.platform === 'win32' || process.env.VERCEL || process.env.NETLIFY) {
+      if (
+        process.platform === "win32" ||
+        process.env.VERCEL ||
+        process.env.NETLIFY
+      ) {
         // On Windows or serverless environments, calculate size manually
-        const calculateDirectorySize = async (dirPath: string): Promise<number> => {
+        const calculateDirectorySize = async (
+          dirPath: string,
+        ): Promise<number> => {
           let totalSize = 0;
           try {
             const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -362,13 +368,16 @@ const _checkGitAvailability = async (): Promise<boolean> => {
     console.log("Skipping git availability check in serverless environment");
     return false;
   }
-  
+
   try {
     await execAsync("git --version", { timeout: 5000 });
     console.log("Git is available for repository cloning");
     return true;
   } catch (error) {
-    console.warn("Git is not available on the system, will use ZIP download fallback:", error);
+    console.warn(
+      "Git is not available on the system, will use ZIP download fallback:",
+      error,
+    );
     return false;
   }
 };
@@ -382,57 +391,61 @@ const _downloadAndExtractZip = async (
   owner: string,
   repo: string,
   tempDir: string,
-  branch: string = "main"
+  branch: string = "main",
 ): Promise<string> => {
   const repoPath = path.join(tempDir, repo);
   const zipUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
-  
-  console.log(`Downloading repository ${owner}/${repo} as ZIP from ${zipUrl}...`);
+
+  console.log(
+    `Downloading repository ${owner}/${repo} as ZIP from ${zipUrl}...`,
+  );
 
   try {
     // Download the ZIP file
     const response = await fetch(zipUrl);
-    
+
     if (!response.ok) {
       // Try with 'master' branch if 'main' fails
       if (branch === "main") {
         console.log(`Branch 'main' not found, trying 'master'...`);
         return await _downloadAndExtractZip(owner, repo, tempDir, "master");
       }
-      throw new Error(`Failed to download repository: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to download repository: ${response.status} ${response.statusText}`,
+      );
     }
 
     const arrayBuffer = await response.arrayBuffer();
     const zip = await JSZip.loadAsync(arrayBuffer);
-    
+
     console.log(`Extracting ZIP archive to ${repoPath}...`);
     await fs.mkdir(repoPath, { recursive: true });
 
     // Extract all files from the ZIP
     const promises: Promise<void>[] = [];
-    
+
     zip.forEach((relativePath, file) => {
       // Skip the root directory (usually repo-name-branch/)
-      const pathParts = relativePath.split('/');
+      const pathParts = relativePath.split("/");
       if (pathParts.length <= 1) return;
-      
+
       // Remove the first part (root directory) to get the actual file path
-      const actualPath = pathParts.slice(1).join('/');
+      const actualPath = pathParts.slice(1).join("/");
       if (!actualPath) return;
-      
+
       const fullPath = path.join(repoPath, actualPath);
-      
+
       if (file.dir) {
         // Create directory
         promises.push(fs.mkdir(fullPath, { recursive: true }).then(() => {}));
       } else {
         // Extract file
         promises.push(
-          file.async('nodebuffer').then(async (content) => {
+          file.async("nodebuffer").then(async (content) => {
             const dirPath = path.dirname(fullPath);
             await fs.mkdir(dirPath, { recursive: true });
             await fs.writeFile(fullPath, content);
-          })
+          }),
         );
       }
     });
@@ -440,11 +453,10 @@ const _downloadAndExtractZip = async (
     await Promise.all(promises);
     console.log(`Successfully extracted repository to ${repoPath}`);
     return repoPath;
-    
   } catch (error) {
     console.error(`Failed to download/extract ZIP:`, error);
     throw new Error(
-      `Failed to download repository ${owner}/${repo} as ZIP: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to download repository ${owner}/${repo} as ZIP: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 };
@@ -463,7 +475,7 @@ const _downloadRepository = async (
 
   // Check if git is available
   const gitAvailable = await _checkGitAvailability();
-  
+
   if (gitAvailable) {
     console.log("Using git clone method...");
     return await _cloneWithGit(owner, repo, tempDir);
@@ -716,18 +728,18 @@ const _splitDocuments = async (documents: Document[]): Promise<Document[]> => {
   });
 
   const chunkedDocs = await splitter.splitDocuments(documents);
-  
+
   // Filter out empty or whitespace-only chunks
-  const validChunks = chunkedDocs.filter(doc => {
+  const validChunks = chunkedDocs.filter((doc) => {
     const content = doc.pageContent?.trim();
     return content && content.length > 0;
   });
-  
+
   const filteredCount = chunkedDocs.length - validChunks.length;
   if (filteredCount > 0) {
     console.log(`Filtered out ${filteredCount} empty chunks`);
   }
-  
+
   console.log(`Documents split into ${validChunks.length} valid chunks`);
   return validChunks;
 };
@@ -741,21 +753,25 @@ const _storeDocsInPinecone = async (
   namespace: string,
 ): Promise<void> => {
   // Final validation: ensure all documents have non-empty content
-  const validDocs = docs.filter(doc => {
+  const validDocs = docs.filter((doc) => {
     const content = doc.pageContent?.trim();
     const isValid = content && content.length > 0;
     if (!isValid) {
-      console.warn('Filtering out document with empty content:', doc.metadata);
+      console.warn("Filtering out document with empty content:", doc.metadata);
     }
     return isValid;
   });
 
   if (validDocs.length === 0) {
-    throw new Error("No valid documents to store after filtering empty content");
+    throw new Error(
+      "No valid documents to store after filtering empty content",
+    );
   }
 
   if (validDocs.length < docs.length) {
-    console.log(`Filtered ${docs.length - validDocs.length} documents with empty content`);
+    console.log(
+      `Filtered ${docs.length - validDocs.length} documents with empty content`,
+    );
   }
 
   console.log("Creating Gemini embeddings...");
@@ -778,8 +794,9 @@ const _storeDocsInPinecone = async (
 
   while (retries < MAX_RETRIES) {
     try {
-      // Process in batches to avoid overwhelming Pinecone
-      const batchSize = 100;
+      // Process in batches to avoid overwhelming Pinecone and API rate limits
+      // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
+      const batchSize = 5;
       for (let i = 0; i < validDocs.length; i += batchSize) {
         const batch = validDocs.slice(i, i + batchSize);
         console.log(
@@ -791,9 +808,10 @@ const _storeDocsInPinecone = async (
           namespace,
         });
 
-        // Small delay between batches
+        // 5 second delay between batches to stay under API rate limits
+        // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
         if (i + batchSize < validDocs.length) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
       }
 
@@ -801,15 +819,38 @@ const _storeDocsInPinecone = async (
       return;
     } catch (error) {
       retries++;
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error(
         `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
         error,
       );
+
+      // Check if this is a rate limit error
+      if (
+        errorMessage.includes("Vector dimension 0") ||
+        errorMessage.includes("rate limit")
+      ) {
+        console.warn(
+          "⚠️ Rate limit detected. This typically happens with large repositories on free API tiers.",
+        );
+        console.warn(
+          "💡 Solutions: 1) Use smaller repos (<50 files), 2) Upgrade Gemini API quota, 3) Wait and retry",
+        );
+      }
+
       if (retries >= MAX_RETRIES) {
+        if (errorMessage.includes("Vector dimension 0")) {
+          throw new Error(
+            `Failed to process repository due to API rate limits. Large repositories (${validDocs.length} chunks) require upgraded API quotas. Please try a smaller repository or upgrade your Gemini API tier.`,
+          );
+        }
         throw error;
       }
+
+      // Longer delay on retry to let rate limits reset
       await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY_MS * retries),
+        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
       );
     }
   }
@@ -855,7 +896,7 @@ export const processGitHubRepositoryWithClone = async (
 
     // Step 1: Create temporary directory
     tempDir = await _createTempDir(`inquora-repo-${owner}-${repo}`);
-    
+
     // Step 2: Download repository (will automatically try git clone, then ZIP)
     repoPath = await _downloadRepository(owner, repo, tempDir);
 
@@ -896,8 +937,10 @@ export const processGitHubRepositoryWithClone = async (
 
     // Step 7: Update file status with summary information
     const wasGitUsed = await _checkGitAvailability();
-    const processingMethod = wasGitUsed ? "Git clone (filesystem)" : "ZIP download (filesystem)";
-    
+    const processingMethod = wasGitUsed
+      ? "Git clone (filesystem)"
+      : "ZIP download (filesystem)";
+
     const repositorySummary = [
       `Repository: ${repositoryInfo.full_name}`,
       `Description: ${repositoryInfo.description || "No description available"}`,
@@ -925,16 +968,17 @@ export const processGitHubRepositoryWithClone = async (
     );
 
     // Check if this is a recoverable error that should trigger API fallback
-    const isRecoverableError = (
+    const isRecoverableError =
       errorMessage.includes("CLONE_UNAVAILABLE") ||
       errorMessage.includes("Failed to clone") ||
       errorMessage.includes("Failed to download") ||
       errorMessage.includes("git: command not found") ||
-      errorMessage.includes("Git is not available")
-    );
+      errorMessage.includes("Git is not available");
 
     if (isRecoverableError) {
-      console.log("Repository processing error is recoverable, will trigger API fallback");
+      console.log(
+        "Repository processing error is recoverable, will trigger API fallback",
+      );
       throw error; // Re-throw to trigger fallback mechanism
     }
 

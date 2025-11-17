@@ -403,15 +403,15 @@ export const processWebPage = async (
 
     // Split the content into chunks
     const texts = await textSplitter.splitText(pageContent.content);
-    
+
     // Filter out empty or whitespace-only chunks
-    const validTexts = texts.filter(text => text && text.trim().length > 0);
-    
+    const validTexts = texts.filter((text) => text && text.trim().length > 0);
+
     const filteredCount = texts.length - validTexts.length;
     if (filteredCount > 0) {
       console.log(`Filtered out ${filteredCount} empty text chunks`);
     }
-    
+
     console.log(`Split content into ${validTexts.length} valid chunks`);
 
     if (validTexts.length === 0) {
@@ -468,10 +468,38 @@ export const processWebPage = async (
 
     // Create embeddings and store in Pinecone
     const embeddings = await createGeminiEmbeddings();
+
+    if (!embeddings) {
+      throw new Error(
+        "Failed to create embeddings. Gemini API may not be configured properly.",
+      );
+    }
+
+    // Test embeddings with a simple string to ensure they work
+    console.log("Testing embeddings generation...");
+    try {
+      const testEmbedding = await embeddings.embedQuery("test");
+      if (!testEmbedding || testEmbedding.length === 0) {
+        throw new Error("Embeddings test failed: returned empty vector");
+      }
+      console.log(
+        `Embeddings test successful. Vector dimension: ${testEmbedding.length}`,
+      );
+    } catch (error) {
+      console.error("Embeddings test failed:", error);
+      throw new Error(
+        `Failed to generate embeddings. This could be due to:
+        1. Invalid or missing GEMINI_API_KEY
+        2. Gemini API rate limiting or quota exceeded
+        3. Network connectivity issues
+        Original error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     const pineconeIndex = await getPineconeIndex();
 
     // Final validation before storing
-    const validDocuments = documents.filter(doc => {
+    const validDocuments = documents.filter((doc) => {
       const content = doc.pageContent?.trim();
       return content && content.length > 0;
     });
@@ -481,10 +509,34 @@ export const processWebPage = async (
     }
 
     console.log(`Storing ${validDocuments.length} documents in Pinecone...`);
-    await PineconeStore.fromDocuments(validDocuments, embeddings, {
-      pineconeIndex,
-      namespace: fileId, // Use fileId as namespace for consistency with other processors
-    });
+
+    // Process in batches to avoid rate limits
+    // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
+    const batchSize = 5;
+    for (let i = 0; i < validDocuments.length; i += batchSize) {
+      const batch = validDocuments.slice(i, i + batchSize);
+      console.log(
+        `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(validDocuments.length / batchSize)}...`,
+      );
+
+      // Log first document in batch for debugging
+      if (i === 0 && batch.length > 0) {
+        console.log(
+          `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
+        );
+      }
+
+      await PineconeStore.fromDocuments(batch, embeddings, {
+        pineconeIndex,
+        namespace: fileId, // Use fileId as namespace for consistency with other processors
+      });
+
+      // 5 second delay between batches to stay under API rate limits
+      // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
+      if (i + batchSize < validDocuments.length) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    }
 
     // Update file status to completed
     await updateFileStatus(supabase, fileId, "completed");
