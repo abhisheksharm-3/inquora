@@ -9,6 +9,12 @@ import { useState, useCallback, useMemo } from "react";
 
 export const CHATS_QUERY_KEY = ["chats"];
 
+
+interface UpdateChatParams {
+  chatId: string;
+  chatData: Partial<TypeChat>;
+}
+
 export const useChats = (chatId?: string) => {
   const queryClient = useQueryClient();
   const supabase = supabaseBrowserClient();
@@ -39,7 +45,7 @@ export const useChats = (chatId?: string) => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as TypeChatWithFile[];
+      return (data || []) as TypeChatWithFile[];
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
@@ -78,13 +84,7 @@ export const useChats = (chatId?: string) => {
   });
 
   const updateChatMutation = useMutation({
-    mutationFn: async ({
-      chatId: id,
-      chatData,
-    }: {
-      chatId: string;
-      chatData: Partial<TypeChat>;
-    }) => {
+    mutationFn: async ({ chatId: id, chatData }: UpdateChatParams) => {
       if (!userId) throw new Error("User not authenticated.");
       const { data, error } = await supabase
         .from("chats")

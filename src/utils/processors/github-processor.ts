@@ -1,10 +1,10 @@
 "use server";
 
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import { supabaseBrowserClient } from "../supabase/client";
 import { updateFileStatus } from "../file-processing-utils";
 import type {

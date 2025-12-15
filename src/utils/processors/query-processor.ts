@@ -3,7 +3,7 @@
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured, findIndexForNamespace } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 
 /**
  * Queries Pinecone for documents similar to a given query string.

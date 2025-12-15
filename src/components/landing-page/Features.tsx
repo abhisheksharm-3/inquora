@@ -122,9 +122,9 @@ const Features = () => {
               <h3 className="text-xl font-semibold mb-2 text-foreground">
                 {feature.title}
               </h3>
-              <p className="text-muted-foreground text-base font-normal leading-relaxed">
+              <div className="text-muted-foreground text-base font-normal leading-relaxed">
                 {feature.description}
-              </p>
+              </div>
             </div>
           ))}
         </div>

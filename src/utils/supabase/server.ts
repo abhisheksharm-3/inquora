@@ -1,6 +1,7 @@
 "use server";
 
 import { TypeDatabase, TypeUser } from "@/types/TypeSupabase";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -10,7 +11,7 @@ import { cookies } from "next/headers";
  *
  * @returns An instance of the Supabase client configured for server-side operations.
  */
-export const supabaseServerClient = async () => {
+export const supabaseServerClient = async (): Promise<SupabaseClient<TypeDatabase>> => {
   const cookieStore = await cookies();
 
   return createServerClient<TypeDatabase>(

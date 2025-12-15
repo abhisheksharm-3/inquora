@@ -16,11 +16,11 @@
  * while avoiding GitHub API rate limits by preferring direct git access when possible.
  */
 
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import { supabaseBrowserClient } from "../supabase/client";
 import { updateFileStatus } from "../file-processing-utils";
 import type {
@@ -280,7 +280,7 @@ const _extractRepositoryInfoFromFS = async (
           };
           repoInfo.size = Math.round(
             parseFloat(size) *
-              (multipliers[unit as keyof typeof multipliers] || 1),
+            (multipliers[unit as keyof typeof multipliers] || 1),
           );
         }
       }
@@ -437,7 +437,7 @@ const _downloadAndExtractZip = async (
 
       if (file.dir) {
         // Create directory
-        promises.push(fs.mkdir(fullPath, { recursive: true }).then(() => {}));
+        promises.push(fs.mkdir(fullPath, { recursive: true }).then(() => { }));
       } else {
         // Extract file
         promises.push(

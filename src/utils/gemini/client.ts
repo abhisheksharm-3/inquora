@@ -8,6 +8,7 @@ import {
   StartChatParams,
   Content,
   Part,
+  FunctionDeclaration,
 } from "@google/generative-ai";
 import { createYoutubeSystemPrompt } from "../youtube-utils";
 import { createAgenticRagPrompt } from "../rag/prompt-engineering";
@@ -15,6 +16,7 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 import { TypeSessionMetadata } from "@/types/TypeRag";
 import { manageMemory, memoryToolDefinition, MemoryAction } from "./memory-tool";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { GeminiUserContext, GeminiMessage } from "@/types/TypeGemini";
 
 // --- Configuration ---
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -45,8 +47,7 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
   return genAI.getGenerativeModel({
     model: MODEL_NAME,
     tools: [{
-      // @ts-expect-error - The Google Generative AI type definitions might be slightly off for this specific config
-      functionDeclarations: [memoryToolDefinition]
+      functionDeclarations: [memoryToolDefinition] as unknown as FunctionDeclaration[]
     }]
   });
 };
@@ -57,22 +58,7 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  */
 const _getSystemInstruction = async (
   fileContent?: string,
-  context?: {
-    currentDateTime?: string;
-    userName?: string;
-    userEmail?: string;
-    chatId?: string;
-    userQuery?: string;
-    conversationHistory?: Array<{ role: string, content: string }>;
-    documentType?: string;
-    namespace?: string;
-    isAdvancedRAG?: boolean;
-    memories?: string[];
-    sessionMetadata?: TypeSessionMetadata;
-    recentConversations?: { id: string, title: string, timestamp: string }[];
-    userId?: string; // Needed for memory tool
-    supabase?: SupabaseClient; // Needed for memory tool RLS
-  },
+  context?: GeminiUserContext,
 ): Promise<Content | null> => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
     return null; // No system prompt needed for images or standard chat
@@ -103,25 +89,10 @@ const _getSystemInstruction = async (
  * @returns {Promise<string>} A promise that resolves to the model's text response.
  */
 export const sendMessageToGemini = async (
-  messages: { role: "user" | "model"; content: string }[],
+  messages: GeminiMessage[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
-  context?: {
-    currentDateTime?: string;
-    userName?: string;
-    userEmail?: string;
-    chatId?: string;
-    userQuery?: string;
-    conversationHistory?: Array<{ role: string, content: string }>;
-    documentType?: string;
-    namespace?: string;
-    isAdvancedRAG?: boolean;
-    memories?: string[];
-    sessionMetadata?: TypeSessionMetadata;
-    recentConversations?: { id: string, title: string, timestamp: string }[];
-    userId?: string;
-    supabase?: SupabaseClient;
-  },
+  context?: GeminiUserContext,
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
     return "Error: Gemini API key is not configured.";
@@ -213,7 +184,15 @@ export const sendMessageToGemini = async (
             };
           }
 
-          const args = call.args as unknown as { action: MemoryAction, content: string };
+          const args = call.args as { action: MemoryAction; content: string };
+          if (!args || typeof args !== "object") {
+            return {
+              functionResponse: {
+                name: call.name,
+                response: { result: "Error: Invalid arguments." }
+              }
+            };
+          }
           console.log(`[Gemini Tool] Managing memory: ${args.action} "${args.content}"`);
           const toolResult = await manageMemory(context.userId, args.action, args.content, context.supabase);
 

@@ -11,6 +11,7 @@ import { TypeGeminiImageData } from "@/types/TypeContent";
 import { processRAGRequest } from "../rag/orchestrator";
 import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/types/TypeRag";
 import { VersionConfig } from "@/constants/VersionConfig";
+import { GeminiMessage, GeminiUserContext } from "@/types/TypeGemini";
 
 const FILE_TYPE_MAP = new Map([
   ["youtube", "video"],
@@ -41,14 +42,14 @@ const VALID_CHAT_TYPES = new Set([
   "web",
 ]);
 
-const mapFileTypeToChatType = (fileType: string | null): string | null => {
+const mapFileTypeToChatType = (fileType: string | null): TypeChat["type"] => {
   if (!fileType) return null;
 
   if (FILE_TYPE_MAP.has(fileType)) {
-    return FILE_TYPE_MAP.get(fileType)!;
+    return FILE_TYPE_MAP.get(fileType)! as TypeChat["type"];
   }
 
-  return VALID_CHAT_TYPES.has(fileType) ? fileType : null;
+  return VALID_CHAT_TYPES.has(fileType) ? (fileType as TypeChat["type"]) : null;
 };
 
 export const createChat = async (fileId: string, userId?: string) => {
@@ -110,18 +111,11 @@ const RAG_SUPPORTED_TYPES = new Set([
 ]);
 
 const prepareContextForGemini = async (
-  chat: TypeChat & { files: TypeFile },
+  chat: TypeChat & { files: TypeFile | null },
   userQuery: string,
   supabase: SupabaseClient,
   conversationHistory?: Array<{ role: string, content: string }>,
-  userContext?: {
-    currentDateTime?: string;
-    userName?: string;
-    userEmail?: string;
-    memories?: string[];
-    sessionMetadata?: TypeSessionMetadata;
-    recentConversations?: { id: string, title: string, timestamp: string }[];
-  }
+  userContext?: GeminiUserContext
 ): Promise<{
   fileContent?: string;
   imageData?: TypeGeminiImageData;
@@ -276,7 +270,7 @@ const saveAssistantMessage = async (
 export const sendMessage = async (
   chatId: string,
   content: string,
-  messages?: { role: "user" | "model"; content: string }[],
+  messages?: GeminiMessage[],
   sessionMetadata?: TypeSessionMetadata,
 ) => {
   if (!isGeminiConfigured()) {
@@ -308,14 +302,7 @@ export const sendMessage = async (
     }
 
     // Get user information for context
-    const userContext: {
-      currentDateTime?: string;
-      userName?: string;
-      userEmail?: string;
-      memories?: string[];
-      sessionMetadata?: TypeSessionMetadata;
-      recentConversations?: { id: string, title: string, timestamp: string }[];
-    } = {
+    const userContext: GeminiUserContext = {
       currentDateTime: new Date().toLocaleString("en-US", {
         timeZone: "UTC",
         year: "numeric",
@@ -393,7 +380,7 @@ export const sendMessage = async (
       return await saveAssistantMessage(chatId, context.error, supabase);
     }
 
-    const formattedMessages: { role: "user" | "model"; content: string }[] = [
+    const formattedMessages: GeminiMessage[] = [
       ...(messages || []),
       { role: "user", content },
     ];
@@ -404,8 +391,8 @@ export const sendMessage = async (
       chatId,
       userQuery: content,
       conversationHistory,
-      documentType: chat.type,
-      namespace: chat.file_id,
+      documentType: chat.type || undefined,
+      namespace: chat.file_id || undefined,
       isAdvancedRAG: context.isAdvancedRAG,
       userId: chat.user_id,
       supabase: supabase

@@ -3,11 +3,11 @@
 import { YoutubeTranscript } from "youtube-transcript";
 import { YoutubeTranscript as DanielYoutubeTranscript } from "@danielxceron/youtube-transcript";
 import { fetchTranscript } from "youtube-transcript-plus";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import { extractYoutubeVideoId } from "../youtube-utils";
 import { supabaseBrowserClient } from "../supabase/client";
 import { updateFileStatus } from "../file-processing-utils";

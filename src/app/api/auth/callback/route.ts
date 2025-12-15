@@ -131,7 +131,7 @@ async function createUserProfileIfNotExists(
     }
 
     // Create the user profile
-    const defaultUser: Partial<TypeUser> = {
+    const defaultUser = {
       id: user.id,
       email: user.email || "",
       name:

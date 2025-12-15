@@ -14,6 +14,11 @@ import {
   initialUploadState,
   uploadReducer,
 } from "@/utils/upload-utils";
+import {
+  _extractGitHubFilename,
+  _extractWebPageTitle,
+  _getHostnameFromUrl,
+} from "@/utils/url-naming-utils";
 import { useUploadErrorHandler } from "./useUploadErrorHandler";
 import { useUploadValidation } from "./useUploadValidation";
 import { EnumUploadActionType } from "@/constants/EnumUploadData";
@@ -77,75 +82,11 @@ export const useUploadLogic = ({
       // Extract a meaningful filename based on URL type
       let urlFileName: string;
       if (urlType === "github") {
-        // Extract owner/repo from GitHub URL for better naming
-        try {
-          const githubMatch = urlToUpload.match(
-            /github\.com\/([^\/]+)\/([^\/\?#]+)/i,
-          );
-          if (githubMatch) {
-            const [, owner, repo] = githubMatch;
-            urlFileName = `${owner}/${repo.replace(/\.git$/, "")}`;
-          } else {
-            urlFileName = new URL(urlToUpload).hostname;
-          }
-        } catch {
-          urlFileName = new URL(urlToUpload).hostname;
-        }
+        urlFileName = await _extractGitHubFilename(urlToUpload);
       } else if (urlType === "web") {
-        // Extract page title from web URL for better naming
-        try {
-          let pageTitle = "";
-
-          // First try to get actual page title
-          try {
-            const response = await fetch(urlToUpload, {
-              method: "GET",
-              headers: {
-                "User-Agent":
-                  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-              },
-              signal: AbortSignal.timeout(5000), // 5 second timeout
-            });
-
-            if (response.ok) {
-              const html = await response.text();
-              const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-              if (titleMatch && titleMatch[1]) {
-                pageTitle = titleMatch[1]
-                  .replace(/\s*[-|]\s*.+$/, "") // Remove site name
-                  .trim();
-                if (pageTitle.length > 60) {
-                  pageTitle = pageTitle.substring(0, 60) + "...";
-                }
-              }
-            }
-          } catch {
-            // Could not fetch page title, using URL-based naming
-          }
-
-          // Fallback to URL-based naming if title fetch failed
-          if (pageTitle) {
-            urlFileName = pageTitle;
-          } else {
-            const urlObj = new URL(urlToUpload);
-            const pathSegments = urlObj.pathname.split("/").filter(Boolean);
-            if (pathSegments.length > 0) {
-              urlFileName = pathSegments[pathSegments.length - 1]
-                .replace(/[-_]/g, " ")
-                .replace(/\.(html?|php|asp|jsp)$/i, "");
-            } else {
-              urlFileName = urlObj.hostname.replace(/^www\./, "");
-            }
-          }
-        } catch {
-          urlFileName = "Web Page";
-        }
-
-        if (!urlFileName) {
-          urlFileName = "Web Page";
-        }
+        urlFileName = await _extractWebPageTitle(urlToUpload);
       } else {
-        urlFileName = new URL(urlToUpload).hostname;
+        urlFileName = _getHostnameFromUrl(urlToUpload);
       }
 
       const uploadedFile = await uploadFileAsync({

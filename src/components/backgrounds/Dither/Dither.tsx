@@ -332,7 +332,7 @@ export default function Dither({
           pointerEvents: enableMouseInteraction ? "auto" : "none",
         }}
         camera={{ position: [0, 0, 6] }}
-        dpr={typeof window !== "undefined" ? window.devicePixelRatio : 1}
+        dpr={typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1}
         gl={{ antialias: true, preserveDrawingBuffer: true }}
       >
         <DitheredWaves

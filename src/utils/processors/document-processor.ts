@@ -1,11 +1,11 @@
 "use server";
 
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import mammoth from "mammoth";
 
 // --- Constants ---
@@ -298,7 +298,8 @@ const _extractExcelText = async (
       textParts.push(`\n=== Sheet: ${worksheet.name} ===\n`);
 
       worksheet.eachRow((row, rowNumber) => {
-        const rowValues = row.values as unknown[];
+        // ExcelJS row.values can be an array or object, but usually array
+        const rowValues = row.values;
         if (Array.isArray(rowValues) && rowValues.length > 1) {
           // Skip index 0 which is undefined
           const rowText = rowValues

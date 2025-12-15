@@ -1,13 +1,14 @@
 "use server";
 
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { createGeminiEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
-import { Document } from "langchain/document";
+import { Document } from "@langchain/core/documents";
 import { updateFileStatus } from "../file-processing-utils";
 import { supabaseBrowserClient } from "../supabase/client";
 import * as cheerio from "cheerio";
+import { type Element } from "domhandler";
 import type {
   TypeWebScrapingResult,
   TypeWebPageInfo,
@@ -154,7 +155,7 @@ const _scrapeWebPage = async (
         const elements = $(selector);
         const extractedTexts: string[] = [];
 
-        elements.each((_: number, element: cheerio.Element) => {
+        elements.toArray().forEach((element) => {
           const text = $(element).text().trim();
           if (
             text.length > 20 &&
@@ -204,7 +205,7 @@ const _scrapeWebPage = async (
 
     // Extract key headings for structure
     const headings: string[] = [];
-    $("h1, h2, h3").each((_: number, element: cheerio.Element) => {
+    $("h1, h2, h3").toArray().forEach((element) => {
       const heading = $(element).text().trim();
       if (heading && heading.length > 3 && heading.length < 100) {
         headings.push(heading);
@@ -379,7 +380,7 @@ export const processWebPage = async (
       .from("files")
       .select("user_id")
       .eq("id", fileId)
-      .single();
+      .single<{ user_id: string }>();
 
     if (fileError || !file) {
       throw new Error(

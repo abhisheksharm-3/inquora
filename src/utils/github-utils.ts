@@ -194,6 +194,8 @@ export const formatGitHubRepoForDisplay = (url: string): string => {
  * @returns {boolean} Returns true if the URL is specifically a GitHub repository URL.
  */
 export const isGitHubRepositoryUrl = (url: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+
   try {
     const urlObj = new URL(url);
 

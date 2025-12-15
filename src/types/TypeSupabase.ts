@@ -23,6 +23,7 @@ export interface TypeDatabase {
           created_at?: string;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["users"]["Insert"]>;
+        Relationships: [];
       };
 
       files: {
@@ -35,11 +36,11 @@ export interface TypeDatabase {
           url: string | null;
           uploaded_at: string;
           processing_status?:
-            | "idle"
-            | "processing"
-            | "completed"
-            | "failed"
-            | null;
+          | "idle"
+          | "processing"
+          | "completed"
+          | "failed"
+          | null;
           processing_error?: string | null;
           indexed_chunks?: number | null;
           full_text?: string | null;
@@ -53,16 +54,17 @@ export interface TypeDatabase {
           url?: string | null;
           uploaded_at?: string;
           processing_status?:
-            | "idle"
-            | "processing"
-            | "completed"
-            | "failed"
-            | null;
+          | "idle"
+          | "processing"
+          | "completed"
+          | "failed"
+          | null;
           processing_error?: string | null;
           indexed_chunks?: number | null;
           full_text?: string | null;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["files"]["Insert"]>;
+        Relationships: [];
       };
 
       chats: {
@@ -73,15 +75,15 @@ export interface TypeDatabase {
           title: string | null;
           created_at: string;
           type:
-            | "pdf"
-            | "image"
-            | "doc"
-            | "video"
-            | "sheet"
-            | "slides"
-            | "github"
-            | "web"
-            | null;
+          | "pdf"
+          | "image"
+          | "doc"
+          | "video"
+          | "sheet"
+          | "slides"
+          | "github"
+          | "web"
+          | null;
         };
         Insert: {
           id?: string;
@@ -90,17 +92,26 @@ export interface TypeDatabase {
           title?: string | null;
           created_at?: string;
           type?:
-            | "pdf"
-            | "image"
-            | "doc"
-            | "video"
-            | "sheet"
-            | "slides"
-            | "github"
-            | "web"
-            | null;
+          | "pdf"
+          | "image"
+          | "doc"
+          | "video"
+          | "sheet"
+          | "slides"
+          | "github"
+          | "web"
+          | null;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["chats"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "chats_file_id_fkey";
+            columns: ["file_id"];
+            isOneToOne: false;
+            referencedRelation: "files";
+            referencedColumns: ["id"];
+          },
+        ];
       };
 
       messages: {
@@ -119,6 +130,7 @@ export interface TypeDatabase {
           created_at?: string;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["messages"]["Insert"]>;
+        Relationships: [];
       };
 
       user_memories: {
@@ -135,13 +147,14 @@ export interface TypeDatabase {
           created_at?: string;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["user_memories"]["Insert"]>;
+        Relationships: [];
       };
     };
 
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Views: {};
+    Functions: {};
+    Enums: {};
+    CompositeTypes: {};
   };
 }
 
