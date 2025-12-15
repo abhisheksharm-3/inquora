@@ -4,6 +4,9 @@ import { supabaseServerClient } from "@/utils/supabase/server";
 import type { TypeUser } from "@/types/TypeSupabase";
 import { User } from "@supabase/supabase-js";
 
+// Force dynamic rendering - this route uses request.url which is only available at runtime
+export const dynamic = "force-dynamic";
+
 /**
  * Authentication callback handler for processing OAuth code exchanges
  *

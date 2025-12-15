@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 /* eslint-disable react/no-unknown-property */
-import { useRef, useEffect, forwardRef } from "react";
+import { useRef, useEffect, forwardRef, useState } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { EffectComposer, wrapEffect } from "@react-three/postprocessing";
 import { Effect } from "postprocessing";
@@ -210,6 +210,16 @@ function DitheredWaves({
   const mesh = useRef<THREE.Mesh>(null);
   const mouseRef = useRef(new THREE.Vector2());
   const { viewport, size, gl } = useThree();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Delay EffectComposer render until after first paint to ensure WebGL context is ready
+  useEffect(() => {
+    // Small delay to ensure WebGL context is fully initialized
+    const timer = requestAnimationFrame(() => {
+      setIsMounted(true);
+    });
+    return () => cancelAnimationFrame(timer);
+  }, []);
 
   const waveUniformsRef = useRef<WaveUniforms>({
     time: new THREE.Uniform(0),
@@ -281,9 +291,11 @@ function DitheredWaves({
         />
       </mesh>
 
-      <EffectComposer>
-        <RetroEffect colorNum={colorNum} pixelSize={pixelSize} />
-      </EffectComposer>
+      {isMounted && (
+        <EffectComposer>
+          <RetroEffect colorNum={colorNum} pixelSize={pixelSize} />
+        </EffectComposer>
+      )}
 
       <mesh
         onPointerMove={handlePointerMove}
@@ -323,6 +335,19 @@ export default function Dither({
   mouseRadius = 1,
   className = "", // Add className with default
 }: DitherProps) {
+  const [isClient, setIsClient] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  // Only render Canvas on the client to prevent SSR hydration issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render anything during SSR or if there was a WebGL error
+  if (!isClient || hasError) {
+    return <div className={`absolute inset-0 bg-black ${className}`} />;
+  }
+
   return (
     <div className={`absolute inset-0 ${className}`}>
       <Canvas
@@ -332,8 +357,21 @@ export default function Dither({
           pointerEvents: enableMouseInteraction ? "auto" : "none",
         }}
         camera={{ position: [0, 0, 6] }}
-        dpr={typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1}
-        gl={{ antialias: true, preserveDrawingBuffer: true }}
+        dpr={Math.min(window.devicePixelRatio, 2)}
+        gl={{
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: false,
+        }}
+        onCreated={({ gl }) => {
+          // Handle WebGL context loss
+          gl.domElement.addEventListener("webglcontextlost", (e) => {
+            e.preventDefault();
+            console.warn("WebGL context lost in Dither component");
+            setHasError(true);
+          });
+        }}
       >
         <DitheredWaves
           waveSpeed={waveSpeed}
