@@ -41,7 +41,7 @@ export const getPineconeClient = async (): Promise<Pinecone> => {
 export const getAllIndexNames = async (): Promise<string[]> => {
   const currentIndex = process.env.PINECONE_INDEX_NAME;
   const legacyIndexes = process.env.PINECONE_LEGACY_INDEX_NAMES?.split(',').map(name => name.trim()) || [];
-  
+
   const allIndexes = currentIndex ? [currentIndex, ...legacyIndexes] : legacyIndexes;
   return [...new Set(allIndexes)]; // Remove duplicates
 };
@@ -55,7 +55,7 @@ export const getAllIndexNames = async (): Promise<string[]> => {
  */
 export const getPineconeIndex = async (indexName?: string): Promise<Index> => {
   const targetIndexName = indexName || process.env.PINECONE_INDEX_NAME;
-  
+
   if (!targetIndexName) {
     throw new Error("PINECONE_INDEX_NAME environment variable is not set and no index name provided.");
   }
@@ -69,10 +69,10 @@ export const getPineconeIndex = async (indexName?: string): Promise<Index> => {
     const client = await getPineconeClient();
     console.log(`Getting Pinecone index: ${targetIndexName}`);
     const index = client.Index(targetIndexName);
-    
+
     // Cache the index instance
     pineconeIndexCache.set(targetIndexName, index);
-    
+
     console.log(`Pinecone index ${targetIndexName} retrieved and cached successfully.`);
     return index;
   } catch (error) {
@@ -99,45 +99,36 @@ export const isPineconeConfigured = async (): Promise<boolean> => {
  */
 export const findIndexForNamespace = async (
   namespace: string
-): Promise<{indexName: string, index: Index} | null> => {
+): Promise<{ indexName: string, index: Index } | null> => {
   const allIndexNames = await getAllIndexNames();
-  
+
   if (allIndexNames.length === 0) {
     console.warn("No Pinecone indexes configured");
     return null;
   }
 
-  // Try current index first
-  const currentIndexName = process.env.PINECONE_INDEX_NAME;
-  if (currentIndexName) {
+  // Create an array of checks to run in parallel
+  const checks = allIndexNames.map(async (indexName) => {
     try {
-      const currentIndex = await getPineconeIndex(currentIndexName);
-      const stats = await currentIndex.describeIndexStats();
-      
-      if (stats.namespaces?.[namespace]?.recordCount ?? 0 > 0) {
-        console.log(`Found namespace "${namespace}" in current index: ${currentIndexName}`);
-        return { indexName: currentIndexName, index: currentIndex };
-      }
-    } catch (error) {
-      console.warn(`Error checking current index ${currentIndexName}:`, error);
-    }
-  }
+      const index = await getPineconeIndex(indexName);
+      const stats = await index.describeIndexStats();
 
-  // Try legacy indexes
-  const legacyIndexes = allIndexNames.filter(name => name !== currentIndexName);
-  
-  for (const legacyIndexName of legacyIndexes) {
-    try {
-      const legacyIndex = await getPineconeIndex(legacyIndexName);
-      const stats = await legacyIndex.describeIndexStats();
-      
       if (stats.namespaces?.[namespace]?.recordCount ?? 0 > 0) {
-        console.log(`Found namespace "${namespace}" in legacy index: ${legacyIndexName}`);
-        return { indexName: legacyIndexName, index: legacyIndex };
+        console.log(`Found namespace "${namespace}" in index: ${indexName}`);
+        return { indexName, index };
       }
     } catch (error) {
-      console.warn(`Error checking legacy index ${legacyIndexName}:`, error);
+      console.warn(`Error checking index ${indexName}:`, error);
     }
+    return null;
+  });
+
+  // Wait for all checks and return the first valid result
+  const results = await Promise.all(checks);
+  const found = results.find(result => result !== null);
+
+  if (found) {
+    return found;
   }
 
   console.log(`Namespace "${namespace}" not found in any configured index`);

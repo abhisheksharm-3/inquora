@@ -16,7 +16,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`prose prose-sm max-w-none dark:prose-invert ${className}`}>
+    <div className={`prose prose-sm max-w-none dark:prose-invert break-words break-all ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight, rehypeRaw]}

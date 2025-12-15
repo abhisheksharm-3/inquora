@@ -95,11 +95,51 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
           <div className="flex items-center gap-2">
             {isSending &&
               localMessages.some((msg) => msg.content === "...") && (
-                <Badge variant="secondary" className="gap-1">
+                <Badge variant="secondary" className="gap-1 hidden sm:flex">
                   <Sparkles className="h-3 w-3 animate-pulse" />
                   Thinking
                 </Badge>
               )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsDocumentPanelOpen(true)}
+            >
+              <FileText className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
+            <Sheet open={isDocumentPanelOpen} onOpenChange={setIsDocumentPanelOpen}>
+              <SheetContent
+                side="bottom"
+                className="h-[85vh] p-0 border-none bg-background backdrop-blur-xl rounded-t-3xl shadow-2xl"
+                
+              >
+                <div className="h-full flex flex-col">
+                  <div className="flex items-center justify-center py-2 shrink-0">
+                    <div className="w-12 h-1 bg-muted-foreground/40 rounded-full" />
+                  </div>
+
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-card/30 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-full bg-primary/10 p-1.5">
+                        <FileText className="h-3 w-3 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {chat?.title || "Document"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    {DocumentPanel}
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
@@ -136,6 +176,11 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
       handleSendMessage,
       isLegacyChat,
       legacyMessage,
+      file, // Added file to dependencies for ChatPanel to react to its presence/absence
+      isDocumentPanelOpen, // Added isDocumentPanelOpen to dependencies
+      setIsDocumentPanelOpen, // Added setIsDocumentPanelOpen to dependencies
+      chat?.title, // Added chat?.title to dependencies
+      DocumentPanel, // Added DocumentPanel to dependencies
     ],
   );
 
@@ -181,72 +226,6 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
 
       <div className="h-full flex flex-col md:hidden relative bg-gradient-to-b from-background to-background/95">
         {ChatPanel}
-
-        {file && (
-          <div className="absolute bottom-24 right-6 z-10 flex flex-col items-end gap-3">
-            {!isDocumentPanelOpen && (
-              <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-lg max-w-[200px] animate-in slide-in-from-right-2 duration-200">
-                <p className="text-xs text-muted-foreground mb-1">
-                  Document available:
-                </p>
-                <p className="text-sm font-medium text-foreground truncate">
-                  {chat.title || "Document"}
-                </p>
-                <p className="text-xs text-primary mt-1">Tap to view</p>
-              </div>
-            )}
-
-            <Sheet
-              open={isDocumentPanelOpen}
-              onOpenChange={setIsDocumentPanelOpen}
-            >
-              <SheetTrigger asChild>
-                <Button
-                  size="lg"
-                  className="rounded-full h-16 w-16 shadow-2xl bg-gradient-to-br from-primary to-primary/80 backdrop-blur-sm border border-white/20 hover:from-primary/90 hover:to-primary/70 hover:scale-110 transition-all duration-300 group relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <FileText className="h-7 w-7 relative z-10 group-hover:scale-110 transition-transform duration-200" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="bottom"
-                className="h-[96vh] p-0 border-none bg-background backdrop-blur-xl rounded-t-3xl shadow-2xl"
-              >
-                <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-center py-2 shrink-0">
-                    <div className="w-12 h-1 bg-muted-foreground/40 rounded-full" />
-                  </div>
-
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-card/30 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-full bg-primary/10 p-1.5">
-                        <FileText className="h-3 w-3 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {chat.title || "Document"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsDocumentPanelOpen(false)}
-                      className="h-7 w-7 rounded-full hover:bg-muted/50"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    {DocumentPanel}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
       </div>
     </div>
   );

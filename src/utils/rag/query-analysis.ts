@@ -1,10 +1,10 @@
 "use server";
 
 import { sendMessageToGemini } from "@/utils/gemini/client";
-import { 
-  TypeQueryAnalysis, 
-  TypeQueryIntent, 
-  TypeQueryComplexity 
+import {
+  TypeQueryAnalysis,
+  TypeQueryIntent,
+  TypeQueryComplexity
 } from "@/types/TypeRag";
 
 /**
@@ -12,7 +12,7 @@ import {
  */
 export async function analyzeQuery(query: string): Promise<TypeQueryAnalysis> {
   const startTime = Date.now();
-  
+
   const analysisPrompt = `
 # QUERY ANALYSIS
 
@@ -65,11 +65,12 @@ Return only the JSON object, no other text.`;
     // Parse the JSON response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("No JSON found in response");
+      console.warn("No JSON found in response, possibly due to rate limiting or error message:", response);
+      return createFallbackAnalysis(query, Date.now() - startTime);
     }
 
     const analysisData = JSON.parse(jsonMatch[0]);
-    
+
     const analysis: TypeQueryAnalysis = {
       intent: {
         type: analysisData.intent.type,
@@ -95,10 +96,10 @@ Return only the JSON object, no other text.`;
     };
 
     return analysis;
-    
+
   } catch (error) {
     console.error("Query analysis failed:", error);
-    
+
     // Fallback analysis
     return createFallbackAnalysis(query, Date.now() - startTime);
   }
@@ -108,10 +109,10 @@ Return only the JSON object, no other text.`;
  * Expands a query with related terms and synonyms
  */
 export async function expandQuery(
-  originalQuery: string, 
+  originalQuery: string,
   analysis: TypeQueryAnalysis
 ): Promise<string> {
-  
+
   if (analysis.complexity.level === 'simple') {
     return originalQuery; // No expansion needed for simple queries
   }
@@ -140,7 +141,7 @@ Keep it focused and relevant. Return only the expanded query text.`;
     );
 
     return expandedQuery.trim();
-    
+
   } catch (error) {
     console.error("Query expansion failed:", error);
     return originalQuery;
@@ -152,11 +153,11 @@ Keep it focused and relevant. Return only the expanded query text.`;
  */
 function createFallbackAnalysis(query: string, processingTime: number): TypeQueryAnalysis {
   const queryLower = query.toLowerCase();
-  
+
   // Simple heuristics for intent detection
   let intentType: TypeQueryIntent['type'] = 'factual';
   let complexityLevel: TypeQueryComplexity['level'] = 'simple';
-  
+
   if (queryLower.includes('how') || queryLower.includes('explain')) {
     intentType = 'explanatory';
     complexityLevel = 'moderate';

@@ -19,6 +19,7 @@ export const queryDocuments = async (
   query: string,
   namespace: string,
   topK: number = 5,
+  pineconeIndex?: any // Optional pre-resolved index
 ): Promise<Document[]> => {
   console.log(`Querying top ${topK} documents in namespace "${namespace}"...`);
 
@@ -34,26 +35,32 @@ export const queryDocuments = async (
       throw new Error("Failed to create Gemini embeddings.");
     }
 
-    // First, try to find which index contains this namespace
-    const indexInfo = await findIndexForNamespace(namespace);
-    
-    let pineconeIndex;
-    if (indexInfo) {
-      // Found the namespace in a specific index
-      console.log(`Using index ${indexInfo.indexName} for namespace "${namespace}"`);
-      pineconeIndex = indexInfo.index;
+    let targetIndex = pineconeIndex;
+
+    // If index not provided, find it
+    if (!targetIndex) {
+      // First, try to find which index contains this namespace
+      const indexInfo = await findIndexForNamespace(namespace);
+
+      if (indexInfo) {
+        // Found the namespace in a specific index
+        console.log(`Using index ${indexInfo.indexName} for namespace "${namespace}"`);
+        targetIndex = indexInfo.index;
+      } else {
+        // Namespace not found in any index, use current index (for new writes)
+        console.log(`Namespace "${namespace}" not found in any index, using current index for new data`);
+        targetIndex = await getPineconeIndex();
+      }
     } else {
-      // Namespace not found in any index, use current index (for new writes)
-      console.log(`Namespace "${namespace}" not found in any index, using current index for new data`);
-      pineconeIndex = await getPineconeIndex();
+      console.log(`Using provided Pinecone index for namespace "${namespace}"`);
     }
 
-    if (!pineconeIndex) {
+    if (!targetIndex) {
       throw new Error("Pinecone index could not be initialized.");
     }
 
     const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
-      pineconeIndex,
+      pineconeIndex: targetIndex,
       namespace,
     });
 
@@ -85,12 +92,12 @@ export const checkNamespaceExists = async (
   try {
     console.log(`Checking for namespace "${namespace}" across all Pinecone indexes...`);
     const indexInfo = await findIndexForNamespace(namespace);
-    
+
     if (indexInfo) {
       console.log(`Namespace "${namespace}" exists in index: ${indexInfo.indexName}`);
       return true;
     }
-    
+
     console.log(`Namespace "${namespace}" does not exist in any configured index`);
     return false;
   } catch (error) {

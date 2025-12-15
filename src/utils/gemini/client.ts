@@ -242,7 +242,18 @@ export const sendMessageToGemini = async (
     return response.text();
   } catch (error) {
     console.error("Error in Gemini chat:", error);
+
+    // Mask sensitive 429 (Quota Exceeded) and 503 (Service Unavailable) errors
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return `I'm sorry, I encountered an error: ${errorMessage}`;
+
+    if (errorMessage.includes("429") || errorMessage.includes("Quota exceeded")) {
+      return "I'm currently receiving too many requests. Please try again in a few moments.";
+    }
+
+    if (errorMessage.includes("503") || errorMessage.includes("Service Unavailable")) {
+      return "The AI service is temporarily unavailable. Please try again later.";
+    }
+
+    return `I'm sorry, I encountered an error. Please try again.`;
   }
 };

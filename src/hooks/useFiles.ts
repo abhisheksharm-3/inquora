@@ -94,47 +94,9 @@ export const useFiles = () => {
     if (insertError || !newFile)
       throw insertError || new Error("Failed to create file record.");
 
-    // Start background processing for documents
-    if (PROCESSABLE_DOC_TYPES.has(newFile.type || "")) {
-      const processor =
-        newFile.type === "pdf" ? processPdfDocument : processGenericDocument;
-      processor(file, newFile.id, newFile.type!).catch((err) =>
-        console.error(`Background processing failed for ${newFile.id}:`, err),
-      );
-    }
-
-    // Start background processing for URL-based types that need immediate processing
-    if (BACKGROUND_PROCESS_TYPES.has(newFile.type || "") && newFile.url) {
-      let processor: Promise<{
-        numDocs: number;
-        success: boolean;
-        error?: string;
-      }>;
-
-      switch (newFile.type) {
-        case "youtube":
-        case "video": // Handle both "video" from FileTypes config and "youtube" from processing
-          processor = processYoutubeVideo(newFile.url, newFile.id);
-          break;
-        case "github":
-          // Orchestrator automatically handles fallback: Clone → ZIP → API
-          processor = processGitHubRepository(newFile.url!, newFile.id);
-          break;
-        case "web":
-          processor = processWebPage(newFile.url, newFile.id);
-          break;
-        default:
-          processor = Promise.resolve({ numDocs: 0, success: true });
-      }
-
-      processor.catch((err) =>
-        console.error(
-          `Background URL processing failed for ${newFile.id}:`,
-          err,
-        ),
-      );
-    }
-
+    // Background processing is now handled by the UI layer (useUpload.ts)
+    // to provide better progress feedback and error handling.
+    // We simply return the file record here.
     return newFile;
   };
 
