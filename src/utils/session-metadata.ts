@@ -5,7 +5,7 @@ export const getSessionMetadata = (): TypeSessionMetadata => {
 
     const { navigator, screen } = window;
     const { userAgent, platform, language } = navigator;
-    // @ts-ignore
+    // @ts-expect-error - session is dynamically assigned
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
     return {

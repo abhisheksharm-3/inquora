@@ -45,7 +45,7 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
   return genAI.getGenerativeModel({
     model: MODEL_NAME,
     tools: [{
-      // @ts-ignore
+      // @ts-expect-error - The Google Generative AI type definitions might be slightly off for this specific config
       functionDeclarations: [memoryToolDefinition]
     }]
   });
