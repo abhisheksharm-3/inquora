@@ -6,6 +6,7 @@ import { TypeMessage } from "@/types/TypeSupabase";
 import { useUser } from "./useUser";
 import { sendMessage as sendMessageToGemini } from "@/utils/gemini/actions";
 import { useMemo, useCallback, useTransition, useOptimistic } from "react";
+import { getSessionMetadata } from "@/utils/session-metadata";
 
 export const MESSAGES_QUERY_KEY = ["messages"];
 
@@ -129,7 +130,8 @@ export const useMessages = (chatId: string) => {
             content: msg.content,
           }));
 
-        await sendMessageToGemini(chatId, content, formattedMessages);
+        const sessionMetadata = getSessionMetadata();
+        await sendMessageToGemini(chatId, content, formattedMessages, sessionMetadata);
 
         await queryClient.invalidateQueries({
           queryKey,
@@ -236,7 +238,7 @@ export const useMessages = (chatId: string) => {
 
   /** Sets up a real-time subscription to keep messages in sync. */
   const subscribeToMessages = useCallback(() => {
-    if (!isValidChatId || !isAuthenticated) return () => {};
+    if (!isValidChatId || !isAuthenticated) return () => { };
 
     const channel = supabase.channel(`messages:${chatId}`);
 

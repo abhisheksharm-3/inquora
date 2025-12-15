@@ -12,6 +12,9 @@ import {
 import { createYoutubeSystemPrompt } from "../youtube-utils";
 import { createAgenticRagPrompt } from "../rag/prompt-engineering";
 import { TypeGeminiImageData } from "@/types/TypeContent";
+import { TypeSessionMetadata } from "@/types/TypeRag";
+import { manageMemory, memoryToolDefinition, MemoryAction } from "./memory-tool";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // --- Configuration ---
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -38,7 +41,14 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
   if (!genAI) {
     throw new Error("Gemini API key is not configured.");
   }
-  return genAI.getGenerativeModel({ model: MODEL_NAME });
+  console.log("Using model:", MODEL_NAME);
+  return genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    tools: [{
+      // @ts-ignore
+      functionDeclarations: [memoryToolDefinition]
+    }]
+  });
 };
 
 /**
@@ -47,16 +57,21 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  */
 const _getSystemInstruction = async (
   fileContent?: string,
-  context?: { 
-    currentDateTime?: string; 
-    userName?: string; 
+  context?: {
+    currentDateTime?: string;
+    userName?: string;
     userEmail?: string;
     chatId?: string;
     userQuery?: string;
-    conversationHistory?: Array<{role: string, content: string}>;
+    conversationHistory?: Array<{ role: string, content: string }>;
     documentType?: string;
     namespace?: string;
     isAdvancedRAG?: boolean;
+    memories?: string[];
+    sessionMetadata?: TypeSessionMetadata;
+    recentConversations?: { id: string, title: string, timestamp: string }[];
+    userId?: string; // Needed for memory tool
+    supabase?: SupabaseClient; // Needed for memory tool RLS
   },
 ): Promise<Content | null> => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
@@ -91,16 +106,21 @@ export const sendMessageToGemini = async (
   messages: { role: "user" | "model"; content: string }[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
-  context?: { 
-    currentDateTime?: string; 
-    userName?: string; 
+  context?: {
+    currentDateTime?: string;
+    userName?: string;
     userEmail?: string;
     chatId?: string;
     userQuery?: string;
-    conversationHistory?: Array<{role: string, content: string}>;
+    conversationHistory?: Array<{ role: string, content: string }>;
     documentType?: string;
     namespace?: string;
     isAdvancedRAG?: boolean;
+    memories?: string[];
+    sessionMetadata?: TypeSessionMetadata;
+    recentConversations?: { id: string, title: string, timestamp: string }[];
+    userId?: string;
+    supabase?: SupabaseClient;
   },
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
@@ -167,8 +187,59 @@ export const sendMessageToGemini = async (
       });
     }
 
-    const result = await chat.sendMessage(messageParts);
-    return result.response.text();
+    let result = await chat.sendMessage(messageParts);
+    let response = result.response;
+
+    // Handle Function Calls (Tool Usage)
+    const MAX_TOOL_LOOPS = 5;
+    let loopCount = 0;
+
+    while (loopCount < MAX_TOOL_LOOPS) {
+      const functionCalls = response.functionCalls();
+
+      if (!functionCalls || functionCalls.length === 0) {
+        break; // No tool called, we are done
+      }
+
+      // We have function calls to execute
+      const functionResponses = await Promise.all(functionCalls.map(async (call) => {
+        if (call.name === "manage_memory") {
+          if (!context?.userId || !context?.supabase) {
+            return {
+              functionResponse: {
+                name: call.name,
+                response: { result: "Error: User ID or Database Client not available for memory management." }
+              }
+            };
+          }
+
+          const args = call.args as unknown as { action: MemoryAction, content: string };
+          console.log(`[Gemini Tool] Managing memory: ${args.action} "${args.content}"`);
+          const toolResult = await manageMemory(context.userId, args.action, args.content, context.supabase);
+
+          return {
+            functionResponse: {
+              name: call.name,
+              response: { result: toolResult }
+            }
+          };
+        }
+
+        return {
+          functionResponse: {
+            name: call.name,
+            response: { result: "Error: Unknown tool." }
+          }
+        };
+      }));
+
+      // Send tool results back to the model
+      result = await chat.sendMessage(functionResponses);
+      response = result.response;
+      loopCount++;
+    }
+
+    return response.text();
   } catch (error) {
     console.error("Error in Gemini chat:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);

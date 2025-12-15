@@ -1,10 +1,11 @@
 "use server";
 
-import { 
-  TypePromptContext, 
+import {
+  TypePromptContext,
   TypeQueryAnalysis,
   TypeContentSource,
-  TypeMultiModalContext
+  TypeMultiModalContext,
+  TypeSessionMetadata
 } from "@/types/TypeRag";
 
 /**
@@ -14,12 +15,12 @@ export async function createSystemPrompt(context: TypePromptContext): Promise<st
   const analysis = context.analysis;
   const contentSource = detectContentSource(context);
   const reasoningStrategy = selectReasoningStrategy(analysis);
-  
+
   const sourceAwareContext = buildSourceAwareContext(contentSource, context);
   const agenticInstructions = generateAgenticInstructions(reasoningStrategy);
   const multiModalContext = buildMultiModalContext(context.multiModalContext);
   const adaptiveGuidelines = generateAdaptiveGuidelines(context, contentSource);
-  
+
   const documentContent = context.retrievedContent
     .map(result => result.document.pageContent)
     .join("\n\n");
@@ -104,22 +105,26 @@ ${documentContent}
  */
 export async function createAgenticRagPrompt(
   documentContent: string,
-  context?: { 
-    currentDateTime?: string; 
-    userName?: string; 
+  context?: {
+    currentDateTime?: string;
+    userName?: string;
     userEmail?: string;
     chatId?: string;
     userQuery?: string;
-    conversationHistory?: Array<{role: string, content: string}>;
+    conversationHistory?: Array<{ role: string, content: string }>;
     documentType?: string;
     namespace?: string;
     contentSource?: TypeContentSource;
+    memories?: string[];
+    sessionMetadata?: TypeSessionMetadata;
+    recentConversations?: { id: string, title: string, timestamp: string }[];
   }
 ): Promise<string> {
-  
+
   const contentSource = context?.contentSource || inferContentSourceFromContext(context);
   const adaptiveStrategy = getAdaptiveStrategy(documentContent);
   const contextualPrompting = buildContextualPrompting(context);
+  const userDeepContext = buildUserDeepContext(context);
   const sourceAwareInstructions = generateSourceAwareInstructions(contentSource);
 
   return `# INQUORA DOCUMENT ANALYSIS
@@ -134,6 +139,8 @@ Analyze documents and provide direct, factual responses. No conversational eleme
 
 **OPERATIONAL PARAMETERS:**
 ${contextualPrompting}
+
+${userDeepContext}
 
 **CONTENT CHARACTERIZATION:**
 Analyzing ${getSourceDescription(contentSource)} with the following dimensional properties:
@@ -202,11 +209,11 @@ function detectContentSource(context: TypePromptContext): TypeContentSource {
   const content = firstDoc.pageContent;
 
   // YouTube detection
-  if (metadata?.source?.includes('youtube') || 
-      metadata?.url?.includes('youtube.com') ||
-      content.includes('[Music]') || 
-      content.includes('transcript') ||
-      metadata?.type === 'youtube') {
+  if (metadata?.source?.includes('youtube') ||
+    metadata?.url?.includes('youtube.com') ||
+    content.includes('[Music]') ||
+    content.includes('transcript') ||
+    metadata?.type === 'youtube') {
     return {
       type: 'youtube',
       format: 'transcript',
@@ -227,11 +234,11 @@ function detectContentSource(context: TypePromptContext): TypeContentSource {
   }
 
   // PDF detection
-  if (metadata?.source?.endsWith('.pdf') || 
-      metadata?.type === 'pdf' ||
-      content.includes('Figure') ||
-      content.includes('Table') ||
-      /Page \d+/.test(content)) {
+  if (metadata?.source?.endsWith('.pdf') ||
+    metadata?.type === 'pdf' ||
+    content.includes('Figure') ||
+    content.includes('Table') ||
+    /Page \d+/.test(content)) {
     return {
       type: 'pdf',
       format: 'extracted_text',
@@ -272,11 +279,11 @@ function detectContentSource(context: TypePromptContext): TypeContentSource {
   }
 
   // Code repository detection
-  if (metadata?.source?.includes('.git') || 
-      content.includes('function') || 
-      content.includes('class ') ||
-      content.includes('import ') ||
-      metadata?.type === 'code') {
+  if (metadata?.source?.includes('.git') ||
+    content.includes('function') ||
+    content.includes('class ') ||
+    content.includes('import ') ||
+    metadata?.type === 'code') {
     return {
       type: 'code',
       format: 'source_code',
@@ -324,8 +331,8 @@ function selectReasoningStrategy(analysis: TypeQueryAnalysis): string {
 }
 
 function buildSourceAwareContext(contentSource: TypeContentSource, context: TypePromptContext): string {
-  const userInfo = context.userContext ? 
-    `- User: ${context.userContext.name || "Anonymous"} (${context.userContext.email || "No email provided"})` : 
+  const userInfo = context.userContext ?
+    `- User: ${context.userContext.name || "Anonymous"} (${context.userContext.email || "No email provided"})` :
     "- User: Anonymous";
 
   const sourceInfo = `- Content Source: ${contentSource.type.toUpperCase()} (${contentSource.format})
@@ -344,21 +351,21 @@ function generateAgenticInstructions(strategy: string): string {
       • **Phase 2:** Sequential reasoning progression with explicit validation checkpoints
       • **Phase 3:** Evidence integration across reasoning chain with confidence mapping
       • **Phase 4:** Conclusion synthesis with full reasoning transparency`;
-      
+
     case 'Tree of Thought':
       return `**TREE OF THOUGHT ANALYTICAL PROTOCOL:**
       • **Multi-Path Exploration:** Simultaneous evaluation of alternative reasoning approaches
       • **Perspective Integration:** Cross-dimensional analysis incorporating multiple viewpoints
       • **Branch Optimization:** Dynamic selection of highest-value analytical pathways
       • **Convergence Synthesis:** Unified insights from distributed reasoning architecture`;
-      
+
     case 'ReAct':
       return `**REACT ANALYTICAL PROTOCOL:**
       • **Reason:** Systematic problem analysis with explicit methodology declaration
       • **Act:** Strategic information processing with targeted analytical operations
       • **Observe:** Pattern recognition and result evaluation with quality metrics
       • **Iterate:** Continuous reasoning refinement based on observational feedback`;
-      
+
     default:
       return `**STANDARD ANALYTICAL PROTOCOL:**
       • **Systematic Processing:** Linear analytical progression with logical coherence
@@ -370,11 +377,11 @@ function generateAgenticInstructions(strategy: string): string {
 
 function buildMultiModalContext(multiModal?: TypeMultiModalContext): string {
   if (!multiModal) return "No multi-modal context available";
-  
-  const visual = multiModal.visualElements ? 
-    `- Visual Elements: ${multiModal.visualElements.length} elements` : 
+
+  const visual = multiModal.visualElements ?
+    `- Visual Elements: ${multiModal.visualElements.length} elements` :
     "- No visual elements detected";
-    
+
   return visual;
 }
 
@@ -387,7 +394,7 @@ function generateAdaptiveGuidelines(context: TypePromptContext, contentSource: T
       • **Reference Framework:** Utilize "video presenter states" and "content demonstrates" language
       • **Quality Considerations:** Factor in potential audio quality limitations and transcription gaps
       • **Content Adaptation:** Apply conversational analysis techniques for spoken content interpretation`;
-      
+
     case 'pdf':
       return `**PDF DOCUMENT ANALYSIS PROTOCOL:**
       • **Structural Intelligence:** Leverage formal document architecture, sections, and hierarchical organization
@@ -395,7 +402,7 @@ function generateAdaptiveGuidelines(context: TypePromptContext, contentSource: T
       • **Visual Element Recognition:** Account for missing figures, tables, and formatting context
       • **Citation Methodology:** Reference specific document sections, pages, and structural elements
       • **Professional Tone:** Align analytical approach with document's academic or professional context`;
-      
+
     case 'website':
       return `**WEB CONTENT ANALYSIS PROTOCOL:**
       • **Scraping Limitations:** Acknowledge potential missing navigation, images, and interactive elements
@@ -403,7 +410,7 @@ function generateAdaptiveGuidelines(context: TypePromptContext, contentSource: T
       • **Fragmentation Management:** Handle incomplete content sections and potential extraction gaps
       • **Source Attribution:** Reference web source with appropriate digital content acknowledgment
       • **Audience Alignment:** Adapt analysis depth to inferred website audience and purpose`;
-      
+
     case 'code':
       return `**CODE REPOSITORY ANALYSIS PROTOCOL:**
       • **Technical Precision:** Maintain programming accuracy and software engineering standards
@@ -411,7 +418,7 @@ function generateAdaptiveGuidelines(context: TypePromptContext, contentSource: T
       • **Context Integration:** Reference specific functions, classes, and implementation details
       • **Best Practices Assessment:** Apply software engineering principles and quality standards
       • **Documentation Standards:** Generate technical explanations with appropriate developer-level detail`;
-      
+
     default:
       return `**GENERAL DOCUMENT ANALYSIS PROTOCOL:**
       • **Universal Standards:** Apply comprehensive document analysis methodologies
@@ -437,7 +444,7 @@ function getIntentSpecificGuidelines(intentType: string): string {
     procedural: "Generate actionable process frameworks with prerequisite analysis, risk assessment, and implementation optimization",
     creative: "Synthesize innovative insights while maintaining source fidelity, evidence grounding, and analytical rigor"
   };
-  
+
   return guidelines[intentType as keyof typeof guidelines] || guidelines.factual;
 }
 
@@ -448,7 +455,7 @@ function getComplexityStrategy(complexityLevel: string): string {
     complex: "Implement multi-dimensional analysis architectures with detailed reasoning chains, cross-domain synthesis, and expert-level insights",
     'multi-step': "Construct systematic progression protocols with phase-based analysis, checkpoint validation, and integrated synthesis"
   };
-  
+
   return strategies[complexityLevel as keyof typeof strategies] || strategies.moderate;
 }
 
@@ -460,7 +467,7 @@ function getSourceSpecificStrategy(sourceType: string): string {
     code: "Apply software engineering analysis with technical precision, architectural evaluation, and development best practices",
     document: "Utilize comprehensive document intelligence with adaptive complexity and professional analytical standards"
   };
-  
+
   return strategies[sourceType as keyof typeof strategies] || strategies.document;
 }
 
@@ -478,7 +485,7 @@ function createDefaultContentSource(): TypeContentSource {
   };
 }
 
-function inferContentSourceFromContext(context: {namespace?: string} | null | undefined): TypeContentSource {
+function inferContentSourceFromContext(context: { namespace?: string } | null | undefined): TypeContentSource {
   if (context?.namespace?.includes('youtube')) {
     return {
       type: 'youtube',
@@ -494,12 +501,48 @@ function inferContentSourceFromContext(context: {namespace?: string} | null | un
 function getAdaptiveStrategy(content: string): string {
   const length = content.length;
   const hasCode = /function|class|import|export/.test(content);
-  
+
   let strategy = `- Content Length: ${length > 10000 ? 'Large' : length > 3000 ? 'Medium' : 'Short'} document`;
-  
+
   if (hasCode) strategy += "\n- Contains code elements requiring technical precision";
-  
+
   return strategy;
+}
+
+function buildUserDeepContext(context: {
+  memories?: string[];
+  sessionMetadata?: TypeSessionMetadata;
+  recentConversations?: { id: string, title: string, timestamp: string }[];
+  userName?: string;
+  userEmail?: string;
+} | undefined | null): string {
+  if (!context) return "";
+
+  let section = `**USER PROFILE & CONTEXT:**`;
+
+  // Identity
+  section += `\n    • **Identity:** ${context.userName || "Anonymous"} (${context.userEmail || "No email"})`;
+
+  // Session
+  if (context.sessionMetadata) {
+    const sm = context.sessionMetadata;
+    const device = sm.device || "Unknown Device";
+    const browser = sm.browser || "Unknown Browser";
+    const screen = sm.screenSize || "Unknown Screen";
+    section += `\n    • **Session Environment:** ${device}, ${browser} | Screen: ${screen} | Timezone: ${sm.timezone || "UTC"}`;
+  }
+
+  // Memories (Long-term)
+  if (context.memories && context.memories.length > 0) {
+    section += `\n    • **Long-Term Memory:**\n      ${context.memories.map(m => `- ${m}`).join('\n      ')}`;
+  }
+
+  // Recent Conversations
+  if (context.recentConversations && context.recentConversations.length > 0) {
+    section += `\n    • **Recent Activity:**\n      ${context.recentConversations.map(c => `- ${c.title}`).join('\n      ')}`;
+  }
+
+  return section === `**USER PROFILE & CONTEXT:**` ? "" : section;
 }
 
 function buildContextualPrompting(context: {
@@ -509,7 +552,7 @@ function buildContextualPrompting(context: {
   userQuery?: string;
 } | null | undefined): string {
   if (!context) return "No additional context provided";
-  
+
   return `- Time: ${context.currentDateTime || "Not specified"}
   - User: ${context.userName || "Anonymous"} 
   - Session: ${context.chatId || "New session"}`;
@@ -529,7 +572,7 @@ function generateSourceAwareInstructions(source: TypeContentSource): string {
       • **REFERENCE PROTOCOL:** Utilize "video content indicates," "presenter discusses," or "material demonstrates" formulations
       • **TEMPORAL AWARENESS:** Recognize conversational flow, emphasis patterns, and spoken delivery context
       • **ANALYTICAL ADAPTATION:** Apply speech-to-text content analysis methodologies with appropriate uncertainty factors`;
-      
+
     case 'pdf':
       return baseInstructions + `
       • **DOCUMENT ARCHITECTURE:** Content extracted from formal document structure with potential formatting artifacts
@@ -537,7 +580,7 @@ function generateSourceAwareInstructions(source: TypeContentSource): string {
       • **FORMAL STANDARDS:** Maintain academic/professional analysis standards appropriate to document type and domain
       • **REFERENCE FRAMEWORK:** Cite specific document sections, page references, and structural elements when available
       • **PROFESSIONAL TONE:** Align analytical rigor with document's institutional or academic context and intended audience`;
-      
+
     case 'website':
       return baseInstructions + `
       • **WEB EXTRACTION CONTEXT:** Content derived from web scraping with potential navigation and multimedia gaps
@@ -545,7 +588,7 @@ function generateSourceAwareInstructions(source: TypeContentSource): string {
       • **FRAGMENTATION MANAGEMENT:** Account for potential missing contextual elements, interactive features, and linked content
       • **DIGITAL STANDARDS:** Apply web content analysis protocols with appropriate uncertainty for extraction limitations
       • **AUDIENCE ADAPTATION:** Infer and adapt to intended web audience sophistication and domain expertise levels`;
-      
+
     default:
       return baseInstructions + `
       • **STANDARD PROCESSING:** Content processed through conventional document analysis protocols
@@ -558,12 +601,12 @@ function generateSourceAwareInstructions(source: TypeContentSource): string {
 function getSourceDescription(source: TypeContentSource): string {
   const descriptions = {
     youtube: "a YouTube video transcript",
-    pdf: "a PDF document", 
+    pdf: "a PDF document",
     website: "web content",
     code: "a code repository",
     document: "a text document"
   };
-  
+
   return descriptions[source.type as keyof typeof descriptions] || "content";
 }
 
@@ -571,7 +614,7 @@ function assessReadability(content: string): string {
   const avgWordsPerSentence = content.split(/[.!?]+/).reduce((acc, sentence) => {
     return acc + sentence.split(/\s+/).length;
   }, 0) / content.split(/[.!?]+/).length;
-  
+
   if (avgWordsPerSentence > 25) return 'complex';
   if (avgWordsPerSentence > 15) return 'moderate';
   return 'simple';
@@ -584,28 +627,31 @@ function assessCompleteness(content: string, sourceType: string): string {
     website: ['read more', 'click here', '[image]', 'see more'],
     code: ['// TODO', '// FIXME', '...', 'truncated']
   };
-  
+
   const sourceIndicators = indicators[sourceType as keyof typeof indicators] || [];
-  const hasIncompleteMarkers = sourceIndicators.some(indicator => 
+  const hasIncompleteMarkers = sourceIndicators.some(indicator =>
     content.toLowerCase().includes(indicator.toLowerCase())
   );
-  
+
   return hasIncompleteMarkers ? 'partial' : 'complete';
 }
 
 // Legacy function support for backward compatibility
 export async function createRagSystemPrompt(
   documentContent: string,
-  context?: { 
-    currentDateTime?: string; 
-    userName?: string; 
+  context?: {
+    currentDateTime?: string;
+    userName?: string;
     userEmail?: string;
     chatId?: string;
     userQuery?: string;
-    conversationHistory?: Array<{role: string, content: string}>;
+    conversationHistory?: Array<{ role: string, content: string }>;
     documentType?: string;
     namespace?: string;
     contentSource?: TypeContentSource;
+    memories?: string[];
+    sessionMetadata?: TypeSessionMetadata;
+    recentConversations?: { id: string, title: string, timestamp: string }[];
   }
 ): Promise<string> {
   return createAgenticRagPrompt(documentContent, context);

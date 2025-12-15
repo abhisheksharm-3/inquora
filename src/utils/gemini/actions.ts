@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { sendMessageToGemini, isGeminiConfigured } from "@/utils/gemini/client";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
+import { supabaseServerClient } from "@/utils/supabase/server";
 import { getFileContent, getImageData } from "../file-processing-utils";
 import { queryDocuments } from "../processors";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TypeChat, TypeFile } from "@/types/TypeSupabase";
 import { TypeGeminiImageData } from "@/types/TypeContent";
 import { processRAGRequest } from "../rag/orchestrator";
-import { TypeRAGRequest, TypeConversationTurn } from "@/types/TypeRag";
+import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/types/TypeRag";
 import { VersionConfig } from "@/constants/VersionConfig";
 
 const FILE_TYPE_MAP = new Map([
@@ -59,7 +59,7 @@ export const createChat = async (fileId: string, userId?: string) => {
     throw new Error("Authentication required to create a chat.");
   }
 
-  const supabase = supabaseBrowserClient();
+  const supabase = await supabaseServerClient();
 
   try {
     const { data: file, error: fileError } = await supabase
@@ -113,11 +113,14 @@ const prepareContextForGemini = async (
   chat: TypeChat & { files: TypeFile },
   userQuery: string,
   supabase: SupabaseClient,
-  conversationHistory?: Array<{role: string, content: string}>,
+  conversationHistory?: Array<{ role: string, content: string }>,
   userContext?: {
     currentDateTime?: string;
     userName?: string;
     userEmail?: string;
+    memories?: string[];
+    sessionMetadata?: TypeSessionMetadata;
+    recentConversations?: { id: string, title: string, timestamp: string }[];
   }
 ): Promise<{
   fileContent?: string;
@@ -184,7 +187,10 @@ const prepareContextForGemini = async (
                 response_style: 'detailed',
                 include_sources: true,
                 include_reasoning: true
-              }
+              },
+              memories: userContext?.memories,
+              sessionMetadata: userContext?.sessionMetadata,
+              recentConversations: userContext?.recentConversations
             },
             documentContext: {
               type: chat.type || 'general',
@@ -209,14 +215,14 @@ const prepareContextForGemini = async (
           };
 
           const ragResponse = await processRAGRequest(ragRequest);
-          
+
           if (ragResponse.retrievedSources && ragResponse.retrievedSources.length > 0) {
             const combinedContent = ragResponse.retrievedSources
               .map((result: { document: { pageContent: string } }) => result.document.pageContent)
               .join("\n\n");
-            return { 
-              fileContent: combinedContent, 
-              isAdvancedRAG: true 
+            return {
+              fileContent: combinedContent,
+              isAdvancedRAG: true
             };
           }
         } catch (advancedRAGError) {
@@ -271,16 +277,17 @@ export const sendMessage = async (
   chatId: string,
   content: string,
   messages?: { role: "user" | "model"; content: string }[],
+  sessionMetadata?: TypeSessionMetadata,
 ) => {
   if (!isGeminiConfigured()) {
     return saveAssistantMessage(
       chatId,
       "Gemini API is not configured.",
-      supabaseBrowserClient(),
+      await supabaseServerClient(),
     );
   }
 
-  const supabase = supabaseBrowserClient();
+  const supabase = await supabaseServerClient();
 
   try {
     const { data: chat, error: chatError } = await supabase
@@ -305,6 +312,9 @@ export const sendMessage = async (
       currentDateTime?: string;
       userName?: string;
       userEmail?: string;
+      memories?: string[];
+      sessionMetadata?: TypeSessionMetadata;
+      recentConversations?: { id: string, title: string, timestamp: string }[];
     } = {
       currentDateTime: new Date().toLocaleString("en-US", {
         timeZone: "UTC",
@@ -328,6 +338,37 @@ export const sendMessage = async (
         userContext.userName = user.name || "Anonymous";
         userContext.userEmail = user.email || "";
       }
+
+      // Fetch User Memories
+      const { data: memories } = await supabase
+        .from("user_memories")
+        .select("content")
+        .eq("user_id", chat.user_id);
+
+      if (memories) {
+        userContext.memories = memories.map(m => m.content);
+      }
+
+      // Fetch Recent Conversations
+      const { data: recentChats } = await supabase
+        .from("chats")
+        .select("id, title, created_at")
+        .eq("user_id", chat.user_id)
+        .neq("id", chatId) // Exclude current chat
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (recentChats) {
+        userContext.recentConversations = recentChats.map(c => ({
+          id: c.id,
+          title: c.title || "Untitled Chat",
+          timestamp: c.created_at
+        }));
+      }
+    }
+
+    if (sessionMetadata) {
+      userContext.sessionMetadata = sessionMetadata;
     }
 
     await supabase
@@ -341,13 +382,13 @@ export const sendMessage = async (
     })) || [];
 
     const context = await prepareContextForGemini(
-      chat, 
-      content, 
-      supabase, 
+      chat,
+      content,
+      supabase,
       conversationHistory,
       userContext
     );
-    
+
     if (context.error) {
       return await saveAssistantMessage(chatId, context.error, supabase);
     }
@@ -365,7 +406,9 @@ export const sendMessage = async (
       conversationHistory,
       documentType: chat.type,
       namespace: chat.file_id,
-      isAdvancedRAG: context.isAdvancedRAG
+      isAdvancedRAG: context.isAdvancedRAG,
+      userId: chat.user_id,
+      supabase: supabase
     };
 
     const response = await sendMessageToGemini(

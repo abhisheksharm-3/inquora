@@ -255,6 +255,18 @@ export interface TypeConversationTurn {
   agentDecisions?: TypeAgentDecision[];
 }
 
+// Session Metadata
+export interface TypeSessionMetadata {
+  device?: string;
+  browser?: string;
+  location?: string;
+  timezone?: string;
+  screenSize?: string;
+  platform?: string;
+  language?: string;
+  connection?: string;
+}
+
 export interface TypeUserContext {
   name?: string;
   email?: string;
@@ -268,6 +280,9 @@ export interface TypeUserContext {
   };
   domain_knowledge?: string[];
   learning_goals?: string[];
+  memories?: string[];
+  sessionMetadata?: TypeSessionMetadata;
+  recentConversations?: { id: string, title: string, timestamp: string }[];
 }
 
 export interface TypeDocumentContext {
@@ -281,8 +296,8 @@ export interface TypeDocumentContext {
 }
 
 export interface TypeContextualRetrievalOptions {
-  conversationHistory?: Array<{role: string, content: string}>;
-  documentMetadata?: {type: string, domain?: string};
+  conversationHistory?: Array<{ role: string, content: string }>;
+  documentMetadata?: { type: string, domain?: string };
   userPreferences?: {
     verbosity: 'concise' | 'detailed' | 'comprehensive';
     technical_level: 'basic' | 'intermediate' | 'expert';

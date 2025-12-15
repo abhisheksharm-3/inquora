@@ -120,6 +120,22 @@ export interface TypeDatabase {
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["messages"]["Insert"]>;
       };
+
+      user_memories: {
+        Row: {
+          id: string;
+          user_id: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: Partial<TypeDatabase["public"]["Tables"]["user_memories"]["Insert"]>;
+      };
     };
 
     Views: Record<string, never>;
@@ -136,6 +152,7 @@ export type TypeMessage =
   TypeDatabase["public"]["Tables"]["messages"]["Row"] & {
     isError?: boolean;
   };
+export type TypeUserMemory = TypeDatabase["public"]["Tables"]["user_memories"]["Row"];
 
 // Extended type for chats with included file data
 export type TypeChatWithFile = TypeChat & {
