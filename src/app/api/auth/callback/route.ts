@@ -1,11 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { unstable_noStore } from "next/cache";
 import { supabaseServerClient } from "@/utils/supabase/server";
 import type { TypeUser } from "@/types/TypeSupabase";
 import { User } from "@supabase/supabase-js";
-
-// Force dynamic rendering - this route uses request.url which is only available at runtime
-export const dynamic = "force-dynamic";
 
 /**
  * Authentication callback handler for processing OAuth code exchanges
@@ -18,6 +16,9 @@ export const dynamic = "force-dynamic";
  * @returns A redirect response to either the target page or an error page
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  // Opt out of caching - this route uses request.url which is only available at runtime
+  unstable_noStore();
+
   try {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
