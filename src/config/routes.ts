@@ -23,7 +23,7 @@ export const AUTH_ROUTES = {
 
 /** Dashboard routes requiring authentication */
 export const DASHBOARD_ROUTES = {
-    HOME: "/dashboard",
+    HOME: "/choose",
     CHAT: (chatId: string) => `/chat/${chatId}` as const,
     HISTORY: "/history",
     SETTINGS: "/settings",
