@@ -9,21 +9,179 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Loader2, FileText, MessageSquare, Sparkles, X } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Loader2, FileText, MessageSquare, Sparkles } from "lucide-react";
 import { useChatInterface } from "@/hooks/useChatInterface";
-import { useState, useMemo, memo } from "react";
+import { useState, memo } from "react";
 
 import { ChatInterfaceInput } from "./ChatInterfaceInput";
 import { ChatInterfaceDocumentViewer } from "./ChatInterfaceDocumentViewer";
 import { ChatInterfaceMessages } from "./ChatInterfaceMessage";
 import { cn } from "@/utils/cn";
+import { SafeComponent } from "@/components/shared/ErrorBoundary";
+import type { TypeFile, TypeMessage } from "@/types/database";
 
-interface ChatInterfaceProps {
-  chatId: string;
+interface DocumentPanelProps {
+  file: TypeFile | null | undefined;
+  isFileLoading: boolean;
+  isFileError: boolean;
+  title: string;
 }
 
-const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
+const DocumentPanel = memo(function DocumentPanel({
+  file,
+  isFileLoading,
+  isFileError,
+  title,
+}: DocumentPanelProps) {
+  return (
+    <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
+      {file ? (
+        <div className="h-full w-full">
+          <SafeComponent name="DocumentViewer">
+            <ChatInterfaceDocumentViewer
+              file={file}
+              isLoading={isFileLoading}
+              isError={isFileError}
+              title={title}
+            />
+          </SafeComponent>
+        </div>
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
+          <div className="rounded-full bg-muted p-4">
+            <FileText className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="text-center space-y-2">
+            <h3 className="font-medium text-foreground">No Document Available</h3>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Upload a document to start analyzing and chatting about its contents
+            </p>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+});
+
+interface ChatPanelProps {
+  localMessages: TypeMessage[];
+  messagesLoading: boolean;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  isSending: boolean;
+  inputValue: string;
+  setInputValue: (v: string) => void;
+  onSendMessage: (content?: string) => Promise<void>;
+  isLegacyChat: boolean;
+  legacyMessage: string | undefined;
+  file: TypeFile | null | undefined;
+  isFileLoading: boolean;
+  isFileError: boolean;
+  chatTitle: string;
+}
+
+const ChatPanel = memo(function ChatPanel({
+  localMessages,
+  messagesLoading,
+  messagesEndRef,
+  isSending,
+  inputValue,
+  setInputValue,
+  onSendMessage,
+  isLegacyChat,
+  legacyMessage,
+  file,
+  isFileLoading,
+  isFileError,
+  chatTitle,
+}: ChatPanelProps) {
+  const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
+
+  return (
+    <Card className="flex h-full flex-col border-border/50 bg-card/95 backdrop-blur-md shadow-lg py-0 gap-0 md:m-0 m-0 rounded-none md:rounded-lg">
+      <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-primary/10 p-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-foreground">Chat</h2>
+            <p className="text-xs text-muted-foreground">
+              {localMessages.length} message{localMessages.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isSending && localMessages.some((msg) => msg.content === "...") && (
+            <Badge variant="secondary" className="gap-1 hidden sm:flex">
+              <Sparkles className="h-3 w-3 animate-pulse" />
+              Thinking
+            </Badge>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsDocumentPanelOpen(true)}
+          >
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          </Button>
+          <Sheet open={isDocumentPanelOpen} onOpenChange={setIsDocumentPanelOpen}>
+            <SheetContent
+              side="bottom"
+              className="h-[85vh] p-0 border-none bg-background backdrop-blur-xl rounded-t-3xl shadow-2xl"
+            >
+              <div className="h-full flex flex-col">
+                <div className="flex items-center justify-center py-2 shrink-0">
+                  <div className="w-12 h-1 bg-muted-foreground/40 rounded-full" />
+                </div>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-card/30 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="rounded-full bg-primary/10 p-1.5">
+                      <FileText className="h-3 w-3 text-primary" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground truncate">{chatTitle}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <DocumentPanel
+                    file={file}
+                    isFileLoading={isFileLoading}
+                    isFileError={isFileError}
+                    title={chatTitle}
+                  />
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ChatInterfaceMessages
+          messages={localMessages}
+          messagesLoading={messagesLoading}
+          messagesEndRef={messagesEndRef}
+          isSending={isSending}
+        />
+      </div>
+      <Separator className="bg-border/50 shrink-0" />
+      <div className="p-1 shrink-0">
+        <ChatInterfaceInput
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSendMessage={onSendMessage}
+          isSending={isSending}
+          isLegacyChat={isLegacyChat}
+          legacyMessage={legacyMessage}
+        />
+      </div>
+    </Card>
+  );
+});
+
+const ChatInterfaceComponent = ({ chatId }: { chatId: string }) => {
   const {
     inputValue,
     setInputValue,
@@ -40,149 +198,6 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
     isLegacyChat,
     legacyMessage,
   } = useChatInterface({ chatId });
-
-  const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
-
-  const DocumentPanel = useMemo(
-    () => (
-      <Card className="h-full border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
-        {file ? (
-          <div className="h-full w-full">
-            <ChatInterfaceDocumentViewer
-              file={file}
-              isLoading={isFileLoading}
-              isError={isFileError}
-              title={chat?.title || "Document"}
-            />
-          </div>
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-            <div className="rounded-full bg-muted p-4">
-              <FileText className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="text-center space-y-2">
-              <h3 className="font-medium text-foreground">
-                No Document Available
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Upload a document to start analyzing and chatting about its
-                contents
-              </p>
-            </div>
-          </div>
-        )}
-      </Card>
-    ),
-    [file, isFileLoading, isFileError, chat?.title],
-  );
-
-  const ChatPanel = useMemo(
-    () => (
-      <Card className="flex h-full flex-col border-border/50 bg-card/95 backdrop-blur-md shadow-lg py-0 gap-0 md:m-0 m-0 rounded-none md:rounded-lg">
-        <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-primary/10 p-2">
-              <MessageSquare className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground">Chat</h2>
-              <p className="text-xs text-muted-foreground">
-                {localMessages.length} message
-                {localMessages.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isSending &&
-              localMessages.some((msg) => msg.content === "...") && (
-                <Badge variant="secondary" className="gap-1 hidden sm:flex">
-                  <Sparkles className="h-3 w-3 animate-pulse" />
-                  Thinking
-                </Badge>
-              )}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsDocumentPanelOpen(true)}
-            >
-              <FileText className="h-5 w-5 text-muted-foreground" />
-            </Button>
-
-            <Sheet open={isDocumentPanelOpen} onOpenChange={setIsDocumentPanelOpen}>
-              <SheetContent
-                side="bottom"
-                className="h-[85vh] p-0 border-none bg-background backdrop-blur-xl rounded-t-3xl shadow-2xl"
-                
-              >
-                <div className="h-full flex flex-col">
-                  <div className="flex items-center justify-center py-2 shrink-0">
-                    <div className="w-12 h-1 bg-muted-foreground/40 rounded-full" />
-                  </div>
-
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border/10 bg-card/30 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-full bg-primary/10 p-1.5">
-                        <FileText className="h-3 w-3 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {chat?.title || "Document"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    {DocumentPanel}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ChatInterfaceMessages
-            messages={localMessages}
-            messagesLoading={messagesLoading}
-            messagesEndRef={messagesEndRef}
-            isSending={isSending}
-          />
-        </div>
-
-        <Separator className="bg-border/50 shrink-0" />
-
-        <div className="p-1 shrink-0">
-          <ChatInterfaceInput
-            inputValue={inputValue}
-            setInputValue={setInputValue}
-            onSendMessage={handleSendMessage}
-            isSending={isSending}
-            isLegacyChat={isLegacyChat}
-            legacyMessage={legacyMessage}
-          />
-        </div>
-      </Card>
-    ),
-    [
-      localMessages,
-      messagesLoading,
-      messagesEndRef,
-      isSending,
-      inputValue,
-      setInputValue,
-      handleSendMessage,
-      isLegacyChat,
-      legacyMessage,
-      file, // Added file to dependencies for ChatPanel to react to its presence/absence
-      isDocumentPanelOpen, // Added isDocumentPanelOpen to dependencies
-      setIsDocumentPanelOpen, // Added setIsDocumentPanelOpen to dependencies
-      chat?.title, // Added chat?.title to dependencies
-      DocumentPanel, // Added DocumentPanel to dependencies
-    ],
-  );
 
   if (isChatLoading || !chat) {
     return (
@@ -201,12 +216,19 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
     );
   }
 
+  const chatTitle = chat?.title || "Document";
+
   return (
     <div className="h-full">
       <div className="hidden h-full p-1 md:block">
         <ResizablePanelGroup direction="horizontal" className="h-full gap-4">
           <ResizablePanel defaultSize={45} minSize={30} maxSize={70}>
-            {DocumentPanel}
+            <DocumentPanel
+              file={file}
+              isFileLoading={isFileLoading}
+              isFileError={isFileError}
+              title={chatTitle}
+            />
           </ResizablePanel>
 
           <ResizableHandle
@@ -219,13 +241,41 @@ const ChatInterfaceComponent = ({ chatId }: ChatInterfaceProps) => {
           />
 
           <ResizablePanel defaultSize={55} minSize={30} maxSize={70}>
-            {ChatPanel}
+            <ChatPanel
+              localMessages={localMessages}
+              messagesLoading={messagesLoading}
+              messagesEndRef={messagesEndRef}
+              isSending={isSending}
+              inputValue={inputValue}
+              setInputValue={setInputValue}
+              onSendMessage={handleSendMessage}
+              isLegacyChat={isLegacyChat}
+              legacyMessage={legacyMessage}
+              file={file}
+              isFileLoading={isFileLoading}
+              isFileError={isFileError}
+              chatTitle={chatTitle}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
 
       <div className="h-full flex flex-col md:hidden relative bg-gradient-to-b from-background to-background/95">
-        {ChatPanel}
+        <ChatPanel
+          localMessages={localMessages}
+          messagesLoading={messagesLoading}
+          messagesEndRef={messagesEndRef}
+          isSending={isSending}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSendMessage={handleSendMessage}
+          isLegacyChat={isLegacyChat}
+          legacyMessage={legacyMessage}
+          file={file}
+          isFileLoading={isFileLoading}
+          isFileError={isFileError}
+          chatTitle={chatTitle}
+        />
       </div>
     </div>
   );

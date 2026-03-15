@@ -3,7 +3,7 @@
 import { 
   TypeConversationTurn, 
   TypeQueryAnalysis
-} from "@/types/TypeRag";
+} from "@/types/rag";
 
 /**
  * Prepares conversation context for RAG processing
@@ -167,17 +167,20 @@ function generateContinuityPrompt(
 
   const lastTurn = history[history.length - 1];
   const isFollowUp = isFollowUpQuestion(lastTurn.userQuery, currentAnalysis.expandedQuery);
-  
-  if (isFollowUp) {
-    return "This appears to be a follow-up question. Please consider the previous discussion context when responding.";
-  }
-
   const topicShift = hasTopicShift(history, currentAnalysis);
-  if (topicShift) {
-    return "The user has shifted to a new topic. Please acknowledge this transition while maintaining helpful context.";
+  
+  const recentTopics = history.slice(-3).map(turn => extractMainTopic(turn.userQuery));
+  const currentTopic = extractMainTopic(currentAnalysis.expandedQuery);
+
+  if (isFollowUp) {
+    return `This is a follow-up question. Previous context covered: ${recentTopics.join(', ')}. The user is now asking about: ${currentTopic}. Build on the previous discussion.`;
   }
 
-  return "Continue the conversation naturally, building on previous context.";
+  if (topicShift) {
+    return `The user has shifted topics. Previous discussion: ${recentTopics.join(', ')}. New topic: ${currentTopic}. Acknowledge the shift and provide fresh context.`;
+  }
+
+  return `Continuing discussion about: ${currentTopic}. Related prior topics: ${recentTopics.join(', ')}.`;
 }
 
 /**
@@ -218,16 +221,26 @@ function extractPrimaryTopics(history: TypeConversationTurn[]): string[] {
 }
 
 /**
- * Calculates user satisfaction based on conversation patterns
+ * Heuristic for user satisfaction from model confidence and topic continuity.
+ * No explicit user feedback is collected; can be replaced when feedback signals exist.
  */
 function calculateUserSatisfaction(history: TypeConversationTurn[]): number {
-  
   if (history.length === 0) return 0.7;
   
+  // Factor in confidence and explicit satisfaction
   const avgConfidence = history.reduce((sum, turn) => sum + turn.confidence, 0) / history.length;
-  const avgSatisfaction = history.reduce((sum, turn) => sum + (turn.satisfaction || 0.7), 0) / history.length;
   
-  return (avgConfidence + avgSatisfaction) / 2;
+  // High variance in confidence or frequent topic shifts reduce satisfaction heuristic
+  const topicShifts = history.filter((turn, i) => i > 0 && isFollowUpQuestion(history[i-1].userQuery, turn.userQuery) === false).length;
+  const shiftPenalty = Math.min(0.2, (topicShifts / history.length) * 0.5);
+
+  const turnsWithSatisfaction = history.filter(turn => turn.satisfaction !== undefined);
+  if (turnsWithSatisfaction.length > 0) {
+    const avgSatisfaction = turnsWithSatisfaction.reduce((sum, turn) => sum + (turn.satisfaction || 0), 0) / turnsWithSatisfaction.length;
+    return Math.max(0, (avgConfidence + avgSatisfaction) / 2 - shiftPenalty);
+  }
+  
+  return Math.max(0, avgConfidence - shiftPenalty);
 }
 
 /**
@@ -281,19 +294,37 @@ function generateRecommendations(
 }
 
 /**
- * Extracts main topic from a query
+ * Extracts main topic from a query using multi-keyword extraction.
+ * Filters out common stop words and prioritizes meaningful technical/academic terms.
  */
 function extractMainTopic(query: string): string {
+  if (!query) return 'general';
   
-  // Simple topic extraction - in practice, this could be more sophisticated
   const words = query.toLowerCase().split(/\s+/);
-  const stopWords = new Set(['what', 'how', 'why', 'when', 'where', 'who', 'is', 'are', 'the', 'a', 'an']);
+  const stopWords = new Set([
+    'what', 'how', 'why', 'when', 'where', 'who', 'which', 'whom',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
+    'for', 'of', 'with', 'by', 'from', 'as', 'into', 'through',
+    'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may',
+    'can', 'has', 'have', 'had', 'this', 'that', 'these', 'those',
+    'it', 'its', 'i', 'me', 'my', 'you', 'your', 'we', 'our', 'they',
+    'about', 'between', 'some', 'more', 'most', 'other', 'also',
+    'tell', 'explain', 'describe', 'please', 'give', 'show', 'find',
+    'please', 'actually', 'just', 'highly', 'really', 'want'
+  ]);
   
-  const keywords = words.filter(word => 
-    word.length > 3 && !stopWords.has(word)
+  // Extract meaningful content words, prioritize longer words and non-standard terms
+  const contentWords = words.filter(word => 
+    word.length > 2 && !stopWords.has(word) && !/^[^a-z]+$/.test(word)
   );
 
-  return keywords[0] || "general";
+  if (contentWords.length === 0) return 'general';
+  
+  // Sort by length (heuristic for complexity) and take top 3
+  const bestWords = contentWords.sort((a, b) => b.length - a.length).slice(0, 3);
+  
+  return bestWords.join(' ');
 }
 
 /**
@@ -311,14 +342,30 @@ function isFollowUpQuestion(previousQuery: string, currentQuery: string): boolea
 }
 
 /**
- * Checks if there's been a topic shift in the conversation
+ * Checks if there's been a meaningful topic shift in the conversation.
+ * Uses word-overlap ratio instead of string equality to avoid false positives
+ * when the same topic is phrased slightly differently.
  */
 function hasTopicShift(history: TypeConversationTurn[], currentAnalysis: TypeQueryAnalysis): boolean {
-  
+
   if (history.length === 0) return false;
-  
+
   const lastTopic = extractMainTopic(history[history.length - 1].userQuery);
   const currentTopic = extractMainTopic(currentAnalysis.expandedQuery);
-  
-  return lastTopic !== currentTopic;
+
+  // If both topics resolve to 'general', treat as no shift
+  if (lastTopic === 'general' && currentTopic === 'general') return false;
+
+  // Jaccard overlap on topic words
+  const lastWords = new Set(lastTopic.split(' ').filter(w => w.length > 1));
+  const currentWords = new Set(currentTopic.split(' ').filter(w => w.length > 1));
+
+  if (lastWords.size === 0 || currentWords.size === 0) return lastTopic !== currentTopic;
+
+  const intersection = [...lastWords].filter(w => currentWords.has(w)).length;
+  const union = new Set([...lastWords, ...currentWords]).size;
+  const overlap = intersection / union;
+
+  // Overlap > 40% = same topic area, not a shift
+  return overlap <= 0.4;
 }

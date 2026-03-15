@@ -1,7 +1,9 @@
+"use client";
+
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
-import { TypePasswordInputProps } from "@/types/TypeAuth";
+import { TypePasswordInputProps } from "@/types/auth";
 import { Button } from "../ui/button";
 import { cn } from "@/utils/cn";
 

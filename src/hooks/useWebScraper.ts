@@ -6,7 +6,7 @@ import {
   getWebPageInfo,
   processWebPage,
 } from "@/utils/processors/web-scraper-server";
-import type { TypeUseWebScrapingReturn } from "@/types/TypeWebScraper";
+import type { TypeUseWebScrapingReturn } from "@/types/web-scraper";
 
 /**
  * Custom hook for managing web page scraping operations

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import { TypeChatWithFile } from "@/types/TypeSupabase";
+import { TypeChatWithFile } from "@/types/database";
 import { HistoryPageChatItem } from "./HistoryPageChatItem";
 
 interface VirtualizedChatListProps {

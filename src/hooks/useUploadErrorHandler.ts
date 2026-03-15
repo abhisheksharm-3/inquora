@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 import { getErrorMessage, UploadAction } from "@/utils/upload-utils";
-import { TypeUploadError } from "@/types/TypeUpload";
-import { EnumUploadActionType } from "@/constants/EnumUploadData";
+import { TypeUploadError } from "@/types/upload";
+import { EnumUploadActionType } from "@/types/upload";
 
 /** A map of regular expressions to error types for categorizing errors by their message. */
 const errorTypeMap = new Map<RegExp, TypeUploadError["type"]>([

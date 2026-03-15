@@ -1,4 +1,4 @@
-import type { TypeAuthLinkProps } from "@/types/TypeAuth";
+import type { TypeAuthLinkProps } from "@/types/auth";
 import Link from "next/link";
 import { JSX } from "react";
 

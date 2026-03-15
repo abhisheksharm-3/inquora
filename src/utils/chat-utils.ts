@@ -1,7 +1,7 @@
-import { TypeChatError } from "@/types/TypeChat";
-import { TypeChat, TypeFile } from "@/types/TypeSupabase";
+import { TypeChatError } from "@/types/chat";
+import { TypeChat, TypeFile } from "@/types/database";
 import { Metadata } from "next";
-import { supabaseBrowserClient } from "./supabase/client";
+import { supabaseBrowserClient } from "@/data/supabase/client";
 
 // --- Constants for Error Handling and Retry Logic ---
 

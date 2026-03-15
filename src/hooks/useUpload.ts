@@ -6,9 +6,9 @@ import { useFiles } from "@/hooks/useFiles";
 import { useChats } from "@/hooks/useChats";
 import { useUser } from "@/hooks/useUser";
 import { useDocumentProcessor } from "@/hooks/useDocumentProcessor";
-import { TypeFile, TypeChat } from "@/types/TypeSupabase";
-import { getFileTypeConfig } from "@/constants/FileTypes";
-import { TypeUseUploadLogicProps } from "@/types/TypeUpload";
+import { TypeFile, TypeChat } from "@/types/database";
+import { getFileTypeConfig } from "@/constants/file-types";
+import { TypeUseUploadLogicProps } from "@/types/upload";
 import {
   getUrlType,
   initialUploadState,
@@ -17,11 +17,12 @@ import {
 import {
   _extractGitHubFilename,
   _extractWebPageTitle,
+  _extractYoutubeTitle,
   _getHostnameFromUrl,
 } from "@/utils/url-naming-utils";
 import { useUploadErrorHandler } from "./useUploadErrorHandler";
 import { useUploadValidation } from "./useUploadValidation";
-import { EnumUploadActionType } from "@/constants/EnumUploadData";
+import { EnumUploadActionType } from "@/types/upload";
 
 // --- Constants ---
 const MAX_CHAT_CREATION_RETRIES = 3;
@@ -85,6 +86,8 @@ export const useUploadLogic = ({
         urlFileName = await _extractGitHubFilename(urlToUpload);
       } else if (urlType === "web") {
         urlFileName = await _extractWebPageTitle(urlToUpload);
+      } else if (urlType === "video" || fileType === "youtube") {
+        urlFileName = await _extractYoutubeTitle(urlToUpload);
       } else {
         urlFileName = _getHostnameFromUrl(urlToUpload);
       }

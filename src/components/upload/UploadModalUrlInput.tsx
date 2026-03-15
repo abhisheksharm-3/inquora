@@ -1,21 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Send, AlertCircle, Link } from "lucide-react";
-import { TypeUploadModalUrlInputProps } from "@/types/TypeUpload";
+import { Send, AlertCircle, Link, CheckCircle2 } from "lucide-react";
+import { TypeUploadModalUrlInputProps } from "@/types/upload";
 import { extractYoutubeVideoId } from "@/utils/youtube-utils";
 import { isValidGitHubUrl } from "@/utils/github-utils";
 import { isValidWebUrl } from "@/utils/web-scraper-utils";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/utils/cn";
 
 /**
- * A controlled input component for submitting a URL for processing.
+ * Enhanced URL input component for submitting URLs for processing.
  *
- * It features an enhanced submit button with proper theming and displays
- * contextual messages when YouTube URLs are detected. Uses shadcn theming
- * for consistent design across light/dark modes.
+ * Features:
+ * - Real-time URL validation feedback
+ * - Contextual help for different URL types (YouTube, GitHub, Web)
+ * - Smooth animations and visual feedback
+ * - Clear submission button
+ * - Better visual hierarchy and spacing
  *
  * @param {TypeUploadModalUrlInputProps} props - The properties for the component.
  * @returns {JSX.Element} The rendered URL input component.
@@ -32,89 +36,126 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
   const [isYouTube, setIsYouTube] = useState(false);
   const [isGitHub, setIsGitHub] = useState(false);
   const [isWebPage, setIsWebPage] = useState(false);
+  const [isValidUrl, setIsValidUrl] = useState(false);
 
   /**
    * Checks if the entered URL is a YouTube link, GitHub repository, or web page to conditionally show help messages.
    */
   useEffect(() => {
-    setIsYouTube(!!extractYoutubeVideoId(url));
-    setIsGitHub(isValidGitHubUrl(url));
-    setIsWebPage(
-      isValidWebUrl(url) &&
-        !extractYoutubeVideoId(url) &&
-        !isValidGitHubUrl(url),
-    );
+    const yt = !!extractYoutubeVideoId(url);
+    const gh = isValidGitHubUrl(url);
+    const web = isValidWebUrl(url) && !yt && !gh;
+
+    setIsYouTube(yt);
+    setIsGitHub(gh);
+    setIsWebPage(web);
+    setIsValidUrl(yt || gh || web);
   }, [url]);
 
   return (
-    <div className="space-y-3">
-      {/* Enhanced label with icon */}
+    <div className="space-y-4">
+      {/* Input label */}
       <div className="flex items-center gap-2">
         <Link className="w-4 h-4 text-muted-foreground" />
-        <p className="text-sm font-medium text-foreground">
+        <label className="text-sm font-semibold text-foreground">
           {isUrlOnly ? `Enter ${fileTypeConfig.name} URL` : "Import from URL"}
-        </p>
+        </label>
       </div>
 
-      {/* Input field with improved styling */}
+      {/* Input field with validation feedback */}
       <div className="relative group">
         <Input
-          type="text"
-          placeholder="https://example.com/your-file"
+          type="url"
+          placeholder={`https://example.com/${fileTypeConfig.name.toLowerCase()}`}
           value={url}
           onChange={handleUrlChange}
           onKeyDown={handleKeyDown}
-          className="pr-12 transition-all duration-200 focus:ring-2 focus:ring-primary/20 group-hover:border-muted-foreground/40"
+          className={cn(
+            "pr-12 transition-all duration-200 bg-background",
+            isValidUrl
+              ? "border-emerald-500/50 focus:border-emerald-500 focus:ring-emerald-500/20"
+              : "border-muted-foreground/30 hover:border-muted-foreground/50 focus:border-primary focus:ring-primary/20",
+          )}
           disabled={isUploading}
         />
-        <Button
-          size="icon"
-          variant={url.trim() ? "default" : "ghost"}
-          className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 transition-all duration-200 ${
-            url.trim()
-              ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-          onClick={handleUrlSubmit}
-          disabled={!url.trim() || isUploading}
-          aria-label="Submit URL"
-        >
-          <Send size={14} />
-        </Button>
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          {isValidUrl && (
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+          )}
+          <Button
+            size="icon"
+            type="button"
+            variant={url.trim() ? "default" : "ghost"}
+            className={cn(
+              "h-8 w-8 transition-all duration-200",
+              url.trim()
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+            onClick={handleUrlSubmit}
+            disabled={!url.trim() || isUploading}
+            aria-label="Submit URL"
+          >
+            <Send size={16} />
+          </Button>
+        </div>
       </div>
 
-      {/* Enhanced YouTube notice with Alert component */}
+      {/* YouTube detection notice */}
       {isYouTube && (
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <span className="font-medium">YouTube video detected:</span> Only
-            videos with available captions can be processed. Private or
-            auto-generated captions may not work reliably.
+        <Alert className="border-blue-500/30 bg-blue-500/5">
+          <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <AlertDescription className="text-blue-600 dark:text-blue-400 text-sm">
+            <span className="font-medium">YouTube video detected</span>
+            <br />
+            <span className="text-xs opacity-90">
+              Videos with captions work best. Private videos and auto-generated
+              captions may have limited support.
+            </span>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Enhanced GitHub notice with Alert component */}
+      {/* GitHub detection notice */}
       {isGitHub && (
-        <Alert className="border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/20">
-          <AlertCircle className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-          <AlertDescription className="text-purple-800 dark:text-purple-200">
-            <span className="font-medium">GitHub repository detected:</span>{" "}
-            Only public repositories can be processed. Large repositories may
-            take several minutes to analyze.
+        <Alert className="border-purple-500/30 bg-purple-500/5">
+          <AlertCircle className="h-4 w-4 text-purple-500 flex-shrink-0" />
+          <AlertDescription className="text-purple-600 dark:text-purple-400 text-sm">
+            <span className="font-medium">GitHub repository detected</span>
+            <br />
+            <span className="text-xs opacity-90">
+              Only public repositories supported. Large repos may take several
+              minutes to process.
+            </span>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Enhanced web page notice with Alert component */}
+      {/* Web page detection notice */}
       {isWebPage && (
-        <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
-          <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-          <AlertDescription className="text-green-800 dark:text-green-200">
-            <span className="font-medium">Web page detected:</span> The page
-            content will be extracted and processed for chat. Pages requiring
-            authentication or heavy JavaScript may not work reliably.
+        <Alert className="border-emerald-500/30 bg-emerald-500/5">
+          <AlertCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+          <AlertDescription className="text-emerald-600 dark:text-emerald-400 text-sm">
+            <span className="font-medium">Web page detected</span>
+            <br />
+            <span className="text-xs opacity-90">
+              Page content will be extracted and processed. Complex sites with
+              authentication may have limitations.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* URL format hint if no valid URL detected yet */}
+      {url.trim() && !isValidUrl && (
+        <Alert className="border-amber-500/30 bg-amber-500/5">
+          <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          <AlertDescription className="text-amber-600 dark:text-amber-400 text-sm">
+            <span className="font-medium">URL format not recognized</span>
+            <br />
+            <span className="text-xs opacity-90">
+              Make sure your URL is valid and accessible
+            </span>
           </AlertDescription>
         </Alert>
       )}

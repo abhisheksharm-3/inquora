@@ -1,4 +1,4 @@
-import { TypeAuthHeaderProps } from "@/types/TypeAuth";
+import { TypeAuthHeaderProps } from "@/types/auth";
 /**
  * @description A clean, left-aligned header for the auth form.
  */

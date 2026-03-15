@@ -2,8 +2,6 @@
 
 import {
   GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
   GenerativeModel,
   StartChatParams,
   Content,
@@ -12,27 +10,27 @@ import {
 } from "@google/generative-ai";
 import { createYoutubeSystemPrompt } from "../youtube-utils";
 import { createAgenticRagPrompt } from "../rag/prompt-engineering";
-import { TypeGeminiImageData } from "@/types/TypeContent";
-import { TypeSessionMetadata } from "@/types/TypeRag";
-import { manageMemory, memoryToolDefinition, MemoryAction } from "./memory-tool";
+import { TypeGeminiImageData } from "@/types/content";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { GeminiUserContext, GeminiMessage } from "@/types/TypeGemini";
+import { manageMemory, memoryToolDefinition, MemoryAction } from "./memory-tool";
+import { GeminiUserContext, GeminiMessage } from "@/types/gemini";
+import { env, isGeminiConfigured as checkGeminiConfigured } from "@/config/env";
+import {
+  GEMINI_GENERATION_CONFIG,
+  GEMINI_SAFETY_SETTINGS,
+  GEMINI_MODEL_NAME,
+} from "@/config/gemini-config";
+import { geminiRateLimiter } from "../rag/rate-limiter";
 
-// --- Configuration ---
-const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = "gemini-2.5-flash";
-
-// --- Initialization ---
 let genAI: GoogleGenerativeAI | undefined;
-if (API_KEY) {
-  genAI = new GoogleGenerativeAI(API_KEY);
+if (env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 }
 
 /**
  * Checks if the Gemini API has been configured with an API key.
- * @returns {boolean} True if the API key is set, otherwise false.
  */
-export const isGeminiConfigured = async (): Promise<boolean> => !!API_KEY;
+export const isGeminiConfigured = async (): Promise<boolean> => checkGeminiConfigured();
 
 /**
  * Retrieves the configured Gemini generative model.
@@ -43,11 +41,10 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
   if (!genAI) {
     throw new Error("Gemini API key is not configured.");
   }
-  console.log("Using model:", MODEL_NAME);
   return genAI.getGenerativeModel({
-    model: MODEL_NAME,
+    model: GEMINI_MODEL_NAME,
     tools: [{
-      functionDeclarations: [memoryToolDefinition] as unknown as FunctionDeclaration[]
+      functionDeclarations: [memoryToolDefinition] as FunctionDeclaration[]
     }]
   });
 };
@@ -86,13 +83,15 @@ const _getSystemInstruction = async (
  * @param fileContent Optional context from a file (e.g., PDF content or a placeholder like 'YOUTUBE_TRANSCRIPT').
  * @param imageData Optional image data to include in the message.
  * @param context Optional context information including date/time and user details.
- * @returns {Promise<string>} A promise that resolves to the model's text response.
+ * @param supabaseClient Optional Supabase client for memory tool (server-side only).
+ * @returns A promise that resolves to the model's text response.
  */
 export const sendMessageToGemini = async (
   messages: GeminiMessage[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
   context?: GeminiUserContext,
+  supabaseClient?: SupabaseClient,
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
     return "Error: Gemini API key is not configured.";
@@ -100,54 +99,31 @@ export const sendMessageToGemini = async (
 
   try {
     const model = await getGeminiModel();
-    const lastUserMessage = messages.pop(); // Remove the last message to send it separately
+    const lastIndex = messages.length - 1;
+    const lastUserMessage = lastIndex >= 0 ? messages[lastIndex] : undefined;
+    const historyMessages = lastIndex >= 0 ? messages.slice(0, lastIndex) : messages;
     if (!lastUserMessage) {
       return "Error: No message to send.";
     }
 
-    // Construct the chat history, including the system prompt if applicable.
     const history: Content[] = [];
     const systemInstruction = await _getSystemInstruction(fileContent, context);
     if (systemInstruction) {
       history.push(systemInstruction);
     }
 
-    // Add the rest of the chat history
-    messages.forEach((msg) => {
+    historyMessages.forEach((msg) => {
       history.push({ role: msg.role, parts: [{ text: msg.content }] });
     });
 
     const chatParams: StartChatParams = {
       history,
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8192,
-      },
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-      ],
+      generationConfig: GEMINI_GENERATION_CONFIG,
+      safetySettings: [...GEMINI_SAFETY_SETTINGS],
     };
 
     const chat = model.startChat(chatParams);
 
-    // Prepare the final message parts, including image data if present.
     const messageParts: Part[] = [{ text: lastUserMessage.content }];
     if (imageData) {
       messageParts.push({
@@ -158,10 +134,9 @@ export const sendMessageToGemini = async (
       });
     }
 
-    let result = await chat.sendMessage(messageParts);
+    let result = await geminiRateLimiter.execute(() => chat.sendMessage(messageParts));
     let response = result.response;
 
-    // Handle Function Calls (Tool Usage)
     const MAX_TOOL_LOOPS = 5;
     let loopCount = 0;
 
@@ -172,10 +147,9 @@ export const sendMessageToGemini = async (
         break; // No tool called, we are done
       }
 
-      // We have function calls to execute
       const functionResponses = await Promise.all(functionCalls.map(async (call) => {
         if (call.name === "manage_memory") {
-          if (!context?.userId || !context?.supabase) {
+          if (!context?.userId || !supabaseClient) {
             return {
               functionResponse: {
                 name: call.name,
@@ -193,8 +167,7 @@ export const sendMessageToGemini = async (
               }
             };
           }
-          console.log(`[Gemini Tool] Managing memory: ${args.action} "${args.content}"`);
-          const toolResult = await manageMemory(context.userId, args.action, args.content, context.supabase);
+          const toolResult = await manageMemory(context.userId, args.action, args.content, supabaseClient);
 
           return {
             functionResponse: {
@@ -212,8 +185,7 @@ export const sendMessageToGemini = async (
         };
       }));
 
-      // Send tool results back to the model
-      result = await chat.sendMessage(functionResponses);
+      result = await geminiRateLimiter.execute(() => chat.sendMessage(functionResponses));
       response = result.response;
       loopCount++;
     }
@@ -222,7 +194,6 @@ export const sendMessageToGemini = async (
   } catch (error) {
     console.error("Error in Gemini chat:", error);
 
-    // Mask sensitive 429 (Quota Exceeded) and 503 (Service Unavailable) errors
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     if (errorMessage.includes("429") || errorMessage.includes("Quota exceeded")) {

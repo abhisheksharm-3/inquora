@@ -1,668 +1,446 @@
 "use server";
 
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { createGeminiEmbeddings } from "../gemini/embeddings";
-import { PineconeStore } from "@langchain/pinecone";
-import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
+/**
+ * Consolidated GitHub Repository Processor
+ * 
+ * Single file handling all GitHub repository processing with fallback strategy:
+ * 1. Git Clone (if available) - Fastest, full access
+ * 2. ZIP Download - Fallback when git unavailable
+ * 3. GitHub API - Final fallback, uses API quota
+ * 
+ * Uses shared utilities from github-processor-utils.ts
+ */
+
 import { Document } from "@langchain/core/documents";
-import { supabaseBrowserClient } from "../supabase/client";
+import { promises as fs } from "fs";
+import path from "path";
+import os from "os";
+import { exec } from "child_process";
+import { promisify } from "util";
+import JSZip from "jszip";
+import { supabaseServerClient } from "@/data/supabase/server";
 import { updateFileStatus } from "../file-processing-utils";
+import { isPineconeConfigured } from "../pinecone";
 import type {
-  TypeGitHubTreeItem,
-  TypeGitHubRepository,
-  TypeGitHubRepositoryInfo,
-  TypeGitHubProcessResult,
-  TypeGitHubParseResult,
-} from "@/types/TypeGitHub";
+    TypeGitHubProcessResult,
+    TypeGitHubRepositoryInfo,
+    TypeGitHubParseResult,
+} from "@/types/github";
+import {
+    parseGitHubUrl,
+    splitDocuments,
+    storeDocsInPinecone,
+    PROCESSABLE_EXTENSIONS,
+    SKIPPED_DIRECTORIES,
+    GITHUB_MAX_FILE_SIZE,
+} from "./github-processor-utils";
 
-// --- Constants ---
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 200;
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
-const MAX_FILE_SIZE = 1024 * 1024; // 1MB limit per file
+const execAsync = promisify(exec);
+
 const GITHUB_API_BASE = "https://api.github.com";
-const RATE_LIMIT_DELAY = 100; // 100ms between API calls
-
-// File extensions to include in processing
-const PROCESSABLE_EXTENSIONS = new Set([
-  ".md",
-  ".txt",
-  ".js",
-  ".ts",
-  ".jsx",
-  ".tsx",
-  ".py",
-  ".java",
-  ".cpp",
-  ".c",
-  ".h",
-  ".cs",
-  ".php",
-  ".rb",
-  ".go",
-  ".rs",
-  ".kt",
-  ".swift",
-  ".sql",
-  ".json",
-  ".yaml",
-  ".yml",
-  ".xml",
-  ".html",
-  ".css",
-  ".scss",
-  ".sass",
-  ".less",
-  ".sh",
-  ".bat",
-  ".ps1",
-  ".r",
-  ".m",
-  ".scala",
-  ".clj",
-  ".hs",
-  ".elm",
-  ".dart",
-  ".lua",
-  ".pl",
-  ".vim",
-  ".config",
-  ".env",
-  ".gitignore",
-  ".dockerfile",
-  "dockerfile",
-  "makefile",
-  "readme",
-]);
-
-// Directories to skip
-const SKIP_DIRECTORIES = new Set([
-  "node_modules",
-  ".git",
-  ".github",
-  "dist",
-  "build",
-  "out",
-  ".next",
-  "coverage",
-  ".nyc_output",
-  "vendor",
-  "target",
-  ".vscode",
-  ".idea",
-  "__pycache__",
-  ".pytest_cache",
-  ".cache",
-  "tmp",
-  "temp",
-  ".DS_Store",
-  "logs",
-  "*.log",
-  ".env.local",
-  ".env.production",
-]);
+const RATE_LIMIT_DELAY = 100;
 
 /**
- * Extracts owner and repository name from GitHub URL
- * @private
+ * Checks if git is available on the system
  */
-const _parseGitHubUrl = (url: string): TypeGitHubParseResult | null => {
-  console.log(`Parsing GitHub URL: ${url}`);
-
-  // Handle various GitHub URL formats
-  const patterns = [
-    /github\.com\/([^\/]+)\/([^\/\?#]+)/i, // Standard GitHub URLs
-    /^([^\/]+)\/([^\/\?#]+)$/i, // owner/repo format
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) {
-      const owner = match[1];
-      const repo = match[2].replace(/\.git$/, ""); // Remove .git suffix if present
-      console.log(`Extracted: owner=${owner}, repo=${repo}`);
-      return { owner, repo };
-    }
-  }
-
-  console.error(`Failed to parse GitHub URL: ${url}`);
-  return null;
-};
-
-/**
- * Makes authenticated GitHub API requests with rate limiting
- * @private
- */
-const _makeGitHubApiRequest = async (
-  url: string,
-  options: RequestInit = {},
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> => {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "Inquora-GitHub-Processor",
-  };
-
-  // Add any additional headers from options
-  if (options.headers) {
-    Object.assign(headers, options.headers);
-  }
-
-  // Add authentication if available
-  if (process.env.GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
-  }
-
-  console.log(`Making GitHub API request to: ${url}`);
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    if (response.status === 403) {
-      const resetTime = response.headers.get("X-RateLimit-Reset");
-      const remaining = response.headers.get("X-RateLimit-Remaining");
-      throw new Error(
-        `GitHub API rate limit exceeded. Reset at: ${resetTime}, Remaining: ${remaining}`,
-      );
-    }
-    if (response.status === 404) {
-      throw new Error(
-        `Repository not found or is private. Make sure the repository exists and is accessible.`,
-      );
-    }
-    throw new Error(
-      `GitHub API error: ${response.status} ${response.statusText}`,
-    );
-  }
-
-  return response.json();
-};
-
-/**
- * Fetches repository information
- * @private
- */
-const _fetchRepositoryInfo = async (
-  owner: string,
-  repo: string,
-): Promise<TypeGitHubRepository> => {
-  console.log(`Fetching repository info for ${owner}/${repo}...`);
-
-  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
-  return _makeGitHubApiRequest(url);
-};
-
-/**
- * Fetches the repository tree (file structure)
- * @private
- */
-const _fetchRepositoryTree = async (
-  owner: string,
-  repo: string,
-  sha: string = "HEAD",
-): Promise<TypeGitHubTreeItem[]> => {
-  console.log(`Fetching repository tree for ${owner}/${repo}...`);
-
-  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/${sha}?recursive=1`;
-  const response = await _makeGitHubApiRequest(url);
-  return response.tree || [];
-};
-
-/**
- * Fetches file content from GitHub
- * @private
- */
-const _fetchFileContent = async (
-  owner: string,
-  repo: string,
-  path: string,
-): Promise<string | null> => {
-  try {
-    console.log(`Fetching content for: ${path}`);
-
-    const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
-    const response = await _makeGitHubApiRequest(url);
-
-    if (response.content && response.encoding === "base64") {
-      const content = Buffer.from(response.content, "base64").toString("utf-8");
-      console.log(
-        `Successfully fetched ${content.length} characters from ${path}`,
-      );
-      return content;
+async function checkGitAvailability(): Promise<boolean> {
+    if (process.env.VERCEL || process.env.NETLIFY || process.env.DISABLE_GIT) {
+        return false;
     }
 
-    console.warn(`No content or unsupported encoding for: ${path}`);
-    return null;
-  } catch (error) {
-    console.warn(`Failed to fetch content for ${path}:`, error);
-    return null;
-  }
-};
-
-/**
- * Filters processable files from the repository tree
- * @private
- */
-const _filterProcessableFiles = (
-  tree: TypeGitHubTreeItem[],
-): TypeGitHubTreeItem[] => {
-  console.log(`Filtering ${tree.length} items from repository tree...`);
-
-  const processableFiles = tree.filter((item) => {
-    // Only process files (blobs), not directories
-    if (item.type !== "blob") return false;
-
-    // Skip large files
-    if (item.size && item.size > MAX_FILE_SIZE) {
-      console.log(`Skipping large file: ${item.path} (${item.size} bytes)`);
-      return false;
-    }
-
-    // Check if file is in a skipped directory
-    const pathParts = item.path.split("/");
-    if (pathParts.some((part) => SKIP_DIRECTORIES.has(part))) {
-      return false;
-    }
-
-    // Check file extension or name
-    const fileName = pathParts[pathParts.length - 1].toLowerCase();
-    const extension = fileName.includes(".")
-      ? "." + fileName.split(".").pop()
-      : fileName;
-
-    return (
-      PROCESSABLE_EXTENSIONS.has(extension) ||
-      PROCESSABLE_EXTENSIONS.has(fileName)
-    );
-  });
-
-  console.log(`Filtered to ${processableFiles.length} processable files`);
-  return processableFiles;
-};
-
-/**
- * Processes repository files and creates documents
- * @private
- */
-const _processRepositoryFiles = async (
-  owner: string,
-  repo: string,
-  files: TypeGitHubTreeItem[],
-  repositoryUrl: string,
-): Promise<Document[]> => {
-  console.log(`Processing ${files.length} files from repository...`);
-
-  const documents: Document[] = [];
-  let processedCount = 0;
-
-  for (const file of files) {
     try {
-      // Rate limiting
-      if (processedCount > 0) {
-        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY));
-      }
-
-      const content = await _fetchFileContent(owner, repo, file.path);
-      if (!content || content.trim().length === 0) {
-        continue;
-      }
-
-      // Create document with rich metadata
-      const document = new Document({
-        pageContent: content,
-        metadata: {
-          source: repositoryUrl,
-          type: "github",
-          repository: `${owner}/${repo}`,
-          filePath: file.path,
-          fileName: file.path.split("/").pop() || file.path,
-          fileExtension: file.path.includes(".")
-            ? "." + file.path.split(".").pop()
-            : "",
-          fileSize: file.size || 0,
-          sha: file.sha,
-          url: `https://github.com/${owner}/${repo}/blob/main/${file.path}`,
-        },
-      });
-
-      documents.push(document);
-      processedCount++;
-
-      if (processedCount % 10 === 0) {
-        console.log(`Processed ${processedCount}/${files.length} files...`);
-      }
-    } catch (error) {
-      console.warn(`Failed to process file ${file.path}:`, error);
+        await execAsync("git --version", { timeout: 5000 });
+        return true;
+    } catch {
+        return false;
     }
-  }
-
-  console.log(`Successfully processed ${documents.length} files`);
-  return documents;
-};
+}
 
 /**
- * Splits documents into chunks for vector storage
- * @private
+ * Creates a temporary directory
  */
-const _splitDocuments = async (documents: Document[]): Promise<Document[]> => {
-  console.log(`Splitting ${documents.length} documents into chunks...`);
-
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: CHUNK_SIZE,
-    chunkOverlap: CHUNK_OVERLAP,
-    separators: ["\n\n", "\n", " ", ""], // Prioritize natural breaks
-  });
-
-  const chunkedDocs = await splitter.splitDocuments(documents);
-
-  // Filter out empty or whitespace-only chunks
-  const validChunks = chunkedDocs.filter((doc) => {
-    const content = doc.pageContent?.trim();
-    return content && content.length > 0;
-  });
-
-  const filteredCount = chunkedDocs.length - validChunks.length;
-  if (filteredCount > 0) {
-    console.log(`Filtered out ${filteredCount} empty chunks`);
-  }
-
-  console.log(`Documents split into ${validChunks.length} valid chunks`);
-  return validChunks;
-};
+async function createTempDir(prefix: string): Promise<string> {
+    const tempDir = path.join(
+        os.tmpdir(),
+        `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
+    await fs.mkdir(tempDir, { recursive: true });
+    return tempDir;
+}
 
 /**
- * Creates embeddings and stores document chunks in Pinecone
- * @private
+ * Clones repository using git
  */
-const _storeDocsInPinecone = async (
-  docs: Document[],
-  namespace: string,
-): Promise<void> => {
-  // Final validation: ensure all documents have non-empty content
-  const validDocs = docs.filter((doc) => {
-    const content = doc.pageContent?.trim();
-    const isValid = content && content.length > 0;
-    if (!isValid) {
-      console.warn("Filtering out document with empty content:", doc.metadata);
+async function cloneWithGit(owner: string, repo: string, tempDir: string): Promise<string> {
+    const repoPath = path.join(tempDir, repo);
+    const cloneUrl = `https://github.com/${owner}/${repo}.git`;
+
+    const cloneCommand = `git clone --depth 1 "${cloneUrl}" "${repoPath}"`;
+    await execAsync(cloneCommand, { timeout: 300000 });
+
+    return repoPath;
+}
+
+/**
+ * Downloads and extracts repository using ZIP
+ */
+async function downloadAndExtractZip(
+    owner: string,
+    repo: string,
+    tempDir: string,
+    branch: string = "main"
+): Promise<string> {
+    const repoPath = path.join(tempDir, repo);
+    const zipUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
+
+    const response = await fetch(zipUrl);
+
+    if (!response.ok) {
+        if (branch === "main") {
+            return downloadAndExtractZip(owner, repo, tempDir, "master");
+        }
+        throw new Error(`Failed to download: ${response.status}`);
     }
-    return isValid;
-  });
 
-  if (validDocs.length === 0) {
-    throw new Error(
-      "No valid documents to store after filtering empty content",
-    );
-  }
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = await JSZip.loadAsync(arrayBuffer);
 
-  if (validDocs.length < docs.length) {
-    console.log(
-      `Filtered ${docs.length - validDocs.length} documents with empty content`,
-    );
-  }
+    await fs.mkdir(repoPath, { recursive: true });
 
-  console.log("Creating Gemini embeddings...");
-  const embeddings = await createGeminiEmbeddings();
-  if (!embeddings) {
-    throw new Error(
-      "Failed to create embeddings. Gemini API may not be configured properly.",
-    );
-  }
+    const promises: Promise<void>[] = [];
+    zip.forEach((relativePath, file) => {
+        const pathParts = relativePath.split("/");
+        if (pathParts.length <= 1) return;
 
-  const pineconeIndex = await getPineconeIndex();
-  if (!pineconeIndex) {
-    throw new Error("Pinecone index is not initialized.");
-  }
+        const actualPath = pathParts.slice(1).join("/");
+        if (!actualPath) return;
 
-  console.log(
-    `Storing ${validDocs.length} chunks in Pinecone with namespace: ${namespace}...`,
-  );
-  let retries = 0;
+        const fullPath = path.join(repoPath, actualPath);
 
-  while (retries < MAX_RETRIES) {
+        if (file.dir) {
+            promises.push(fs.mkdir(fullPath, { recursive: true }).then(() => { }));
+        } else {
+            promises.push(
+                file.async("nodebuffer").then(async (content) => {
+                    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+                    await fs.writeFile(fullPath, content);
+                })
+            );
+        }
+    });
+
+    await Promise.all(promises);
+    return repoPath;
+}
+
+/**
+ * Walks directory and finds processable files
+ */
+async function walkDirectory(dirPath: string, basePath: string): Promise<string[]> {
+    const files: string[] = [];
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+
+        if (entry.isDirectory()) {
+            if (SKIPPED_DIRECTORIES.has(entry.name)) continue;
+            const subFiles = await walkDirectory(fullPath, basePath);
+            files.push(...subFiles);
+        } else if (entry.isFile()) {
+            const stats = await fs.stat(fullPath);
+            if (stats.size > GITHUB_MAX_FILE_SIZE) continue;
+
+            const fileName = entry.name.toLowerCase();
+            const extension = fileName.includes(".") ? "." + fileName.split(".").pop() : fileName;
+
+            if (PROCESSABLE_EXTENSIONS.has(extension) || PROCESSABLE_EXTENSIONS.has(fileName)) {
+                files.push(fullPath);
+            }
+        }
+    }
+
+    return files;
+}
+
+/**
+ * Processes files from filesystem into documents
+ */
+async function processFilesFromFS(
+    repoPath: string,
+    owner: string,
+    repo: string,
+    repositoryUrl: string
+): Promise<Document[]> {
+    const filePaths = await walkDirectory(repoPath, repoPath);
+    const documents: Document[] = [];
+
+    for (const filePath of filePaths) {
+        try {
+            const content = await fs.readFile(filePath, "utf-8");
+            if (!content || content.trim().length === 0) continue;
+
+            const relativePath = path.relative(repoPath, filePath).replace(/\\/g, "/");
+
+            documents.push(new Document({
+                pageContent: content,
+                metadata: {
+                    source: repositoryUrl,
+                    type: "github",
+                    repository: `${owner}/${repo}`,
+                    filePath: relativePath,
+                    fileName: path.basename(filePath),
+                    url: `https://github.com/${owner}/${repo}/blob/main/${relativePath}`,
+                },
+            }));
+        } catch {
+            // Skip unreadable files
+        }
+    }
+
+    return documents;
+}
+
+/**
+ * Cleans up temporary directory
+ */
+async function cleanupTempDir(tempDir: string): Promise<void> {
     try {
-      // Process in batches to avoid overwhelming Pinecone and API rate limits
-      // Using 5 docs per batch with 5 second delay = ~12 requests/minute (under 15 RPM limit)
-      const batchSize = 5;
-      for (let i = 0; i < validDocs.length; i += batchSize) {
-        const batch = validDocs.slice(i, i + batchSize);
-        console.log(
-          `Storing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(validDocs.length / batchSize)}...`,
-        );
+        await fs.rm(tempDir, { recursive: true, force: true, maxRetries: 3 });
+    } catch {
+        // Ignore cleanup errors
+    }
+}
 
-        // Log first document in batch for debugging
-        if (i === 0 && batch.length > 0) {
-          console.log(
-            `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
-          );
+/**
+ * Makes authenticated GitHub API request
+ */
+async function makeGitHubApiRequest(url: string): Promise<unknown> {
+    await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY));
+
+    const headers: Record<string, string> = {
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "Inquora-App",
+    };
+
+    if (process.env.GITHUB_TOKEN) {
+        headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
+    }
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Processes repository using GitHub API (final fallback)
+ */
+async function processWithAPI(
+    owner: string,
+    repo: string,
+    repositoryUrl: string
+): Promise<Document[]> {
+    const treeData = await makeGitHubApiRequest(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`
+    ) as { tree: Array<{ path: string; type: string; size?: number }> };
+
+    const files = treeData.tree.filter((item) => {
+        if (item.type !== "blob") return false;
+        if ((item.size || 0) > GITHUB_MAX_FILE_SIZE) return false;
+
+        const ext = "." + item.path.split(".").pop()?.toLowerCase();
+        return PROCESSABLE_EXTENSIONS.has(ext);
+    });
+
+    const documents: Document[] = [];
+
+    for (const file of files.slice(0, 100)) {
+        try {
+            const fileData = await makeGitHubApiRequest(
+                `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${file.path}`
+            ) as { content?: string };
+
+            if (fileData.content) {
+                const content = Buffer.from(fileData.content, "base64").toString("utf-8");
+                documents.push(new Document({
+                    pageContent: content,
+                    metadata: {
+                        source: repositoryUrl,
+                        type: "github",
+                        repository: `${owner}/${repo}`,
+                        filePath: file.path,
+                        url: `https://github.com/${owner}/${repo}/blob/main/${file.path}`,
+                    },
+                }));
+            }
+        } catch {
+            // Skip files that fail to fetch
+        }
+    }
+
+    return documents;
+}
+
+/**
+ * Main function: Processes a GitHub repository with automatic fallback
+ * Order: Git Clone → ZIP Download → GitHub API
+ */
+export async function processGitHubRepository(
+    repositoryUrl: string,
+    namespace: string
+): Promise<TypeGitHubProcessResult> {
+    if (!(await isPineconeConfigured())) {
+        throw new Error("Pinecone is not configured.");
+    }
+
+    const parsed = parseGitHubUrl(repositoryUrl);
+    if (!parsed) {
+        throw new Error("Invalid GitHub URL.");
+    }
+
+    const { owner, repo } = parsed;
+    const supabase = await supabaseServerClient();
+    let tempDir: string | null = null;
+    const errors: string[] = [];
+
+    try {
+        await updateFileStatus(supabase, namespace, "processing");
+
+        let documents: Document[] = [];
+
+        // Method 1: Try Git Clone
+        const gitAvailable = await checkGitAvailability();
+        if (gitAvailable) {
+            try {
+                tempDir = await createTempDir(`github-${owner}-${repo}`);
+                const repoPath = await cloneWithGit(owner, repo, tempDir);
+                documents = await processFilesFromFS(repoPath, owner, repo, repositoryUrl);
+            } catch (error) {
+                errors.push(`Git clone: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
 
-        await PineconeStore.fromDocuments(batch, embeddings, {
-          pineconeIndex,
-          namespace,
+        // Method 2: Try ZIP Download
+        if (documents.length === 0) {
+            try {
+                if (!tempDir) tempDir = await createTempDir(`github-${owner}-${repo}`);
+                const repoPath = await downloadAndExtractZip(owner, repo, tempDir);
+                documents = await processFilesFromFS(repoPath, owner, repo, repositoryUrl);
+            } catch (error) {
+                errors.push(`ZIP download: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+
+        // Method 3: Try GitHub API (final fallback)
+        if (documents.length === 0) {
+            try {
+                documents = await processWithAPI(owner, repo, repositoryUrl);
+            } catch (error) {
+                errors.push(`API: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        }
+
+        if (documents.length === 0) {
+            throw new Error(`All methods failed:\n${errors.join("\n")}`);
+        }
+
+        // Split and store documents
+        const chunks = await splitDocuments(documents);
+        await storeDocsInPinecone(chunks, namespace);
+
+        await updateFileStatus(supabase, namespace, "completed", {
+            indexedChunks: chunks.length,
+            fullText: `Processed ${documents.length} files, ${chunks.length} chunks from ${owner}/${repo}`,
         });
 
-        // 5 second delay between batches to stay under API rate limits
-        // This keeps us at ~12 embeddings/minute, well under Gemini's 15 RPM free tier limit
-        if (i + batchSize < validDocs.length) {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-        }
-      }
-
-      console.log("Successfully stored all repository chunks in Pinecone.");
-      return;
+        return { numDocs: chunks.length, success: true };
     } catch (error) {
-      retries++;
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error(
-        `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
-        error,
-      );
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await updateFileStatus(supabase, namespace, "failed", { error: errorMessage });
+        return { numDocs: 0, success: false, error: errorMessage };
+    } finally {
+        if (tempDir) await cleanupTempDir(tempDir);
+    }
+}
 
-      // Check if this is a rate limit error
-      if (
-        errorMessage.includes("Vector dimension 0") ||
-        errorMessage.includes("rate limit")
-      ) {
-        console.warn(
-          "⚠️ Rate limit detected. This typically happens with large repositories on free API tiers.",
-        );
-        console.warn(
-          "💡 Solutions: 1) Use smaller repos (<50 files), 2) Upgrade Gemini API quota, 3) Wait and retry",
-        );
-      }
+/**
+ * Gets repository information
+ */
+export async function getGitHubRepositoryInfo(
+    repositoryUrl: string
+): Promise<TypeGitHubRepositoryInfo> {
+    const parsed = parseGitHubUrl(repositoryUrl);
+    if (!parsed) throw new Error("Invalid GitHub URL.");
 
-      if (retries >= MAX_RETRIES) {
-        if (errorMessage.includes("Vector dimension 0")) {
-          throw new Error(
-            `Failed to process repository due to API rate limits. Large repositories (${validDocs.length} chunks) require upgraded API quotas. Please try a smaller repository or upgrade your Gemini API tier.`,
-          );
+    const { owner, repo } = parsed;
+
+    try {
+        const data = await makeGitHubApiRequest(
+            `${GITHUB_API_BASE}/repos/${owner}/${repo}`
+        ) as {
+            name: string;
+            full_name: string;
+            description: string | null;
+            language: string | null;
+            stargazers_count: number;
+            forks_count: number;
+            size: number;
+            updated_at: string;
+        };
+
+        return {
+            name: data.name,
+            fullName: data.full_name,
+            description: data.description,
+            language: data.language,
+            stars: data.stargazers_count,
+            forks: data.forks_count,
+            size: data.size,
+            lastUpdate: data.updated_at,
+        };
+    } catch (error) {
+        throw new Error(`Failed to fetch repository info: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
+/**
+ * Validates GitHub URL
+ */
+export async function isValidGitHubUrl(url: string): Promise<boolean> {
+    return parseGitHubUrl(url) !== null;
+}
+
+/**
+ * Extracts repository ID from URL
+ */
+export async function extractGitHubRepoId(url: string): Promise<string | null> {
+    const parsed = parseGitHubUrl(url);
+    return parsed ? `${parsed.owner}/${parsed.repo}` : null;
+}
+
+/**
+ * Cleans up orphaned temp directories
+ */
+export async function cleanupOrphanedTempDirectories(): Promise<void> {
+    try {
+        const tempBase = os.tmpdir();
+        const entries = await fs.readdir(tempBase, { withFileTypes: true });
+
+        for (const entry of entries) {
+            if (entry.isDirectory() && entry.name.startsWith("github-")) {
+                const fullPath = path.join(tempBase, entry.name);
+                const stats = await fs.stat(fullPath);
+                const ageMinutes = (Date.now() - stats.mtime.getTime()) / 60000;
+
+                if (ageMinutes > 60) {
+                    await cleanupTempDir(fullPath);
+                }
+            }
         }
-        throw error;
-      }
-
-      // Longer delay on retry to let rate limits reset
-      await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
-      );
+    } catch {
+        // Ignore cleanup errors
     }
-  }
-};
-
-/**
- * Main function to process a GitHub repository
- *
- * @param repositoryUrl The URL of the GitHub repository
- * @param namespace The unique ID (and Pinecone namespace) for the file
- * @returns A promise that resolves with the outcome of the processing
- */
-export const processGitHubRepository = async (
-  repositoryUrl: string,
-  namespace: string,
-): Promise<TypeGitHubProcessResult> => {
-  console.log(
-    `Starting GitHub repository processing for namespace: ${namespace}`,
-  );
-
-  if (!(await isPineconeConfigured())) {
-    throw new Error(
-      "Pinecone is not configured. Please check environment variables.",
-    );
-  }
-
-  const supabase = supabaseBrowserClient();
-  const parsedRepo = _parseGitHubUrl(repositoryUrl);
-
-  if (!parsedRepo) {
-    throw new Error(
-      "Invalid GitHub URL. Could not extract repository information.",
-    );
-  }
-
-  const { owner, repo } = parsedRepo;
-
-  try {
-    await updateFileStatus(supabase, namespace, "processing");
-
-    // Step 1: Fetch repository information
-    const repositoryInfo = await _fetchRepositoryInfo(owner, repo);
-    console.log(`Repository: ${repositoryInfo.full_name}`);
-    console.log(
-      `Description: ${repositoryInfo.description || "No description"}`,
-    );
-    console.log(`Language: ${repositoryInfo.language || "Unknown"}`);
-    console.log(`Stars: ${repositoryInfo.stargazers_count}`);
-
-    // Step 2: Fetch repository tree
-    const tree = await _fetchRepositoryTree(
-      owner,
-      repo,
-      repositoryInfo.default_branch,
-    );
-
-    // Step 3: Filter processable files
-    const processableFiles = _filterProcessableFiles(tree);
-
-    if (processableFiles.length === 0) {
-      throw new Error("No processable files found in the repository.");
-    }
-
-    // Step 4: Process files and create documents
-    const documents = await _processRepositoryFiles(
-      owner,
-      repo,
-      processableFiles,
-      repositoryUrl,
-    );
-
-    if (documents.length === 0) {
-      throw new Error(
-        "No content could be extracted from the repository files.",
-      );
-    }
-
-    // Step 5: Split documents into chunks
-    const chunkedDocs = await _splitDocuments(documents);
-
-    // Step 6: Store in Pinecone
-    await _storeDocsInPinecone(chunkedDocs, namespace);
-
-    // Step 7: Update file status with summary information
-    const repositorySummary = [
-      `Repository: ${repositoryInfo.full_name}`,
-      `Description: ${repositoryInfo.description || "No description available"}`,
-      `Language: ${repositoryInfo.language || "Unknown"}`,
-      `Stars: ${repositoryInfo.stargazers_count}`,
-      `Forks: ${repositoryInfo.forks_count}`,
-      `Files processed: ${documents.length}/${processableFiles.length}`,
-      `Chunks created: ${chunkedDocs.length}`,
-      `Last updated: ${repositoryInfo.updated_at}`,
-      `Processing method: API-based (fallback)`,
-    ].join("\n");
-
-    await updateFileStatus(supabase, namespace, "completed", {
-      indexedChunks: chunkedDocs.length,
-      fullText: repositorySummary,
-    });
-
-    return { numDocs: chunkedDocs.length, success: true };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(
-      `Processing failed for namespace ${namespace}:`,
-      errorMessage,
-    );
-
-    await updateFileStatus(supabase, namespace, "failed", {
-      error: errorMessage,
-    });
-
-    return { numDocs: 0, success: false, error: errorMessage };
-  }
-};
-
-/**
- * Retrieves basic information about a GitHub repository without processing
- *
- * @param repositoryUrl The URL of the GitHub repository
- * @returns A promise that resolves to the repository's information
- */
-export const getGitHubRepositoryInfo = async (
-  repositoryUrl: string,
-): Promise<TypeGitHubRepositoryInfo> => {
-  const parsedRepo = _parseGitHubUrl(repositoryUrl);
-
-  if (!parsedRepo) {
-    throw new Error(
-      "Invalid GitHub URL. Could not extract repository information.",
-    );
-  }
-
-  const { owner, repo } = parsedRepo;
-
-  try {
-    const repositoryInfo = await _fetchRepositoryInfo(owner, repo);
-
-    return {
-      name: repositoryInfo.name,
-      fullName: repositoryInfo.full_name,
-      description: repositoryInfo.description,
-      language: repositoryInfo.language,
-      stars: repositoryInfo.stargazers_count,
-      forks: repositoryInfo.forks_count,
-      size: repositoryInfo.size,
-      lastUpdate: repositoryInfo.updated_at,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to fetch repository information: ${errorMessage}`);
-  }
-};
-
-/**
- * Validates if a URL is a valid GitHub repository URL
- *
- * @param url The URL to validate
- * @returns True if the URL is a valid GitHub repository URL
- */
-export const isValidGitHubUrl = async (url: string): Promise<boolean> => {
-  const parsed = _parseGitHubUrl(url);
-  return parsed !== null;
-};
-
-/**
- * Extracts the repository identifier from a GitHub URL
- *
- * @param url The GitHub repository URL
- * @returns The repository identifier in the format "owner/repo"
- */
-export const extractGitHubRepoId = async (
-  url: string,
-): Promise<string | null> => {
-  const parsed = _parseGitHubUrl(url);
-  return parsed ? `${parsed.owner}/${parsed.repo}` : null;
-};
+}

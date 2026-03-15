@@ -1,28 +1,77 @@
-"use server";
 
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+
+import { Embeddings } from "@langchain/core/embeddings";
+import { generateEmbeddings } from "../multiutility-api";
 
 /**
- * Creates and initializes a GoogleGenerativeAIEmbeddings instance.
+ * Custom embeddings implementation using the multiutility API.
  *
- * This factory function ensures that the necessary API key is available and
- * configures the client with a specified or default model.
- *
- * @returns An instance of `GoogleGenerativeAIEmbeddings`.
- * @throws An error if the Gemini API key is not provided via parameters or environment variables.
+ * Returns 1024-dimensional vectors compatible with Pinecone and LangChain.
+ * Implements the LangChain Embeddings interface for seamless integration
+ * with PineconeStore and other vector store implementations.
  */
-export const createGeminiEmbeddings =
-  async (): Promise<GoogleGenerativeAIEmbeddings> => {
-    const apiKey = process.env.GEMINI_API_KEY;
+export class CustomEmbeddings extends Embeddings {
+  readonly dimensions = 1024;
+  readonly modelName = "custom-sentence-transformer";
 
-    if (!apiKey) {
-      throw new Error(
-        "Gemini API key is missing. Please provide it via the `apiKey` parameter or set the GEMINI_API_KEY environment variable.",
-      );
+  constructor() {
+    super({});
+  }
+
+  /**
+   * Embeds a list of documents/texts.
+   * Used when storing documents in a vector store.
+   *
+   * @param texts - Array of texts to embed
+   * @returns Array of embedding vectors (1024-dimensional each)
+   */
+  async embedDocuments(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) {
+      return [];
     }
 
-    return new GoogleGenerativeAIEmbeddings({
-      apiKey,
-      model: "gemini-embedding-001",
-    });
-  };
+    // Filter out empty/whitespace-only texts
+    const validTexts = texts.filter((text) => text && text.trim().length > 0);
+
+    if (validTexts.length === 0) {
+      console.warn("All provided texts were empty, returning empty embeddings");
+      return [];
+    }
+
+    const response = await generateEmbeddings(validTexts, true);
+    return response.embeddings;
+  }
+
+  /**
+   * Embeds a single query text.
+   * Used when performing similarity search.
+   *
+   * @param text - The query text to embed
+   * @returns A single embedding vector (1024-dimensional)
+   */
+  async embedQuery(text: string): Promise<number[]> {
+    if (!text || text.trim().length === 0) {
+      throw new Error("Cannot embed empty query text");
+    }
+
+    const response = await generateEmbeddings([text], true);
+
+    if (response.embeddings.length === 0) {
+      throw new Error("Failed to generate embedding for query");
+    }
+
+    return response.embeddings[0];
+  }
+}
+
+/**
+ * Factory function to create an embeddings instance.
+ *
+ * Returns a CustomEmbeddings instance that uses the multiutility API
+ * to generate 1024-dimensional embedding vectors.
+ *
+ * @returns An embeddings instance compatible with LangChain/Pinecone
+ */
+export const createEmbeddings = async (): Promise<CustomEmbeddings> => {
+  return new CustomEmbeddings();
+};

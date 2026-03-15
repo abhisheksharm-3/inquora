@@ -58,3 +58,38 @@ export const _extractWebPageTitle = async (url: string): Promise<string> => {
         return "Web Page";
     }
 };
+
+/**
+ * Extracts the title of a YouTube video from its URL.
+ * Uses youtubei.js to fetch the actual video title.
+ */
+export const _extractYoutubeTitle = async (url: string): Promise<string> => {
+    try {
+        // Extract video ID from URL
+        const videoIdMatch = url.match(
+            /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+        );
+
+        if (!videoIdMatch) {
+            return "YouTube Video";
+        }
+
+        const videoId = videoIdMatch[1];
+
+        // Import dynamically to avoid issues with server/client
+        const { getYoutubeVideoInfo } = await import("./youtube/transcript");
+        const info = await getYoutubeVideoInfo(videoId);
+
+        // Use the actual video title
+        let title = info.title || `YouTube Video ${videoId}`;
+
+        // Truncate if too long
+        if (title.length > 60) {
+            title = title.substring(0, 60) + "...";
+        }
+
+        return title;
+    } catch {
+        return "YouTube Video";
+    }
+};

@@ -4,9 +4,9 @@ import { useCallback } from "react";
 import {
   getAllAcceptedFileTypes,
   getFileTypeConfig,
-} from "@/constants/FileTypes";
+} from "@/constants/file-types";
 import { isValidUrl } from "@/utils/upload-utils";
-import { TypeUploadError } from "@/types/TypeUpload";
+import { TypeUploadError } from "@/types/upload";
 
 const MAX_FILE_NAME_LENGTH = 255;
 const BLOCKED_DOMAINS = ["localhost", "127.0.0.1", "0.0.0.0"];

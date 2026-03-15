@@ -1,14 +1,14 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { TypeMessage } from "@/types/TypeSupabase";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { TypeMessage } from "@/types/database";
 import { useUser } from "./useUser";
 import { sendMessage as sendMessageToGemini } from "@/utils/gemini/actions";
 import { useMemo, useCallback, useTransition, useOptimistic } from "react";
 import { getSessionMetadata } from "@/utils/session-metadata";
-
-export const MESSAGES_QUERY_KEY = ["messages"];
+import { createMessageRepository } from "@/data/repositories";
+import { QUERY_KEYS, TIMING_CONSTANTS } from "@/config/constants";
 
 const createOptimisticMessages = (chatId: string, content: string) => {
   const timestamp = new Date().toISOString();
@@ -34,41 +34,33 @@ const createOptimisticMessages = (chatId: string, content: string) => {
 
 export const useMessages = (chatId: string) => {
   const queryClient = useQueryClient();
-  const supabase = supabaseBrowserClient();
+  const supabase = useSupabase();
   const { isAuthenticated, userId } = useUser();
   const [isPending, startTransition] = useTransition();
+
+  const messageRepository = useMemo(
+    () => createMessageRepository(supabase),
+    [supabase]
+  );
 
   const isValidChatId = useMemo(
     () => !!chatId && typeof chatId === "string" && chatId.trim() !== "",
     [chatId],
   );
 
-  const queryKey = useMemo(() => [...MESSAGES_QUERY_KEY, chatId], [chatId]);
+  const queryKey = useMemo(() => [...QUERY_KEYS.MESSAGES, chatId], [chatId]);
 
   const messagesQuery = useQuery({
     queryKey,
     queryFn: async (): Promise<TypeMessage[]> => {
       if (!isValidChatId) return [];
-
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("chat_id", chatId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching messages:", error);
-        return [];
-      }
-
-      return data as TypeMessage[];
+      return messageRepository.findAllByChatId(chatId);
     },
     enabled: isAuthenticated && isValidChatId,
-    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: TIMING_CONSTANTS.STALE_TIME_MS,
+    gcTime: TIMING_CONSTANTS.CACHE_TIME_MS,
   });
 
-  // Wrap in useMemo to prevent dependency changes on every render
   const serverMessages = useMemo(
     () => messagesQuery.data || [],
     [messagesQuery.data]
@@ -166,19 +158,12 @@ export const useMessages = (chatId: string) => {
     ],
   );
 
-  /** Mutation to create a message directly in the database. */
   const createMessageMutation = useMutation({
     mutationFn: async (
       messageData: Omit<TypeMessage, "id" | "created_at">,
     ): Promise<TypeMessage> => {
       if (!isValidChatId) throw new Error("No chat ID provided");
-      const { data, error } = await supabase
-        .from("messages")
-        .insert(messageData)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as TypeMessage;
+      return messageRepository.create(messageData);
     },
     onSuccess: (newMessage) => {
       queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) => [
@@ -188,36 +173,6 @@ export const useMessages = (chatId: string) => {
     },
   });
 
-  /** Mutation to update an existing message. */
-  const updateMessageMutation = useMutation({
-    mutationFn: async ({
-      messageId,
-      messageData,
-    }: {
-      messageId: string;
-      messageData: Partial<TypeMessage>;
-    }): Promise<TypeMessage> => {
-      if (!isValidChatId) throw new Error("No chat ID provided");
-      const { data, error } = await supabase
-        .from("messages")
-        .update(messageData)
-        .eq("id", messageId)
-        .eq("chat_id", chatId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as TypeMessage;
-    },
-    onSuccess: (updatedMessage) => {
-      queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) =>
-        oldData.map((msg) =>
-          msg.id === updatedMessage.id ? updatedMessage : msg,
-        ),
-      );
-    },
-  });
-
-  /** Mutation to delete a message. */
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string): Promise<string> => {
       if (!isValidChatId) throw new Error("No chat ID provided");
@@ -236,7 +191,6 @@ export const useMessages = (chatId: string) => {
     },
   });
 
-  /** Sets up a real-time subscription to keep messages in sync. */
   const subscribeToMessages = useCallback(() => {
     if (!isValidChatId || !isAuthenticated) return () => { };
 
@@ -292,10 +246,6 @@ export const useMessages = (chatId: string) => {
     createMessage: createMessageMutation.mutate,
     createMessageAsync: createMessageMutation.mutateAsync,
     isCreating: createMessageMutation.isPending,
-
-    updateMessage: updateMessageMutation.mutate,
-    updateMessageAsync: updateMessageMutation.mutateAsync,
-    isUpdating: updateMessageMutation.isPending,
 
     deleteMessage: deleteMessageMutation.mutate,
     deleteMessageAsync: deleteMessageMutation.mutateAsync,

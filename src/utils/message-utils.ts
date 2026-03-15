@@ -1,5 +1,5 @@
-import { MessageConstants } from "@/constants/MessageConstants";
-import { TypeMessage } from "@/types/TypeSupabase";
+import { MessageConstants } from "@/constants/message-constants";
+import { TypeMessage } from "@/types/database";
 
 const areMessagesDuplicate = (
   msg1: TypeMessage,

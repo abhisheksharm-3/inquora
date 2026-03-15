@@ -14,8 +14,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, CircleAlert, Lock, Clock, Upload, Link } from "lucide-react";
 import { useUploadLogic } from "@/hooks/useUpload";
-import { getFileTypeConfig } from "@/constants/FileTypes";
+import { getFileTypeConfig } from "@/constants/file-types";
 import { useUser } from "@/hooks/useUser";
+import { withErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 import UploadModalArea from "./UploadModalArea";
 import UploadModalProgress from "./UploadModalProgress";
@@ -23,7 +24,7 @@ import UploadModalSuccess from "./UploadModalSuccess";
 import UploadModalError from "./UploadModalError";
 import UploadModalUrlInput from "./UploadModalUrlInput";
 import { DocumentProcessingProgress } from "./DocumentProcessingProgress";
-import { TypeUploadModalProps } from "@/types/TypeUpload";
+import { TypeUploadModalProps } from "@/types/upload";
 
 /**
  * A modal dialog for handling file and URL uploads.
@@ -49,10 +50,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
   const isComingSoon = fileTypeConfig.comingSoon === true;
   const isUrlOnly = fileTypeConfig.urlOnly === true;
 
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   const {
     uploadStatus,
     fileName,
@@ -72,8 +69,18 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     resetState,
   } = useUploadLogic({
     fileType,
-    onClose: handleClose,
+    onClose: () => {
+      setOpen(false);
+    },
   });
+
+  const handleClose = () => {
+    setOpen(false);
+    // Reset state when closing the modal to ensure a clean slate next time
+    if (resetState) {
+      resetState();
+    }
+  };
 
   const handleDismissError = () => {
     if (resetState) {
@@ -140,22 +147,26 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-lg p-0 gap-0" showCloseButton={false}>
-        <DialogHeader className="p-6 pb-4">
-          <div className="flex items-start justify-between">
+      <DialogContent
+        className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col"
+        showCloseButton={false}
+      >
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+          <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <DialogTitle className="text-lg font-semibold">
+              <DialogTitle className="text-2xl font-bold">
                 Upload {fileTypeConfig.name}
               </DialogTitle>
               <p className="text-sm text-muted-foreground">
-                Upload and chat with your {fileTypeConfig.name.toLowerCase()}.
+                Add your {fileTypeConfig.name.toLowerCase()} to get started with
+                AI-powered analysis
               </p>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="h-8 w-8 rounded-full cursor-pointer"
+              className="h-8 w-8 rounded-lg cursor-pointer flex-shrink-0 hover:bg-muted"
               aria-label="Close dialog"
             >
               <X className="h-4 w-4" />
@@ -163,7 +174,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
           </div>
         </DialogHeader>
 
-        <div className="px-6 pb-6">
+        <div className="px-6 py-6 overflow-y-auto flex-1">
           {/* Show tabs only in idle state, otherwise show status screens */}
           {uploadStatus === "idle" ? (
             <Tabs defaultValue={isUrlOnly ? "url" : "file"} className="w-full">
@@ -188,6 +199,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                     fileTypeConfig={fileTypeConfig}
                     selectedFile={selectedFile}
                     handleFileChange={handleFileChange}
+                    handleRemoveFile={handleRemoveFile}
                   />
                   {/* File type specific status message */}
                   {fileTypeConfig.statusMessage && (
@@ -309,34 +321,29 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
 
         {/* Hide footer during active processing to reduce clutter */}
         {uploadStatus === "idle" && (
-          <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
-            <div className="flex w-full gap-3">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1 cursor-pointer"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                className="flex-1 cursor-pointer"
-                disabled={!selectedFile && !url?.trim()}
-              >
-                Upload & Process
-              </Button>
-            </div>
+          <DialogFooter className="border-t border-border/50 bg-muted/30 px-6 py-4 gap-3">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              className="cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="cursor-pointer"
+              disabled={!selectedFile && !url?.trim()}
+            >
+              Upload & Process
+            </Button>
           </DialogFooter>
         )}
 
         {/* Show simplified footer with only close option during/after processing */}
         {(uploadStatus === "uploaded" || uploadStatus === "error") && (
-          <DialogFooter className="border-t bg-muted/20 p-4 rounded-b-lg">
-            <Button
-              onClick={handleClose}
-              className="w-full cursor-pointer"
-            >
-              Close
+          <DialogFooter className="border-t border-border/50 bg-muted/30 px-6 py-4">
+            <Button onClick={handleClose} className="cursor-pointer">
+              Close & Start Chat
             </Button>
           </DialogFooter>
         )}
@@ -345,4 +352,4 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
   );
 };
 
-export default UploadModal;
+export default withErrorBoundary(UploadModal, { name: "UploadModal" });

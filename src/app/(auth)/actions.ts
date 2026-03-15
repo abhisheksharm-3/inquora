@@ -1,37 +1,49 @@
 "use server";
 
-import { supabaseServerClient } from "@/utils/supabase/server";
+import { supabaseServerClient } from "@/data/supabase/server";
+import { getSiteUrl } from "@/config/env";
+import { z } from "zod";
+import { checkRateLimit, RATE_LIMIT_CONFIGS } from "@/utils/rate-limit";
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+const signupSchema = z.object({
+  "full-name": z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
 /**
- * Extracts form data safely with type casting.
+ * Extracts and validates form data.
  */
-const extractFormData = (formData: FormData, fields: string[]) => {
-  return fields.reduce(
-    (acc, field) => {
-      acc[field] = formData.get(field) as string;
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
-};
-
-/**
- * Handles authentication errors consistently.
- */
-const handleAuthError = (error: unknown): string => {
-  return `${error}`;
-};
+function extractFormData<T extends z.ZodObject<z.ZodRawShape>>(
+  formData: FormData,
+  schema: T
+): z.infer<T> {
+  const data: Record<string, unknown> = {};
+  for (const key of Object.keys(schema.shape)) {
+    data[key] = formData.get(key);
+  }
+  return schema.parse(data);
+}
 
 /**
  * Server Action to sign in a user with email and password.
- * @param {FormData} formData - Must contain 'email' and 'password' fields.
- * @returns {Promise<string | void>} An error message on failure, otherwise void.
  */
 export const signIn = async (formData: FormData) => {
-  const { email, password } = extractFormData(formData, ["email", "password"]);
   const supabase = await supabaseServerClient();
 
   try {
+    const { email, password } = extractFormData(formData, loginSchema);
+
+    const rateLimitResult = await checkRateLimit(`auth:login:${email}`, RATE_LIMIT_CONFIGS.auth);
+    if (!rateLimitResult.allowed) {
+      return "Too many login attempts. Please wait a moment before trying again.";
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -41,30 +53,30 @@ export const signIn = async (formData: FormData) => {
       throw error;
     }
   } catch (error) {
-    return handleAuthError(error);
+    return `${error}`;
   }
 };
 
 /**
  * Server Action to create a new user account.
- * @param {FormData} formData - Must contain 'full-name', 'email', and 'password'.
- * @returns {Promise<string | void>} An error message on failure, otherwise void.
  */
 export const signUp = async (formData: FormData) => {
-  const {
-    "full-name": fullName,
-    email,
-    password,
-  } = extractFormData(formData, ["full-name", "email", "password"]);
   const supabase = await supabaseServerClient();
 
   try {
+    const data = extractFormData(formData, signupSchema);
+
+    const rateLimitResult = await checkRateLimit(`auth:signup:${data.email}`, RATE_LIMIT_CONFIGS.signup);
+    if (!rateLimitResult.allowed) {
+      return "Too many signup attempts. Please wait before trying again.";
+    }
+
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: data.email,
+      password: data.password,
       options: {
         data: {
-          full_name: fullName,
+          full_name: data["full-name"],
         },
       },
     });
@@ -73,25 +85,30 @@ export const signUp = async (formData: FormData) => {
       throw error;
     }
   } catch (error) {
-    return handleAuthError(error);
+    return `${error}`;
   }
 };
 
-/**
- * Server Action to sign in with Google OAuth.
- * @returns {Promise<string | void>} An error message on failure, otherwise void.
- */
-export const signInWithGoogle = async () => {
+function isValidNextPath(next: string): boolean {
+  const trimmed = next.trim();
+  return trimmed.startsWith("/") && !trimmed.startsWith("//");
+}
+
+export const signInWithGoogle = async (nextUrl?: string | null) => {
   const supabase = await supabaseServerClient();
 
   try {
-    // Dynamically determine the correct redirect URL
-    const redirectUrl = getAuthRedirectUrl();
+    const redirectUrl = getSiteUrl();
+    const baseCallback = `${redirectUrl}/api/auth/callback`;
+    const callbackUrl =
+      nextUrl && isValidNextPath(nextUrl)
+        ? `${baseCallback}?next=${encodeURIComponent(nextUrl)}`
+        : baseCallback;
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${redirectUrl}/api/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
 
@@ -101,36 +118,7 @@ export const signInWithGoogle = async () => {
 
     return data;
   } catch (error) {
-    return handleAuthError(error);
+    return `${error}`;
   }
 };
 
-/**
- * Determines the correct redirect URL for OAuth based on environment
- * @returns {string} The base URL for redirects
- */
-function getAuthRedirectUrl(): string {
-  // In development, use localhost
-  if (process.env.NODE_ENV === "development") {
-    return "http://localhost:3000";
-  }
-
-  // In production, try to get the URL from various sources
-  // First try SITE_URL if it's set
-  if (process.env.SITE_URL) {
-    return process.env.SITE_URL;
-  }
-
-  // Try VERCEL_URL for Vercel deployments
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  // Try NEXT_PUBLIC_SITE_URL as a fallback
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-
-  // Default fallback (you should set this to your actual production domain)
-  return "https://inquora.vercel.app";
-}

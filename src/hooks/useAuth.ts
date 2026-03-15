@@ -7,10 +7,10 @@ import {
   TypeAuthFormData,
   TypeLoginFormData,
   TypeSignupFormData,
-} from "@/types/TypeAuth";
+} from "@/types/auth";
 import { signIn, signUp } from "@/app/(auth)/actions";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { EnumAuthErrorType } from "@/constants/EnumAuthErrorTypes";
+import { supabaseBrowserClient } from "@/data/supabase/client";
+import { EnumAuthErrorType } from "@/types/auth";
 import { categorizeAuthError, handleAuthErrors } from "@/utils/auth-utils";
 
 /**
@@ -124,25 +124,24 @@ export const useAuth = () => {
    */
   const createUserProfile = async (signupData: TypeSignupFormData) => {
     try {
-      const { data: sessionData, error: sessionError } =
-        await supabase.auth.getSession();
+      const { data: { user }, error: sessionError } =
+        await supabase.auth.getUser();
 
       if (sessionError) {
         throw categorizeAuthError(sessionError, {
-          action: "getSession",
+          action: "getUser",
           step: "createUserProfile",
         });
       }
 
-      const userId = sessionData.session?.user?.id;
+      const userId = user?.id;
       if (!userId) {
         throw categorizeAuthError(
           new Error("No authenticated user found after signup"),
           {
             action: "validateSession",
             step: "createUserProfile",
-            sessionExists: !!sessionData.session,
-            userExists: !!sessionData.session?.user,
+            userExists: !!user,
           },
         );
       }
@@ -198,9 +197,9 @@ export const useAuth = () => {
           action === "login"
             ? { email: (data as TypeLoginFormData).email }
             : {
-                email: (data as TypeSignupFormData).email,
-                fullName: (data as TypeSignupFormData).fullName,
-              };
+              email: (data as TypeSignupFormData).email,
+              fullName: (data as TypeSignupFormData).fullName,
+            };
 
         throw categorizeAuthError(result, { action, ...context });
       }
@@ -211,9 +210,9 @@ export const useAuth = () => {
         action === "login"
           ? { email: (data as TypeLoginFormData).email }
           : {
-              email: (data as TypeSignupFormData).email,
-              fullName: (data as TypeSignupFormData).fullName,
-            };
+            email: (data as TypeSignupFormData).email,
+            fullName: (data as TypeSignupFormData).fullName,
+          };
 
       handleAuthErrors(error, action, context);
     }

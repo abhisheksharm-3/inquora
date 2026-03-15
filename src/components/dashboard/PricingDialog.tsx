@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 
-import { TypeDialogProps } from "@/types/TypeUi";
+import { TypeDialogProps } from "@/types/ui";
 
 /**
  * @description A list of features included in the free beta plan.

@@ -4,13 +4,18 @@ import { YoutubeTranscript } from "youtube-transcript";
 import { YoutubeTranscript as DanielYoutubeTranscript } from "@danielxceron/youtube-transcript";
 import { fetchTranscript } from "youtube-transcript-plus";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { createGeminiEmbeddings } from "../gemini/embeddings";
+import { createEmbeddings } from "../gemini/embeddings";
+import { extractYoutubeSubtitles, transcribeAudio } from "../multiutility-api";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
 import { Document } from "@langchain/core/documents";
 import { extractYoutubeVideoId } from "../youtube-utils";
-import { supabaseBrowserClient } from "../supabase/client";
+import { supabaseBrowserClient } from "@/data/supabase/client";
 import { updateFileStatus } from "../file-processing-utils";
+import { downloadYoutubeAudio } from "../youtube/audio-downloader";
+import { getYoutubeTranscript } from "../youtube/transcript";
+
+
 
 // --- Constants ---
 const CHUNK_SIZE = 1000;
@@ -22,10 +27,74 @@ const RETRY_DELAY_MS = 1000;
  * Fetches and formats the transcript from a YouTube video with multiple fallback methods.
  * @private
  */
-const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
+const _fetchAndFormatTranscript = async (
+  videoId: string,
+  videoUrl: string
+): Promise<string> => {
   console.log(`Fetching transcript for YouTube video: ${videoId}`);
 
-  // Method 1: Try youtube-transcript-plus (primary)
+  // Method 1: Download and Transcribe (Primary) - Using pure JS libraries
+  // This downloads the audio and sends it to the custom transcription API.
+  try {
+    console.log("Attempting download and transcribe (Primary method)...");
+
+    const { buffer, mimeType } = await downloadYoutubeAudio(videoId, videoUrl);
+
+    // Determine file extension from mime type
+    const extension = mimeType.includes("webm") ? "webm" :
+      mimeType.includes("mp4") ? "m4a" :
+        mimeType.includes("mp3") ? "mp3" : "audio";
+
+    console.log(`Audio downloaded (${buffer.length} bytes, ${mimeType}). Sending to transcription service...`);
+
+    const transcriptText = await transcribeAudio(
+      buffer,
+      `${videoId}.${extension}`,
+      "en"
+    );
+
+    if (transcriptText && transcriptText.length > 0) {
+      console.log(
+        `Successfully transcribed video with ${transcriptText.length} characters.`
+      );
+      return transcriptText;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("Download/Transcribe failed:", message);
+    console.log("Falling back to subtitle extraction methods...");
+  }
+
+  // Method 2: Try youtubei.js native transcript extraction
+  try {
+    const transcript = await getYoutubeTranscript(videoId);
+    if (transcript && transcript.length > 0) {
+      console.log(
+        `Successfully extracted transcript with ${transcript.length} characters using youtubei.js.`
+      );
+      return transcript;
+    }
+  } catch (error) {
+    console.warn("youtubei.js transcript extraction failed:", error);
+  }
+
+  // Method 3: Try custom subtitle extraction API
+  try {
+    console.log("Attempting with custom subtitle API...");
+    const result = await extractYoutubeSubtitles(videoUrl);
+
+    if (result.subtitles && result.subtitles.length > 0) {
+      const transcriptText = result.subtitles.join(" ");
+      console.log(
+        `Successfully extracted transcript with ${transcriptText.length} characters using custom API.`
+      );
+      return transcriptText;
+    }
+  } catch (error) {
+    console.warn("Custom subtitle API failed:", error);
+  }
+
+  // Method 4: Try youtube-transcript-plus
   try {
     console.log("Attempting with youtube-transcript-plus...");
     const transcriptParts = await fetchTranscript(videoId);
@@ -33,7 +102,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using youtube-transcript-plus.`,
+        `Successfully extracted transcript with ${transcriptText.length} characters using youtube-transcript-plus.`
       );
       return transcriptText;
     }
@@ -41,7 +110,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("youtube-transcript-plus failed:", error);
   }
 
-  // Method 2: Try danielxceron/youtube-transcript (fallback 1)
+  // Method 5: Try @danielxceron/youtube-transcript
   try {
     console.log("Attempting with @danielxceron/youtube-transcript...");
     const transcriptParts =
@@ -50,7 +119,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`,
+        `Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`
       );
       return transcriptText;
     }
@@ -58,7 +127,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("danielxceron/youtube-transcript failed:", error);
   }
 
-  // Method 3: Try original youtube-transcript (fallback 2)
+  // Method 6: Try original youtube-transcript
   try {
     console.log("Attempting with original youtube-transcript...");
     const transcriptParts = await YoutubeTranscript.fetchTranscript(videoId);
@@ -66,7 +135,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using original.`,
+        `Successfully extracted transcript with ${transcriptText.length} characters using original.`
       );
       return transcriptText;
     }
@@ -74,7 +143,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
     console.warn("Original youtube-transcript failed:", error);
   }
 
-  // Method 4: Try alternative API approach (fallback 3)
+  // Method 7: Try alternative API approach
   try {
     console.log("Attempting alternative YouTube API approach...");
     const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
@@ -82,7 +151,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
 
     // Extract captions from video page - this is a basic approach
     const captionMatch = html.match(
-      /"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/,
+      /"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/
     );
     if (captionMatch) {
       const captionData = JSON.parse(`[${captionMatch[1]}]`) as Array<{
@@ -93,7 +162,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
         (cap) =>
           cap.languageCode === "en" ||
           cap.languageCode === "en-US" ||
-          cap.languageCode.startsWith("en"),
+          cap.languageCode.startsWith("en")
       );
 
       if (englishCaption && englishCaption.baseUrl) {
@@ -110,7 +179,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
 
           if (transcriptText.length > 0) {
             console.log(
-              `Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`,
+              `Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`
             );
             return transcriptText;
           }
@@ -122,7 +191,7 @@ const _fetchAndFormatTranscript = async (videoId: string): Promise<string> => {
   }
 
   throw new Error(
-    "No transcript content found using any available method. The video may not have captions available.",
+    "No transcript content found using any available method. The video may not have captions available."
   );
 };
 
@@ -187,8 +256,8 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
     );
   }
 
-  console.log("Creating Gemini embeddings...");
-  const embeddings = await createGeminiEmbeddings();
+  console.log("Creating embeddings...");
+  const embeddings = await createEmbeddings();
   if (!embeddings) {
     throw new Error(
       "Failed to create embeddings. Gemini API may not be configured properly.",
@@ -326,7 +395,7 @@ export const processYoutubeVideo = async (
   try {
     await updateFileStatus(supabase, namespace, "processing");
 
-    const transcriptText = await _fetchAndFormatTranscript(videoId);
+    const transcriptText = await _fetchAndFormatTranscript(videoId, videoUrl);
     const chunkedDocs = await _splitTranscriptToDocs(transcriptText, videoUrl);
     await _storeDocsInPinecone(chunkedDocs, namespace);
 

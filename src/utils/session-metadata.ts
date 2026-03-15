@@ -1,4 +1,4 @@
-import { TypeSessionMetadata } from "@/types/TypeRag";
+import { TypeSessionMetadata } from "@/types/rag";
 
 export const getSessionMetadata = (): TypeSessionMetadata => {
     if (typeof window === "undefined") return {};

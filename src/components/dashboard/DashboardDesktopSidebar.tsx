@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { LogOut } from "lucide-react";
 import LogoutDialog from "@/components/dashboard/LogoutDialog";
-import { NavigationItems } from "@/constants/NavItems";
+import { NavigationItems } from "@/constants/nav-items";
 import { usePathname } from "next/navigation";
 import {
   Tooltip,

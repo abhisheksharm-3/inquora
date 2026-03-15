@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, LogOut, Shield, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/useUser";
-import { TypeDialogProps } from "@/types/TypeUi";
+import { TypeDialogProps } from "@/types/ui";
 
 /**
  * Renders a confirmation dialog for logging out.

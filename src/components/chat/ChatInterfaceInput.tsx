@@ -1,7 +1,7 @@
 import { Send, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { TypeChatInputProps } from "@/types/TypeChat";
+import { TypeChatInputProps } from "@/types/chat";
 import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 

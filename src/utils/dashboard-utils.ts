@@ -1,4 +1,4 @@
-import { TypeUser } from "@/types/TypeSupabase";
+import { TypeUser } from "@/types/database";
 
 /**
  * Generates user initials from a user object's name.

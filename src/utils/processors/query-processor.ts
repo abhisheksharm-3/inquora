@@ -1,26 +1,29 @@
 "use server";
 
-import { createGeminiEmbeddings } from "../gemini/embeddings";
+import type { Index } from "@pinecone-database/pinecone";
+import { createEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured, findIndexForNamespace } from "../pinecone";
 import { Document } from "@langchain/core/documents";
+import { pineconeRateLimiter } from "../rag/rate-limiter";
 
 /**
  * Queries Pinecone for documents similar to a given query string.
  * Automatically searches current index and falls back to legacy indexes if namespace not found.
+ * Returns documents with their similarity scores.
  *
  * @param query The text to search for.
  * @param namespace The Pinecone namespace to query within.
  * @param topK The number of top results to return. Defaults to 5.
- * @returns A promise that resolves to an array of matching documents.
- * @throws An error if services are not configured or if the query fails.
+ * @param pineconeIndex Optional pre-resolved index.
+ * @returns A promise that resolves to an array of [Document, score] tuples.
  */
 export const queryDocuments = async (
   query: string,
   namespace: string,
   topK: number = 5,
-  pineconeIndex?: any // Optional pre-resolved index
-): Promise<Document[]> => {
+  pineconeIndex?: Index
+): Promise<[Document, number][]> => {
   console.log(`Querying top ${topK} documents in namespace "${namespace}"...`);
 
   if (!(await isPineconeConfigured())) {
@@ -30,9 +33,9 @@ export const queryDocuments = async (
   }
 
   try {
-    const embeddings = await createGeminiEmbeddings();
+    const embeddings = await createEmbeddings();
     if (!embeddings) {
-      throw new Error("Failed to create Gemini embeddings.");
+      throw new Error("Failed to create embeddings.");
     }
 
     let targetIndex = pineconeIndex;
@@ -64,7 +67,7 @@ export const queryDocuments = async (
       namespace,
     });
 
-    const results = await vectorStore.similaritySearch(query, topK);
+    const results = await pineconeRateLimiter.execute(() => vectorStore.similaritySearchWithScore(query, topK));
     console.log(`Found ${results.length} documents in namespace "${namespace}".`);
     return results;
   } catch (error) {

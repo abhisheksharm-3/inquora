@@ -1,6 +1,6 @@
-import { TypeSkeletonConfig } from "@/types/TypeUi";
+import { TypeSkeletonConfig } from "@/types/ui";
 import { Skeleton } from "../ui/skeleton";
-import { HistoryPageSkeletonConfigs } from "@/constants/HistoryPage";
+import { HistoryPageSkeletonConfigs } from "@/constants/history-page";
 
 /**
  * Reusable skeleton element component with improved theming

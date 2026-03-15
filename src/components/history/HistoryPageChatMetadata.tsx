@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatFileSize, formatTimeAgo } from "@/utils/history-page-utils";
-import { TypeHistoryPageChatMetadataProps } from "@/types/TypeUi";
+import { TypeHistoryPageChatMetadataProps } from "@/types/ui";
 
 /**
  * Displays responsive and themed metadata for a single chat item with improved mobile layout.

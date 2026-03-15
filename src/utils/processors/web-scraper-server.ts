@@ -1,12 +1,12 @@
 "use server";
 
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { createGeminiEmbeddings } from "../gemini/embeddings";
+import { createEmbeddings } from "../gemini/embeddings";
 import { PineconeStore } from "@langchain/pinecone";
 import { getPineconeIndex, isPineconeConfigured } from "../pinecone";
 import { Document } from "@langchain/core/documents";
 import { updateFileStatus } from "../file-processing-utils";
-import { supabaseBrowserClient } from "../supabase/client";
+import { supabaseBrowserClient } from "@/data/supabase/client";
 import * as cheerio from "cheerio";
 import { type Element } from "domhandler";
 import type {
@@ -14,8 +14,8 @@ import type {
   TypeWebPageInfo,
   TypeWebPageContent,
   TypeScrapingConfig,
-} from "@/types/TypeWebScraper";
-import { DEFAULT_SCRAPING_CONFIG } from "@/types/TypeWebScraper";
+} from "@/types/web-scraper";
+import { DEFAULT_SCRAPING_CONFIG } from "@/types/web-scraper";
 import {
   getDomainFromUrl,
   generatePageId,
@@ -468,11 +468,11 @@ export const processWebPage = async (
     });
 
     // Create embeddings and store in Pinecone
-    const embeddings = await createGeminiEmbeddings();
+    const embeddings = await createEmbeddings();
 
     if (!embeddings) {
       throw new Error(
-        "Failed to create embeddings. Gemini API may not be configured properly.",
+        "Failed to create embeddings. API may not be configured properly.",
       );
     }
 

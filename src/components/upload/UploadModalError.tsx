@@ -10,7 +10,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { TypeUploadError, TypeUploadModalErrorProps } from "@/types/TypeUpload";
+import { TypeUploadError, TypeUploadModalErrorProps } from "@/types/upload";
 import { getUploadErrorTitle } from "@/utils/upload-utils";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription } from "../ui/alert";

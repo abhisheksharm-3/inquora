@@ -1,25 +1,17 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { TypeFile } from "@/types/TypeSupabase";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { TypeFile } from "@/types/database";
 import { useUser } from "./useUser";
-import {
-  processPdfDocument,
-  processGenericDocument,
-  processYoutubeVideo,
-  processGitHubRepository,
-  processWebPage,
-} from "@/utils/processors";
 import {
   TypeUpdateFileParams,
   TypeUploadFileParams,
-} from "@/types/TypeContent";
+} from "@/types/content";
 import { useMemo } from "react";
+import { createFileRepository } from "@/data/repositories";
+import { QUERY_KEYS, TIMING_CONSTANTS, FILE_CONSTANTS } from "@/config/constants";
 
-export const FILES_QUERY_KEY = ["files"];
-
-const STORAGE_BUCKET = "file-storage";
 const PROCESSABLE_DOC_TYPES = new Set([
   "pdf",
   "doc",
@@ -29,35 +21,32 @@ const PROCESSABLE_DOC_TYPES = new Set([
   "sheets",
   "xls",
   "xlsx",
+  "slide",
   "slides",
   "ppt",
   "pptx",
 ]);
 const URL_BASED_TYPES = new Set(["url", "web", "youtube", "github", "video"]);
-const BACKGROUND_PROCESS_TYPES = new Set(["youtube", "github", "web", "video"]);
 
 export const useFiles = () => {
   const queryClient = useQueryClient();
-  const supabase = supabaseBrowserClient();
+  const supabase = useSupabase();
   const { userId } = useUser();
 
+  const fileRepository = useMemo(
+    () => createFileRepository(supabase),
+    [supabase]
+  );
+
   const filesQuery = useQuery({
-    queryKey: FILES_QUERY_KEY,
+    queryKey: QUERY_KEYS.FILES,
     queryFn: async (): Promise<TypeFile[]> => {
       if (!userId) return [];
-
-      const { data, error: queryError } = await supabase
-        .from("files")
-        .select("*")
-        .eq("user_id", userId)
-        .order("uploaded_at", { ascending: false });
-
-      if (queryError) throw queryError;
-      return data as TypeFile[];
+      return fileRepository.findAllByUserId(userId);
     },
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: TIMING_CONSTANTS.CACHE_TIME_MS,
+    gcTime: TIMING_CONSTANTS.CACHE_TIME_MS * 2,
   });
 
   const handleUpload = async ({
@@ -70,12 +59,12 @@ export const useFiles = () => {
     if (!URL_BASED_TYPES.has(fileData.type || "")) {
       const filePath = `${userId}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKET)
+        .from(FILE_CONSTANTS.STORAGE_BUCKET)
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from(STORAGE_BUCKET)
+        .from(FILE_CONSTANTS.STORAGE_BUCKET)
         .getPublicUrl(filePath);
       fileUrl = urlData.publicUrl;
     }
@@ -94,49 +83,36 @@ export const useFiles = () => {
     if (insertError || !newFile)
       throw insertError || new Error("Failed to create file record.");
 
-    // Background processing is now handled by the UI layer (useUpload.ts)
-    // to provide better progress feedback and error handling.
-    // We simply return the file record here.
     return newFile;
   };
 
   const handleDelete = async (fileId: string): Promise<string> => {
     if (!userId) throw new Error("User not authenticated.");
 
-    const { data: file, error: fetchError } = await supabase
-      .from("files")
-      .select("url")
-      .eq("id", fileId)
-      .single();
-
-    if (fetchError) throw fetchError;
+    const file = await fileRepository.findById(fileId);
+    if (!file) throw new Error("File not found.");
 
     if (file.url) {
       try {
         const filePath = new URL(file.url).pathname.split(
-          `/${STORAGE_BUCKET}/`,
+          `/${FILE_CONSTANTS.STORAGE_BUCKET}/`,
         )[1];
         if (filePath) {
-          await supabase.storage.from(STORAGE_BUCKET).remove([filePath]);
+          await supabase.storage.from(FILE_CONSTANTS.STORAGE_BUCKET).remove([filePath]);
         }
       } catch (e) {
         console.error("Could not parse or delete file from storage:", e);
       }
     }
 
-    const { error: deleteError } = await supabase
-      .from("files")
-      .delete()
-      .eq("id", fileId);
-    if (deleteError) throw deleteError;
-
+    await fileRepository.delete(fileId);
     return fileId;
   };
 
   const uploadFileMutation = useMutation({
     mutationFn: handleUpload,
     onSuccess: (newFile) => {
-      queryClient.setQueryData<TypeFile[]>(FILES_QUERY_KEY, (old = []) => [
+      queryClient.setQueryData<TypeFile[]>(QUERY_KEYS.FILES, (old = []) => [
         newFile,
         ...old,
       ]);
@@ -145,17 +121,10 @@ export const useFiles = () => {
 
   const updateFileMutation = useMutation({
     mutationFn: async ({ fileId, fileData }: TypeUpdateFileParams) => {
-      const { data, error: updateError } = await supabase
-        .from("files")
-        .update(fileData)
-        .eq("id", fileId)
-        .select()
-        .single();
-      if (updateError) throw updateError;
-      return data as TypeFile;
+      return fileRepository.update(fileId, fileData);
     },
     onSuccess: (updatedFile) => {
-      queryClient.setQueryData<TypeFile[]>(FILES_QUERY_KEY, (old = []) =>
+      queryClient.setQueryData<TypeFile[]>(QUERY_KEYS.FILES, (old = []) =>
         old.map((file) => (file.id === updatedFile.id ? updatedFile : file)),
       );
     },
@@ -164,7 +133,7 @@ export const useFiles = () => {
   const deleteFileMutation = useMutation({
     mutationFn: handleDelete,
     onSuccess: (deletedFileId) => {
-      queryClient.setQueryData<TypeFile[]>(FILES_QUERY_KEY, (old = []) =>
+      queryClient.setQueryData<TypeFile[]>(QUERY_KEYS.FILES, (old = []) =>
         old.filter((file) => file.id !== deletedFileId),
       );
     },
@@ -205,8 +174,13 @@ export const useFiles = () => {
 };
 
 export function useFileById(fileId: string) {
-  const supabase = supabaseBrowserClient();
+  const supabase = useSupabase();
   const { userId, isAuthenticated } = useUser();
+
+  const fileRepository = useMemo(
+    () => createFileRepository(supabase),
+    [supabase]
+  );
 
   const isValidFileId = useMemo(
     () => !!fileId && typeof fileId === "string" && fileId.trim() !== "",
@@ -214,26 +188,13 @@ export function useFileById(fileId: string) {
   );
 
   return useQuery({
-    queryKey: [...FILES_QUERY_KEY, fileId],
+    queryKey: [...QUERY_KEYS.FILES, fileId],
     queryFn: async (): Promise<TypeFile | null> => {
       if (!userId || !isValidFileId) return null;
-
-      const { data, error } = await supabase
-        .from("files")
-        .select("*")
-        .eq("id", fileId)
-        .eq("user_id", userId)
-        .single();
-
-      if (error) {
-        if (error.code === "PGRST116") return null;
-        throw error;
-      }
-
-      return data as TypeFile;
+      return fileRepository.findById(fileId);
     },
     enabled: isAuthenticated && !!userId && isValidFileId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: TIMING_CONSTANTS.CACHE_TIME_MS,
+    gcTime: TIMING_CONSTANTS.CACHE_TIME_MS * 2,
   });
 }

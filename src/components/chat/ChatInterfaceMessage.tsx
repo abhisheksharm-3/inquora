@@ -1,13 +1,12 @@
-// src/components/chat/ChatInterfaceMessages.tsx
-
 import { Loader2 } from "lucide-react";
 import { memo } from "react";
 import Image from "next/image";
 import { useUser } from "@/hooks/useUser";
-import { TypeChatInterfaceMessagesProps } from "@/types/TypeChat";
+import { TypeChatInterfaceMessagesProps } from "@/types/chat";
 import { getUserInitials } from "@/utils/dashboard-utils";
-import { MessageConstants } from "@/constants/MessageConstants";
+import { MessageConstants } from "@/constants/message-constants";
 import { MarkdownRenderer } from "@/components/shared/MarkdownRenderer";
+import { SafeComponent } from "@/components/shared/ErrorBoundary";
 
 /**
  * Renders the message list with redesigned, themed chat bubbles.
@@ -49,54 +48,55 @@ const ChatInterfaceMessagesComponent: React.FC<
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-6">
-      {messages.map((message) => (
-        <div
-          key={message.id}
-          className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-        >
-          {/* Assistant Avatar */}
-          {message.role === "assistant" && (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card p-1.5">
-              <Image src="/logo.png" alt="AI" width={24} height={24} />
-            </div>
-          )}
-
-          {/* Message Bubble */}
+    <SafeComponent name="MessageList">
+      <div className="h-full overflow-y-auto p-4 space-y-6">
+        {messages.map((message) => (
           <div
-            className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
-              message.role === "user"
+            key={message.id}
+            className={`flex items-start gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            {/* Assistant Avatar */}
+            {message.role === "assistant" && (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card p-1.5">
+                <Image src="/logo.png" alt="AI" width={24} height={24} />
+              </div>
+            )}
+
+            {/* Message Bubble */}
+            <div
+              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${message.role === "user"
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-foreground"
-            }`}
-          >
-            {message.content === MessageConstants.AssistantThinkingContent ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-                <span>Thinking...</span>
-              </div>
-            ) : message.role === "assistant" ? (
-              <MarkdownRenderer
-                content={message.content}
-                className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-              />
-            ) : (
-              <div className="whitespace-pre-wrap break-words">
-                {message.content}
+                }`}
+            >
+              {message.content === MessageConstants.AssistantThinkingContent ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                  <span>Thinking...</span>
+                </div>
+              ) : message.role === "assistant" ? (
+                <MarkdownRenderer
+                  content={message.content}
+                  className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                />
+              ) : (
+                <div className="whitespace-pre-wrap break-words">
+                  {message.content}
+                </div>
+              )}
+            </div>
+
+            {/* User Avatar */}
+            {message.role === "user" && (
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card font-semibold text-primary">
+                {getUserInitials(user)}
               </div>
             )}
           </div>
-
-          {/* User Avatar */}
-          {message.role === "user" && (
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card font-semibold text-primary">
-              {getUserInitials(user)}
-            </div>
-          )}
-        </div>
-      ))}
-      <div ref={messagesEndRef} className="h-4" />
-    </div>
+        ))}
+        <div ref={messagesEndRef} className="h-4" />
+      </div>
+    </SafeComponent>
   );
 };
 

@@ -2,16 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { sendMessageToGemini, isGeminiConfigured } from "@/utils/gemini/client";
-import { supabaseServerClient } from "@/utils/supabase/server";
+import { supabaseServerClient } from "@/data/supabase/server";
 import { getFileContent, getImageData } from "../file-processing-utils";
 import { queryDocuments } from "../processors";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { TypeChat, TypeFile } from "@/types/TypeSupabase";
-import { TypeGeminiImageData } from "@/types/TypeContent";
+import { TypeChat, TypeFile } from "@/types/database";
 import { processRAGRequest } from "../rag/orchestrator";
-import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/types/TypeRag";
-import { VersionConfig } from "@/constants/VersionConfig";
-import { GeminiMessage, GeminiUserContext } from "@/types/TypeGemini";
+import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/types/rag";
+import { VersionConfig } from "@/constants/version-config";
+import { GeminiMessage, GeminiUserContext, PrepareContextResultType } from "@/types/gemini";
 
 const FILE_TYPE_MAP = new Map([
   ["youtube", "video"],
@@ -116,12 +115,7 @@ const prepareContextForGemini = async (
   supabase: SupabaseClient,
   conversationHistory?: Array<{ role: string, content: string }>,
   userContext?: GeminiUserContext
-): Promise<{
-  fileContent?: string;
-  imageData?: TypeGeminiImageData;
-  error?: string;
-  isAdvancedRAG?: boolean;
-}> => {
+): Promise<PrepareContextResultType> => {
   if (!chat.file_id) return {};
 
   const fileContent = await getFileContent(chat.file_id);
@@ -130,18 +124,17 @@ const prepareContextForGemini = async (
   if (fileContent.startsWith("ERROR:")) {
     const errorMessage = fileContent.substring(6).trim();
 
-    // Provide more helpful error messages based on the error type
     if (errorMessage.includes("not been processed yet")) {
       return {
         error: `I need a moment to analyze this document before we can chat about it. The document processing wasn't completed during upload. Please try uploading the document again, and I'll process it fully before creating the chat.`,
       };
     } else if (errorMessage.includes("Failed to process")) {
       return {
-        error: `I had trouble processing this document: ${errorMessage}. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.`,
+        error: "I had trouble processing this document. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.",
       };
     } else {
       return {
-        error: `I encountered an issue with this document: ${errorMessage}. Please try uploading it again or contact support if the problem persists.`,
+        error: "I encountered an issue with this document. Please try uploading it again or contact support if the problem persists.",
       };
     }
   }
@@ -159,7 +152,6 @@ const prepareContextForGemini = async (
 
   if (chat.type && RAG_SUPPORTED_TYPES.has(chat.type)) {
     try {
-      // Try advanced RAG system first
       if (chat.file_id && conversationHistory) {
         try {
           const ragRequest: TypeRAGRequest = {
@@ -175,12 +167,11 @@ const prepareContextForGemini = async (
             } as TypeConversationTurn)).filter(turn => turn.userQuery || turn.aiResponse),
             userContext: {
               name: userContext?.userName,
-              email: userContext?.userEmail,
-              expertise_level: 'intermediate',
+              expertise_level: userContext?.sessionMetadata?.expertise_level || 'intermediate',
               preferences: {
-                response_style: 'detailed',
-                include_sources: true,
-                include_reasoning: true
+                response_style: userContext?.sessionMetadata?.preferences?.response_style || 'detailed',
+                include_sources: userContext?.sessionMetadata?.preferences?.include_sources ?? true,
+                include_reasoning: userContext?.sessionMetadata?.preferences?.include_reasoning ?? true
               },
               memories: userContext?.memories,
               sessionMetadata: userContext?.sessionMetadata,
@@ -235,7 +226,7 @@ const prepareContextForGemini = async (
       }
 
       const combinedContent = relevantDocs
-        .map((doc) => doc.pageContent)
+        .map(([doc]) => doc.pageContent)
         .join("\n\n");
       return { fileContent: combinedContent };
     } catch (queryError) {
@@ -323,7 +314,6 @@ export const sendMessage = async (
 
       if (user) {
         userContext.userName = user.name || "Anonymous";
-        userContext.userEmail = user.email || "";
       }
 
       // Fetch User Memories
@@ -395,7 +385,6 @@ export const sendMessage = async (
       namespace: chat.file_id || undefined,
       isAdvancedRAG: context.isAdvancedRAG,
       userId: chat.user_id,
-      supabase: supabase
     };
 
     const response = await sendMessageToGemini(
@@ -403,6 +392,7 @@ export const sendMessage = async (
       context.fileContent,
       context.imageData,
       enhancedUserContext,
+      supabase,
     );
 
     return await saveAssistantMessage(chatId, response, supabase);

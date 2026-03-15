@@ -1,10 +1,9 @@
 "use client";
-
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Dither from "@/components/backgrounds/Dither/Dither";
-import { TypeErrorProps } from "@/types/TypeUi";
+import { TypeErrorProps } from "@/types/ui";
 
 /**
  * A custom error boundary component for the application.

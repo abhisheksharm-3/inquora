@@ -31,7 +31,8 @@ Inquora is a modern AI-powered application that enables users to have intelligen
 
 ### 🤖 Inquora AI Agent
 - **Advanced RAG System** - Multi-source retrieval with source awareness
-- **Agentic Reasoning** - 4 reasoning frameworks (Chain of Thought, Tree of Thought, ReAct, Reflexion)
+- **
+Reasoning** - 4 reasoning frameworks (Chain of Thought, Tree of Thought, ReAct, Reflexion)
 - **Anti-Hallucination** - Strict source fidelity, never fabricates information
 - **Multi-Modal Intelligence** - Specialized processing for PDFs, videos, code, web content
 - **Confidence Calibration** - Transparent confidence levels for all responses

@@ -2,8 +2,8 @@
  * A collection of utility functions for handling uploads, URL validation, and errors.
  */
 
-import { EnumUploadActionType } from "@/constants/EnumUploadData";
-import { TypeUploadError, TypeUploadState } from "@/types/TypeUpload";
+import { EnumUploadActionType } from "@/types/upload";
+import { TypeUploadError, TypeUploadState } from "@/types/upload";
 
 /**
  * Validates if a string is a well-formed URL with an http or https protocol.

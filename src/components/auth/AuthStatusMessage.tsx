@@ -1,4 +1,4 @@
-import { TypeStatusMessageProps } from "@/types/TypeAuth";
+import { TypeStatusMessageProps } from "@/types/auth";
 
 /**
  * Displays a styled message for authentication status feedback, like errors or success notes.

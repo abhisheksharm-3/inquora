@@ -6,8 +6,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreVertical } from "lucide-react";
-import { HistoryPageDropdownActions } from "@/constants/HistoryPage";
-import { TypeHistoryPageChatDropdownProps } from "@/types/TypeUi";
+import { HistoryPageDropdownActions } from "@/constants/history-page";
+import { TypeHistoryPageChatDropdownProps } from "@/types/ui";
 
 /**
  * A responsive dropdown menu for chat item actions with improved mobile touch targets.

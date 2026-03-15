@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/popover";
 import UploadModal from "@/components/upload/UploadModal";
 import { Metadata } from "next";
-import { FileTypes } from "@/constants/FileTypes";
+import { FileTypes } from "@/constants/file-types";
 
 /**
  * @description SEO metadata for the new chat/dashboard page.
@@ -143,7 +143,7 @@ const ChoosePage = () => {
                           <div className="h-1.5 w-1.5 bg-red-500 rounded-full mt-1 flex-shrink-0"></div>
                           <div className="space-y-2">
                             <span className="text-muted-foreground">
-                              Chats older than September 15, 2025 - Read-only
+                              Chats older than January 14, 2026 - Read-only
                             </span>
                             <div className="p-2 rounded bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                               <span className="text-red-700 dark:text-red-300 font-medium">

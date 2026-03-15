@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMessages } from "@/hooks/useMessages";
 import { useChats } from "@/hooks/useChats";
 import { useFileById } from "@/hooks/useFiles";
-import { VersionConfig } from "@/constants/VersionConfig";
+import { VersionConfig } from "@/constants/version-config";
 
 const REDIRECT_DELAY_MS = 2000;
 
@@ -18,6 +18,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
   const {
     messages,
     isLoading: messagesLoading,
+    isError: isMessagesError,
     isSending,
     sendMessage,
     subscribeToMessages,
@@ -34,19 +35,17 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
   const { isChatLoading, isChatError } = useMemo(
     () => ({
       isChatLoading: !chat && messagesLoading,
-      isChatError: !chat && !messagesLoading,
+      isChatError: !chat && !messagesLoading && isMessagesError,
     }),
-    [chat, messagesLoading],
+    [chat, messagesLoading, isMessagesError],
   );
 
   const handleSendMessage = useCallback(
     async (messageContent?: string) => {
-      const content = messageContent || inputValue.trim();
+      const content = messageContent ?? inputValue.trim();
       if (!content || isSending) return;
 
-      if (messageContent) {
-        setInputValue("");
-      }
+      setInputValue("");
 
       try {
         await sendMessage(content);

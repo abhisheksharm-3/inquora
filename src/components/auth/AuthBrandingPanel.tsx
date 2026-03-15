@@ -8,7 +8,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { TypeSlide } from "@/types/TypeUi";
+import { TypeSlide } from "@/types/ui";
 
 const slides: TypeSlide[] = [
   {

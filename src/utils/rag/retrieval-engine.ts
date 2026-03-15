@@ -1,47 +1,26 @@
 "use server";
 
+import type { Index } from "@pinecone-database/pinecone";
 import { queryDocuments } from "../processors/query-processor";
 import {
   TypeQueryAnalysis,
   TypeRetrievalResult,
   TypeRetrievalConfiguration,
-  TypeContextualRetrievalOptions
-} from "@/types/TypeRag";
-
+  TypeContextualRetrievalOptions,
+} from "@/types/rag";
+import { DEFAULT_RETRIEVAL_CONFIG } from "@/config/constants";
 import { findIndexForNamespace, getPineconeIndex } from "../pinecone";
+import { getDynamicWeights } from "./retrieval-utils";
 
-/**
- * Default configuration for retrieval
- */
-const DEFAULT_RETRIEVAL_CONFIG: TypeRetrievalConfiguration = {
-  strategies: [
-    { name: 'semantic', weight: 0.6, topK: 8, enabled: true },
-    { name: 'keyword', weight: 0.3, topK: 5, enabled: true },
-    { name: 'contextual', weight: 0.1, topK: 3, enabled: true }
-  ],
-  rerankingEnabled: true,
-  diversityThreshold: 0.7,
-  minimumRelevanceScore: 0.3,
-  maxResults: 10,
-  multiModalEnabled: true,
-  crossReferenceEnabled: true,
-  temporalWeighting: true
-};
-
-/**
- * Main retrieval function that orchestrates multiple strategies
- */
 export async function retrieveRelevantDocuments(
   analysisResult: TypeQueryAnalysis,
   namespace: string,
   options: TypeContextualRetrievalOptions = {},
-  config: TypeRetrievalConfiguration = DEFAULT_RETRIEVAL_CONFIG
+  config: TypeRetrievalConfiguration = DEFAULT_RETRIEVAL_CONFIG,
 ): Promise<TypeRetrievalResult[]> {
-
   const allResults: TypeRetrievalResult[] = [];
 
-  // Resolve Pinecone index once for all strategies
-  let pineconeIndex: any;
+  let pineconeIndex: Index | undefined;
   try {
     const indexInfo = await findIndexForNamespace(namespace);
     if (indexInfo) {
@@ -51,155 +30,213 @@ export async function retrieveRelevantDocuments(
     }
   } catch (error) {
     console.error("Failed to resolve Pinecone index:", error);
-    // Continue without index, individual queries might fail or try their own resolution
   }
 
-  // Execute strategies in parallel
   const searchPromises: Promise<TypeRetrievalResult[]>[] = [];
 
-  // Strategy 1: Semantic Search (primary)
   searchPromises.push(
     performSemanticSearch(
       analysisResult.expandedQuery,
       namespace,
-      config.strategies.find(s => s.name === 'semantic')?.topK || 8,
-      pineconeIndex
-    ).catch(error => {
+      config.strategies.find((s) => s.name === "semantic")?.topK ?? 8,
+      pineconeIndex,
+    ).catch((error) => {
       console.warn("Semantic search failed:", error);
       return [];
-    })
+    }),
   );
 
-  // Strategy 2: Keyword-based search
   if (analysisResult.keywords.length > 0) {
     searchPromises.push(
       performKeywordSearch(
         analysisResult.keywords,
         namespace,
-        config.strategies.find(s => s.name === 'keyword')?.topK || 5,
-        pineconeIndex
-      ).catch(error => {
+        config.strategies.find((s) => s.name === "keyword")?.topK ?? 5,
+        pineconeIndex,
+      ).catch((error) => {
         console.warn("Keyword search failed:", error);
         return [];
-      })
+      }),
     );
   }
 
-  // Strategy 3: Contextual search (if conversation history available)
   if (options.conversationHistory && options.conversationHistory.length > 0) {
     searchPromises.push(
       performContextualSearch(
         analysisResult,
         options.conversationHistory,
         namespace,
-        config.strategies.find(s => s.name === 'contextual')?.topK || 3,
-        pineconeIndex
-      ).catch(error => {
+        config.strategies.find((s) => s.name === "contextual")?.topK ?? 3,
+        pineconeIndex,
+      ).catch((error) => {
         console.warn("Contextual search failed:", error);
         return [];
-      })
+      }),
     );
   }
 
-  // Wait for all strategies to complete
+  if (options.stepBackQuery) {
+    searchPromises.push(
+      performStepBackSearch(
+        options.stepBackQuery,
+        namespace,
+        config.strategies.find((s) => s.name === "stepback")?.topK ?? 4,
+        pineconeIndex,
+      ).catch((error) => {
+        console.warn("Step-back search failed:", error);
+        return [];
+      }),
+    );
+  }
+
   const results = await Promise.all(searchPromises);
-  results.forEach(resultGroup => allResults.push(...resultGroup));
+  results.forEach((resultGroup) => allResults.push(...resultGroup));
 
-  // Remove duplicates and apply quality filtering
   const deduplicatedResults = removeDuplicateDocuments(allResults);
-  const filteredResults = filterByRelevanceScore(deduplicatedResults, config.minimumRelevanceScore);
+  const filteredResults = filterByRelevanceScore(
+    deduplicatedResults,
+    config.minimumRelevanceScore,
+  );
 
-  // Apply reranking if enabled
   const finalResults = config.rerankingEnabled
-    ? await rerankResults(filteredResults, analysisResult)
+    ? await rerankResults(filteredResults, analysisResult, config)
     : filteredResults;
 
-  // Apply diversity filtering and limit results
-  const diverseResults = applyDiversityFiltering(finalResults, config.diversityThreshold);
-
+  const diverseResults = applyMmrDiversity(
+    finalResults,
+    config.diversityThreshold,
+  );
   return diverseResults.slice(0, config.maxResults);
 }
 
 /**
- * Performs semantic search using vector similarity
+ * Normalizes Pinecone similarity scores to a 0-1 range.
+ * Pinecone cosine similarity already returns 0-1 (higher = more similar).
+ * This function clamps and ensures consistency.
  */
+function normalizeScore(rawScore: number): number {
+  return Math.max(0, Math.min(1, rawScore));
+}
+
+/** Builds a keyword-focused query so the embedding emphasizes those terms. */
+function buildKeywordQuery(keywords: string[]): string {
+  const top = keywords.slice(0, 6);
+  const phrase = top.join(" ");
+  return `Keywords: ${phrase}. ${phrase}`;
+}
+
 async function performSemanticSearch(
   query: string,
   namespace: string,
   topK: number,
-  pineconeIndex?: any
+  pineconeIndex?: Index,
 ): Promise<TypeRetrievalResult[]> {
-
-  const documents = await queryDocuments(query, namespace, topK, pineconeIndex);
-
-  return documents.map((doc, index) => ({
+  const results = await queryDocuments(query, namespace, topK, pineconeIndex);
+  return results.map(([doc, score]) => ({
     document: doc,
-    score: 1.0 - (index * 0.1), // Simple scoring based on order
-    retrievalMethod: 'semantic',
-    relevanceReason: 'Vector similarity match'
+    score: normalizeScore(score),
+    retrievalMethod: "semantic",
+    relevanceReason: "Vector similarity match",
   }));
 }
 
-/**
- * Performs keyword-based search
- */
 async function performKeywordSearch(
   keywords: string[],
   namespace: string,
   topK: number,
-  pineconeIndex?: any
+  pineconeIndex?: Index,
 ): Promise<TypeRetrievalResult[]> {
-
-  const keywordQuery = keywords.join(' OR ');
-  const documents = await queryDocuments(keywordQuery, namespace, topK, pineconeIndex);
-
-  return documents.map((doc, index) => ({
+  const keywordQuery = buildKeywordQuery(keywords);
+  const results = await queryDocuments(
+    keywordQuery,
+    namespace,
+    topK,
+    pineconeIndex,
+  );
+  return results.map(([doc, score]) => ({
     document: doc,
-    score: 0.8 - (index * 0.1), // Slightly lower base score than semantic
-    retrievalMethod: 'keyword',
-    relevanceReason: `Keyword match: ${keywords.slice(0, 3).join(', ')}`
+    score: normalizeScore(score),
+    retrievalMethod: "keyword",
+    relevanceReason: `Keyword match: ${keywords.slice(0, 3).join(", ")}`,
   }));
 }
 
-/**
- * Performs contextual search based on conversation history
- */
 async function performContextualSearch(
   analysis: TypeQueryAnalysis,
-  conversationHistory: Array<{ role: string, content: string }>,
+  conversationHistory: Array<{ role: string; content: string }>,
   namespace: string,
   topK: number,
-  pineconeIndex?: any
+  pineconeIndex?: Index,
 ): Promise<TypeRetrievalResult[]> {
-
-  // Create a contextual query from recent conversation
   const recentMessages = conversationHistory.slice(-3);
-  const contextQuery = recentMessages
-    .map(msg => msg.content)
-    .join(' ') + ' ' + analysis.expandedQuery;
-
-  const documents = await queryDocuments(contextQuery, namespace, topK, pineconeIndex);
-
-  return documents.map((doc, index) => ({
+  const contextQuery =
+    recentMessages.map((msg) => msg.content).join(" ") +
+    " " +
+    analysis.expandedQuery;
+  const results = await queryDocuments(
+    contextQuery,
+    namespace,
+    topK,
+    pineconeIndex,
+  );
+  return results.map(([doc, score]) => ({
     document: doc,
-    score: 0.7 - (index * 0.1), // Lower score as this is supplementary
-    retrievalMethod: 'contextual',
-    relevanceReason: 'Contextual relevance based on conversation history'
+    score: normalizeScore(score),
+    retrievalMethod: "contextual",
+    relevanceReason: "Contextual relevance based on conversation history",
+  }));
+}
+
+async function performStepBackSearch(
+  stepBackQuery: string,
+  namespace: string,
+  topK: number,
+  pineconeIndex?: Index,
+): Promise<TypeRetrievalResult[]> {
+  const results = await queryDocuments(
+    stepBackQuery,
+    namespace,
+    topK,
+    pineconeIndex,
+  );
+  return results.map(([doc, score]) => ({
+    document: doc,
+    score: normalizeScore(score),
+    retrievalMethod: "stepback",
+    relevanceReason: `Step-back conceptual match: "${stepBackQuery.substring(0, 60)}..."`,
   }));
 }
 
 /**
- * Removes duplicate documents based on content similarity
+ * Removes duplicate documents based on content similarity.
+ * Uses a robust normalized content signature to detect exact or near-exact duplicates.
  */
-function removeDuplicateDocuments(results: TypeRetrievalResult[]): TypeRetrievalResult[] {
-  const seen = new Set<string>();
+function removeDuplicateDocuments(
+  results: TypeRetrievalResult[],
+): TypeRetrievalResult[] {
+  const seenSignatures = new Set<string>();
   const unique: TypeRetrievalResult[] = [];
 
   for (const result of results) {
-    // Use first 100 characters as a simple deduplication key
-    const key = result.document.pageContent.substring(0, 100);
-    if (!seen.has(key)) {
-      seen.add(key);
+    // Create a robust signature: normalize whitespace, lowercase, and grab a substantial prefix
+    const normalized = result.document.pageContent
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Use first 200 chars of normalized content as signature
+    const signature = normalized.substring(0, 200);
+
+    if (signature.length > 50 && !seenSignatures.has(signature)) {
+      seenSignatures.add(signature);
+      unique.push(result);
+    } else if (
+      signature.length <= 50 &&
+      !unique.some(
+        (u) => u.document.pageContent === result.document.pageContent,
+      )
+    ) {
+      // Fallback for very short documents
       unique.push(result);
     }
   }
@@ -212,91 +249,153 @@ function removeDuplicateDocuments(results: TypeRetrievalResult[]): TypeRetrieval
  */
 function filterByRelevanceScore(
   results: TypeRetrievalResult[],
-  minimumScore: number
+  minimumScore: number,
 ): TypeRetrievalResult[] {
-  return results.filter(result => result.score >= minimumScore);
+  return results.filter((result) => result.score >= minimumScore);
 }
 
 /**
- * Reranks results based on query analysis
+ * Reranks results using strategy weights and query-aware boosting
  */
 async function rerankResults(
   results: TypeRetrievalResult[],
-  analysis: TypeQueryAnalysis
+  analysis: TypeQueryAnalysis,
+  config: TypeRetrievalConfiguration,
 ): Promise<TypeRetrievalResult[]> {
+  // Build a weight lookup from config strategies or dynamic defaults
+  const dynamicWeights = getDynamicWeights(analysis.intent.type);
+  const strategyWeights: Record<string, number> = {};
 
-  // Simple reranking based on query complexity and intent
-  return results.map(result => {
-    let scoreMultiplier = 1.0;
+  for (const strategy of config.strategies) {
+    // Priority: hardcoded strategy weight > dynamic intent-based weight > default
+    strategyWeights[strategy.name] =
+      strategy.weight || dynamicWeights[strategy.name] || 0.5;
+  }
 
-    // Boost scores for complex queries if document is longer
-    if (analysis.complexity.level === 'complex' && result.document.pageContent.length > 500) {
-      scoreMultiplier += 0.1;
-    }
+  return results
+    .map((result) => {
+      // Apply strategy weight — this is the core weighted fusion
+      const strategyWeight = strategyWeights[result.retrievalMethod] ?? 0.5;
+      let weightedScore = result.score * strategyWeight;
 
-    // Boost semantic results for analytical queries
-    if (analysis.intent.type === 'analytical' && result.retrievalMethod === 'semantic') {
-      scoreMultiplier += 0.15;
-    }
+      // Intent-aware boosting (small adjustments on top of weighted score)
+      if (
+        analysis.complexity.level === "complex" &&
+        result.document.pageContent.length > 500
+      ) {
+        weightedScore *= 1.05;
+      }
 
-    // Boost keyword results for factual queries
-    if (analysis.intent.type === 'factual' && result.retrievalMethod === 'keyword') {
-      scoreMultiplier += 0.1;
-    }
+      if (
+        analysis.intent.type === "analytical" &&
+        result.retrievalMethod === "semantic"
+      ) {
+        weightedScore *= 1.1;
+      }
 
-    return {
-      ...result,
-      score: Math.min(result.score * scoreMultiplier, 1.0)
-    };
-  }).sort((a, b) => b.score - a.score);
+      if (
+        analysis.intent.type === "factual" &&
+        result.retrievalMethod === "keyword"
+      ) {
+        weightedScore *= 1.1;
+      }
+
+      return {
+        ...result,
+        score: Math.min(weightedScore, 1.0),
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 /**
- * Applies diversity filtering to avoid too similar results
+ * Applies maximal marginal relevance (MMR): greedy selection that balances relevance and diversity.
+ * @param lambda - Balance between score (1-lambda) and diversity (lambda). Use diversityThreshold as lambda.
  */
-function applyDiversityFiltering(
+function applyMmrDiversity(
   results: TypeRetrievalResult[],
-  diversityThreshold: number
+  lambda: number,
 ): TypeRetrievalResult[] {
-
   if (results.length <= 1) return results;
 
-  const diverse: TypeRetrievalResult[] = [results[0]]; // Always include the top result
+  const selected: TypeRetrievalResult[] = [results[0]];
+  const remaining = results.slice(1);
 
-  for (let i = 1; i < results.length; i++) {
-    const candidate = results[i];
-    let shouldInclude = true;
+  while (remaining.length > 0) {
+    let bestIdx = 0;
+    let bestMmr = -Infinity;
 
-    // Check similarity with already selected results
-    for (const selected of diverse) {
-      const similarity = calculateContentSimilarity(
-        candidate.document.pageContent,
-        selected.document.pageContent
-      );
-
-      if (similarity > diversityThreshold) {
-        shouldInclude = false;
-        break;
+    for (let i = 0; i < remaining.length; i++) {
+      const candidate = remaining[i];
+      let maxSim = 0;
+      for (const s of selected) {
+        const sim = calculateContentSimilarity(
+          candidate.document.pageContent,
+          s.document.pageContent,
+        );
+        if (sim > maxSim) maxSim = sim;
+      }
+      const mmr = (1 - lambda) * candidate.score - lambda * maxSim;
+      if (mmr > bestMmr) {
+        bestMmr = mmr;
+        bestIdx = i;
       }
     }
 
-    if (shouldInclude) {
-      diverse.push(candidate);
-    }
+    selected.push(remaining[bestIdx]);
+    remaining.splice(bestIdx, 1);
   }
 
-  return diverse;
+  return selected;
 }
 
 /**
  * Calculates simple content similarity between two texts
  */
 function calculateContentSimilarity(text1: string, text2: string): number {
-  const words1 = new Set(text1.toLowerCase().split(/\s+/));
-  const words2 = new Set(text2.toLowerCase().split(/\s+/));
+  const stopWords = new Set([
+    "the",
+    "is",
+    "at",
+    "which",
+    "on",
+    "and",
+    "a",
+    "an",
+    "to",
+    "in",
+    "for",
+    "with",
+    "it",
+    "that",
+    "this",
+    "of",
+    "by",
+    "from",
+    "as",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+  ]);
 
-  const intersection = new Set([...words1].filter(word => words2.has(word)));
+  const getWords = (text: string) =>
+    new Set(
+      text
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !stopWords.has(w)),
+    );
+
+  const words1 = getWords(text1);
+  const words2 = getWords(text2);
+
+  if (words1.size === 0 || words2.size === 0) return 0;
+
+  const intersection = new Set([...words1].filter((word) => words2.has(word)));
   const union = new Set([...words1, ...words2]);
 
-  return intersection.size / union.size; // Jaccard similarity
+  return intersection.size / union.size;
 }

@@ -1,14 +1,18 @@
 "use client";
 
 import { JSX } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Chrome } from "lucide-react";
 import { signInWithGoogle } from "@/app/(auth)/actions";
+import { RiGoogleLine } from "@remixicon/react";
 
 export const AuthSocialLogins = (): JSX.Element => {
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
+
   const handleGoogleSignIn = async () => {
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(nextUrl);
       if (typeof result === "object" && "url" in result) {
         window.location.href = result.url;
       }
@@ -25,7 +29,7 @@ export const AuthSocialLogins = (): JSX.Element => {
         onClick={handleGoogleSignIn}
         type="button"
       >
-        <Chrome className="mr-2 h-4 w-4" />
+        <RiGoogleLine className="mr-2 h-4 w-4" />
         Continue with Google
       </Button>
     </div>

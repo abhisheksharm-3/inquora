@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { TypeUser } from "@/types/TypeSupabase";
+import { supabaseBrowserClient } from "@/data/supabase/client";
+import { TypeUser } from "@/types/database";
 import { Session } from "@supabase/supabase-js";
 
 /** The base query key for the authenticated user's session and profile. */
@@ -33,16 +33,17 @@ export const useUser = () => {
     queryKey: USER_QUERY_KEY,
     queryFn: async () => {
       const {
-        data: { session },
+        data: { user },
         error: sessionError,
-      } = await supabase.auth.getSession();
+      } = await supabase.auth.getUser();
       if (sessionError) throw sessionError;
-      if (!session?.user) return { session: null, profile: null };
+      if (!user) return { session: null, profile: null };
 
+      const session = { user };
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("*")
-        .eq("id", session.user.id)
+        .select("id, email, name, created_at")
+        .eq("id", user.id)
         .single<TypeUser>();
 
       // A missing profile is not a critical error (e.g., new user).
@@ -109,19 +110,20 @@ export const useUser = () => {
    */
   const userFallback: TypeUser | null = userData?.session?.user
     ? {
-        id: userData.session.user.id,
-        email: userData.session.user.email ?? "",
-        name: userData.session.user.user_metadata?.full_name ?? "",
-        created_at:
-          userData.session.user.created_at ?? new Date().toISOString(),
-      }
+      id: userData.session.user.id,
+      email: userData.session.user.email ?? "",
+      name: userData.session.user.user_metadata?.full_name ?? "",
+      created_at:
+        userData.session.user.created_at ?? new Date().toISOString(),
+    }
     : null;
 
+  const avatarUrl = userData?.session?.user?.user_metadata?.avatar_url as string | undefined;
+
   return {
-    /** The full user profile, with a fallback to basic session info. */
     user: userData?.profile || userFallback,
-    /** The raw Supabase auth session object. */
     session: userData?.session,
+    avatarUrl: avatarUrl ?? null,
     /** True if the session or user profile is being fetched. */
     isLoading,
     /** True if an error occurred during fetching. */

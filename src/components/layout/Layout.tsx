@@ -2,7 +2,7 @@ import React from "react";
 import Navbar from "@/components/landing-page/Navbar";
 import Footer from "@/components/landing-page/Footer";
 import Dither from "@/components/backgrounds/Dither/Dither";
-import { LayoutProps } from "@/types/TypeUi";
+import { LayoutProps } from "@/types/ui";
 
 const defaultDitherConfig = {
   waveColor: [0.1, 0.1, 0.2] as [number, number, number],

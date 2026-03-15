@@ -10,7 +10,7 @@ import PricingDialog from "./PricingDialog";
 import { useSidebarState } from "@/hooks/useMobileSidebarState";
 import { useChats } from "@/hooks/useChats";
 import { useFileById } from "@/hooks/useFiles";
-import { TypeChat, TypeFile } from "@/types/TypeSupabase";
+import { TypeChat, TypeFile } from "@/types/database";
 import { ModeToggle } from "@/components/shared/mode-toggle";
 
 /**

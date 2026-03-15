@@ -7,14 +7,14 @@ import {
   isValidGitHubUrl,
   extractGitHubRepoId,
   processGitHubRepository,
-} from "@/utils/processors/github-processor-orchestrator";
+} from "@/utils/processors/github-processor";
 import {
   isValidGitHubUrl as isValidGitHubUrlSync,
   extractGitHubRepoInfo,
 } from "@/utils/github-utils";
 import { useUser } from "./useUser";
 import { useFiles } from "./useFiles";
-import { TypeUploadError } from "@/types/TypeUpload";
+import { TypeUploadError } from "@/types/upload";
 
 export const GITHUB_QUERY_KEY = ["github"];
 

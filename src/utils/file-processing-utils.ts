@@ -7,9 +7,9 @@ import {
   processWebPage,
 } from "@/utils/processors";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { TypeFile } from "@/types/TypeSupabase";
-import { supabaseBrowserClient } from "./supabase/client";
-import { TypeGeminiImageData } from "@/types/TypeContent";
+import { TypeFile } from "@/types/database";
+import { supabaseBrowserClient } from "@/data/supabase/client";
+import { TypeGeminiImageData } from "@/types/content";
 import { extractYoutubeVideoId } from "./youtube-utils";
 
 /**

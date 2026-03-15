@@ -2,6 +2,10 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export type MemoryAction = "add" | "delete";
 
+function escapeIlikePattern(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 export const manageMemory = async (
     userId: string,
     action: MemoryAction,
@@ -20,13 +24,12 @@ export const manageMemory = async (
             if (error) throw error;
             return `Successfully stored memory: "${content}"`;
         } else if (action === "delete") {
-            // Basic fuzzy delete for now, or specific if exact match
-            // For safety, let's delete exact matches or matches containing the text
+            const escaped = escapeIlikePattern(content);
             const { error } = await supabase
                 .from("user_memories")
                 .delete()
                 .eq("user_id", userId)
-                .ilike("content", `%${content}%`);
+                .ilike("content", `%${escaped}%`);
 
             if (error) throw error;
             return `Successfully deleted memory containing: "${content}"`;

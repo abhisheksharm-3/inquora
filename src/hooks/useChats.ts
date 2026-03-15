@@ -1,14 +1,13 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowserClient } from "@/utils/supabase/client";
-import { TypeChat, TypeChatWithFile } from "@/types/TypeSupabase";
+import { useSupabase } from "@/providers/SupabaseProvider";
+import { TypeChat, TypeChatWithFile } from "@/types/database";
 import { useUser } from "./useUser";
 import { createChat as createChatWithFile } from "@/utils/gemini/actions";
 import { useState, useCallback, useMemo } from "react";
-
-export const CHATS_QUERY_KEY = ["chats"];
-
+import { createChatRepository } from "@/data/repositories";
+import { QUERY_KEYS, TIMING_CONSTANTS } from "@/config/constants";
 
 interface UpdateChatParams {
   chatId: string;
@@ -17,55 +16,31 @@ interface UpdateChatParams {
 
 export const useChats = (chatId?: string) => {
   const queryClient = useQueryClient();
-  const supabase = supabaseBrowserClient();
+  const supabase = useSupabase();
   const { userId } = useUser();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const chatRepository = useMemo(
+    () => createChatRepository(supabase),
+    [supabase]
+  );
+
   const chatsQuery = useQuery({
-    queryKey: CHATS_QUERY_KEY,
+    queryKey: QUERY_KEYS.CHATS,
     queryFn: async (): Promise<TypeChatWithFile[]> => {
       if (!userId) return [];
-
-      const { data, error } = await supabase
-        .from("chats")
-        .select(
-          `
-          *,
-          files (
-            id,
-            name,
-            type,
-            size,
-            url,
-            uploaded_at
-          )
-        `,
-        )
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as TypeChatWithFile[];
+      return chatRepository.findAllByUserId(userId);
     },
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: TIMING_CONSTANTS.CACHE_TIME_MS,
+    gcTime: TIMING_CONSTANTS.CACHE_TIME_MS * 2,
   });
 
   const singleChatQuery = useQuery({
-    queryKey: [...CHATS_QUERY_KEY, chatId],
-    queryFn: async (): Promise<TypeChat | null> => {
+    queryKey: [...QUERY_KEYS.CHATS, chatId],
+    queryFn: async (): Promise<TypeChatWithFile | null> => {
       if (!userId || !chatId) return null;
-
-      const { data, error } = await supabase
-        .from("chats")
-        .select("*, files(*)")
-        .eq("id", chatId)
-        .eq("user_id", userId)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      return data as TypeChat | null;
+      return chatRepository.findById(chatId);
     },
     enabled: !!userId && !!chatId,
   });
@@ -77,7 +52,7 @@ export const useChats = (chatId?: string) => {
     },
     onSuccess: (newChat) => {
       queryClient.setQueryData<TypeChatWithFile[]>(
-        CHATS_QUERY_KEY,
+        QUERY_KEYS.CHATS,
         (old = []) => [newChat, ...old],
       );
     },
@@ -86,24 +61,16 @@ export const useChats = (chatId?: string) => {
   const updateChatMutation = useMutation({
     mutationFn: async ({ chatId: id, chatData }: UpdateChatParams) => {
       if (!userId) throw new Error("User not authenticated.");
-      const { data, error } = await supabase
-        .from("chats")
-        .update(chatData)
-        .eq("id", id)
-        .eq("user_id", userId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as TypeChat;
+      return chatRepository.update(id, chatData);
     },
     onSuccess: (updatedChat) => {
       queryClient.setQueryData<TypeChatWithFile[]>(
-        CHATS_QUERY_KEY,
+        QUERY_KEYS.CHATS,
         (old = []) =>
           old.map((chat) => (chat.id === updatedChat.id ? updatedChat : chat)),
       );
       queryClient.setQueryData(
-        [...CHATS_QUERY_KEY, updatedChat.id],
+        [...QUERY_KEYS.CHATS, updatedChat.id],
         updatedChat,
       );
     },
@@ -112,21 +79,16 @@ export const useChats = (chatId?: string) => {
   const deleteChatMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!userId) throw new Error("User not authenticated.");
-      const { error } = await supabase
-        .from("chats")
-        .delete()
-        .eq("id", id)
-        .eq("user_id", userId);
-      if (error) throw error;
+      await chatRepository.delete(id);
       return id;
     },
     onSuccess: (deletedChatId) => {
       queryClient.setQueryData<TypeChatWithFile[]>(
-        CHATS_QUERY_KEY,
+        QUERY_KEYS.CHATS,
         (old = []) => old.filter((chat) => chat.id !== deletedChatId),
       );
       queryClient.removeQueries({
-        queryKey: [...CHATS_QUERY_KEY, deletedChatId],
+        queryKey: [...QUERY_KEYS.CHATS, deletedChatId],
       });
     },
   });

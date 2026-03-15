@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { TypeChatWithFile } from "@/types/TypeSupabase";
+import { TypeChatWithFile } from "@/types/database";
 import { HistoryPageChatMetadata } from "./HistoryPageChatMetadata";
 import { HistorypageChatDropdown } from "./HistoryPageChatDropdown";
 import Link from "next/link";

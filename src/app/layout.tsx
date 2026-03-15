@@ -3,6 +3,7 @@ import { Literata, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/providers/QueryProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { SupabaseProvider } from "@/providers/SupabaseProvider";
 
 const literata = Literata({
   variable: "--font-serif",
@@ -17,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 /**
- * @description SEO metadata for the application.
+ * SEO metadata for the application.
  */
 export const metadata: Metadata = {
   title: "Inquora",
@@ -26,12 +27,6 @@ export const metadata: Metadata = {
 
 /**
  * The root layout for the application.
- *
- * This component sets up the main HTML structure, applies global fonts,
- * and wraps children with necessary context providers like `QueryProvider`.
- *
- * @param {{ children: React.ReactNode }} props - The component props.
- * @returns {React.ReactElement} The root layout element.
  */
 const RootLayout = ({
   children,
@@ -49,7 +44,9 @@ const RootLayout = ({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <SupabaseProvider>
+            {children}
+          </SupabaseProvider>
         </ThemeProvider>
       </QueryProvider>
     </body>

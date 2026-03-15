@@ -1,29 +1,42 @@
 "use server";
 
 import { sendMessageToGemini } from "@/utils/gemini/client";
-import { 
-  TypeRAGAgent, 
-  TypeAgentDecision, 
-  TypeReasoningChain, 
-  TypeReasoningStep
-} from "@/types/TypeRag";
+import {
+  TypeRAGAgent,
+  TypeAgentDecision,
+  TypeReasoningChain,
+  TypeReasoningStep,
+} from "@/types/rag";
+import {
+  selectDynamicReasoningFramework,
+  getAgentCapabilities,
+} from "./reasoning-utils";
 
 /**
  * Advanced Agentic Reasoning System
  */
 
 export async function createRAGAgent(
-  specialization: 'generalist' | 'technical' | 'academic' | 'creative' | 'analytical' = 'generalist'
+  specialization:
+    | "generalist"
+    | "technical"
+    | "academic"
+    | "creative"
+    | "analytical" = "generalist",
+  reasoningFramework:
+    | "chain_of_thought"
+    | "tree_of_thought"
+    | "react"
+    | "reflexion" = "chain_of_thought",
 ): Promise<TypeRAGAgent> {
-  
   const capabilities = getAgentCapabilities(specialization);
-  
+
   return {
     id: `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     capabilities,
     specialization,
     confidenceThreshold: 0.7,
-    reasoningFramework: 'chain_of_thought'
+    reasoningFramework,
   };
 }
 
@@ -31,21 +44,27 @@ export async function executeAgenticReasoning(
   query: string,
   context: string,
   agent: TypeRAGAgent,
-  framework: 'chain_of_thought' | 'tree_of_thought' | 'react' | 'reflexion' = 'chain_of_thought'
+  framework:
+    | "chain_of_thought"
+    | "tree_of_thought"
+    | "react"
+    | "reflexion" = "chain_of_thought",
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  
-  switch (framework) {
-    case 'chain_of_thought':
+  const frameworkToUse =
+    framework || agent.reasoningFramework || "chain_of_thought";
+
+  switch (frameworkToUse) {
+    case "chain_of_thought":
       return await executeChainOfThought(query, context, agent);
-    case 'tree_of_thought':
+    case "tree_of_thought":
       return await executeTreeOfThought(query, context);
-    case 'react':
+    case "react":
       return await executeReActReasoning(query, context);
-    case 'reflexion':
+    case "reflexion":
       return await executeReflexionReasoning(query, context);
     default:
       return await executeChainOfThought(query, context, agent);
@@ -58,13 +77,12 @@ export async function executeAgenticReasoning(
 async function executeChainOfThought(
   query: string,
   context: string,
-  agent: TypeRAGAgent
+  agent: TypeRAGAgent,
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  
   const prompt = `# CHAIN OF THOUGHT ANALYSIS
 
 **CONTEXT:**
@@ -102,11 +120,10 @@ Alternative viewpoints: [List any alternative interpretations]`;
       [{ role: "user", content: prompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     return parseChainOfThoughtResponse(response);
-    
   } catch (error) {
     console.error("Chain of Thought reasoning failed:", error);
     return createFallbackReasoning();
@@ -118,13 +135,12 @@ Alternative viewpoints: [List any alternative interpretations]`;
  */
 async function executeTreeOfThought(
   query: string,
-  context: string
+  context: string,
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  
   const prompt = `# MULTI-PATH ANALYSIS
 
 **CONTEXT:**
@@ -139,10 +155,10 @@ Explore 3 reasoning approaches. Select best path. Deliver direct factual respons
 **FORMAT:**
 
 PATH 1 - ANALYTICAL APPROACH:
-- Key assumptions: 
+- Key assumptions:
 - Reasoning steps:
 - Conclusion:
-- Confidence: 
+- Confidence:
 
 PATH 2 - CREATIVE APPROACH:
 - Key assumptions:
@@ -169,11 +185,10 @@ FINAL RESPONSE:
       [{ role: "user", content: prompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     return parseTreeOfThoughtResponse(response);
-    
   } catch (error) {
     console.error("Tree of Thought reasoning failed:", error);
     return createFallbackReasoning();
@@ -185,13 +200,12 @@ FINAL RESPONSE:
  */
 async function executeReActReasoning(
   query: string,
-  context: string
+  context: string,
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  
   const prompt = `# ITERATIVE ANALYSIS (REACT)
 
 **CONTEXT:**
@@ -225,11 +239,10 @@ RESPONSE: [Complete answer to the query]`;
       [{ role: "user", content: prompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     return parseReActResponse(response);
-    
   } catch (error) {
     console.error("ReAct reasoning failed:", error);
     return createFallbackReasoning();
@@ -241,13 +254,12 @@ RESPONSE: [Complete answer to the query]`;
  */
 async function executeReflexionReasoning(
   query: string,
-  context: string
+  context: string,
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  
   const prompt = `# SELF-REFLECTIVE ANALYSIS
 
 **CONTEXT:**
@@ -286,11 +298,10 @@ CONFIDENCE: [0.0-1.0 with justification]`;
       [{ role: "user", content: prompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     return parseReflexionResponse(response);
-    
   } catch (error) {
     console.error("Reflexion reasoning failed:", error);
     return createFallbackReasoning();
@@ -300,105 +311,133 @@ CONFIDENCE: [0.0-1.0 with justification]`;
 /**
  * Get agent capabilities based on specialization
  */
-function getAgentCapabilities(specialization: string): Array<{
-  name: string;
-  description: string;
-  enabled: boolean;
-  priority: number;
-}> {
-  
-  const baseCapabilities = [
-    { name: 'query_analysis', description: 'Analyze and understand query intent', enabled: true, priority: 10 },
-    { name: 'context_retrieval', description: 'Retrieve relevant information', enabled: true, priority: 9 },
-    { name: 'reasoning', description: 'Apply logical reasoning', enabled: true, priority: 8 },
-    { name: 'synthesis', description: 'Combine information coherently', enabled: true, priority: 7 }
-  ];
-
-  const specializationCapabilities = {
-    technical: [
-      { name: 'technical_analysis', description: 'Deep technical reasoning', enabled: true, priority: 9 },
-      { name: 'code_understanding', description: 'Analyze code and systems', enabled: true, priority: 8 },
-      { name: 'system_thinking', description: 'Understand complex systems', enabled: true, priority: 7 }
-    ],
-    academic: [
-      { name: 'critical_analysis', description: 'Academic-level critical thinking', enabled: true, priority: 9 },
-      { name: 'research_methodology', description: 'Apply research principles', enabled: true, priority: 8 },
-      { name: 'citation_analysis', description: 'Understand and use citations', enabled: true, priority: 6 }
-    ],
-    creative: [
-      { name: 'creative_synthesis', description: 'Generate creative connections', enabled: true, priority: 9 },
-      { name: 'analogical_reasoning', description: 'Use analogies and metaphors', enabled: true, priority: 8 },
-      { name: 'divergent_thinking', description: 'Explore multiple perspectives', enabled: true, priority: 7 }
-    ],
-    analytical: [
-      { name: 'data_analysis', description: 'Analyze patterns and trends', enabled: true, priority: 9 },
-      { name: 'statistical_reasoning', description: 'Apply statistical thinking', enabled: true, priority: 8 },
-      { name: 'causal_inference', description: 'Identify cause-effect relationships', enabled: true, priority: 7 }
-    ],
-    generalist: []
-  };
-
-  return [...baseCapabilities, ...(specializationCapabilities[specialization as keyof typeof specializationCapabilities] || [])];
-}
 
 /**
- * Parse Chain of Thought response
+ * Parse Chain of Thought response with resilient extraction
  */
 function parseChainOfThoughtResponse(response: string): {
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 } {
-  
-  // Extract reasoning steps
+  // Extract reasoning steps — try structured format first, fall back to section extraction
   const steps: TypeReasoningStep[] = [];
   const stepMatches = response.match(/Step \d+ - (\w+): \[(.*?)\]/g) || [];
-  
-  stepMatches.forEach((match, index) => {
-    const typeMatch = match.match(/Step \d+ - (\w+):/);
-    const contentMatch = match.match(/\[(.*?)\]/);
-    
-    if (typeMatch && contentMatch) {
-      steps.push({
-        id: `step-${index + 1}`,
-        type: typeMatch[1].toLowerCase() as 'observation' | 'inference' | 'deduction' | 'hypothesis' | 'validation',
-        content: contentMatch[1],
-        evidence: [],
-        confidence: 0.8,
-        dependencies: index > 0 ? [`step-${index}`] : []
-      });
-    }
-  });
 
-  // Extract decisions
+  if (stepMatches.length > 0) {
+    // Structured format matched
+    stepMatches.forEach((match, index) => {
+      const typeMatch = match.match(/Step \d+ - (\w+):/);
+      const contentMatch = match.match(/\[(.*?)\]/);
+
+      if (typeMatch && contentMatch) {
+        steps.push({
+          id: `step-${index + 1}`,
+          type: typeMatch[1].toLowerCase() as
+            | "observation"
+            | "inference"
+            | "deduction"
+            | "hypothesis"
+            | "validation",
+          content: contentMatch[1],
+          evidence: [],
+          confidence: 0.85,
+          dependencies: index > 0 ? [`step-${index}`] : [],
+        });
+      }
+    });
+  } else {
+    // Fallback: extract content between known section headers
+    const sections = response.split(
+      /(?=REASONING|STEP|OBSERVATION|ANALYSIS|INFERENCE|SYNTHESIS|VALIDATION)/i,
+    );
+    sections.forEach((section, index) => {
+      const trimmed = section.trim();
+      if (trimmed.length > 20) {
+        // Skip tiny fragments
+        const headerMatch = trimmed.match(/^(\w+[\w\s]*?)[:]\s*([\s\S]*)/);
+        steps.push({
+          id: `step-${index + 1}`,
+          type: "inference",
+          content: headerMatch
+            ? headerMatch[2].trim().substring(0, 500)
+            : trimmed.substring(0, 500),
+          evidence: [],
+          confidence: 0.7, // Lower confidence for fallback parsing
+          dependencies: index > 0 ? [`step-${index}`] : [],
+        });
+      }
+    });
+  }
+
+  // Extract decisions — try structured, then fallback
   const decisions: TypeAgentDecision[] = [];
   const decisionMatches = response.match(/Decision \d+: \[(.*?)\]/g) || [];
-  
-  decisionMatches.forEach((match) => {
-    const contentMatch = match.match(/\[(.*?)\]/);
-    if (contentMatch) {
-      decisions.push({
-        action: 'analyze',
-        reasoning: contentMatch[1],
-        confidence: 0.8,
-        nextSteps: []
-      });
+
+  if (decisionMatches.length > 0) {
+    decisionMatches.forEach((match) => {
+      const contentMatch = match.match(/\[(.*?)\]/);
+      if (contentMatch) {
+        decisions.push({
+          action: "analyze",
+          reasoning: contentMatch[1],
+          confidence: 0.85,
+          nextSteps: [],
+        });
+      }
+    });
+  } else {
+    // Single fallback decision when structured parsing fails
+    decisions.push({
+      action: "analyze",
+      reasoning: "Chain of thought reasoning applied (unstructured)",
+      confidence: 0.7,
+      nextSteps: [],
+    });
+  }
+
+  // Extract final response — try multiple markers, fall back to full response
+  let finalResponse = response;
+  const finalResponsePatterns = [
+    /FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE ASSESSMENT:|CONFIDENCE:|$)/i,
+    /RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE|$)/i,
+    /CONCLUSION:\s*([\s\S]*?)$/i,
+  ];
+
+  for (const pattern of finalResponsePatterns) {
+    const match = response.match(pattern);
+    if (match && match[1].trim().length > 20) {
+      finalResponse = match[1].trim();
+      break;
     }
-  });
+  }
 
-  // Extract final response
-  const finalResponseMatch = response.match(/FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE ASSESSMENT:|$)/);
-  const finalResponse = finalResponseMatch ? finalResponseMatch[1].trim() : response;
+  // Extract confidence — try to parse from response, derive from parsing success otherwise
+  const confidenceMatch = response.match(
+    /(?:Overall )?[Cc]onfidence:?\s*([\d.]+)/,
+  );
+  const parsedConfidence = confidenceMatch
+    ? parseFloat(confidenceMatch[1])
+    : null;
+  const derivedConfidence = parsedConfidence ?? (steps.length > 0 ? 0.8 : 0.65);
 
-  // Extract confidence
-  const confidenceMatch = response.match(/Overall confidence: ([\d.]+)/);
-  const confidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : 0.7;
+  // Extract alternative viewpoints
+  let alternativeViewpoints: string[] = [];
+  const viewpointsMatch = response.match(
+    /(?:Alternative viewpoints|ALTERNATIVE VIEWPOINTS)[:\s]*([\s\S]*?)(?:$)/i,
+  );
+  if (viewpointsMatch) {
+    alternativeViewpoints = viewpointsMatch[1]
+      .split("\n")
+      .map((line) => line.replace(/^[-*•]\s+/, "").trim())
+      .filter((line) => line.length > 5);
+  }
 
   const reasoningChain: TypeReasoningChain = {
     steps,
     finalConclusion: finalResponse,
-    confidenceScore: confidence,
-    alternativeViewpoints: []
+    confidenceScore: derivedConfidence,
+    alternativeViewpoints,
   };
 
   return { decisions, reasoningChain, finalResponse };
@@ -412,45 +451,103 @@ function parseTreeOfThoughtResponse(response: string): {
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 } {
-  
   // Extract final response
-  const finalResponseMatch = response.match(/FINAL RESPONSE:\s*([\s\S]*?)$/);
-  const finalResponse = finalResponseMatch ? finalResponseMatch[1].trim() : response;
+  const finalResponsePatterns = [
+    /FINAL RESPONSE:\s*([\s\S]*?)$/i,
+    /SYNTHESIS:\s*([\s\S]*?)$/i,
+  ];
+  let finalResponse = response;
+  for (const pattern of finalResponsePatterns) {
+    const m = response.match(pattern);
+    if (m && m[1].trim().length > 20) {
+      finalResponse = m[1].trim();
+      break;
+    }
+  }
 
-  // Create reasoning steps from paths
+  // Extract the selected best path and its reasoning
+  const bestPathMatch = response.match(
+    /(?:Best path|BEST PATH)[:\s]+([\s\S]*?)(?=Why:|WHY:|\n\n|$)/i,
+  );
+  const whyMatch = response.match(
+    /(?:Why|WHY)[:\s]+([\s\S]*?)(?=Synthesis:|SYNTHESIS:|\n\n|$)/i,
+  );
+  const synthesisMatch = response.match(
+    /(?:Synthesis|SYNTHESIS)[:\s]+([\s\S]*?)(?=FINAL|$)/i,
+  );
+
+  const pathDescription = bestPathMatch
+    ? bestPathMatch[1].trim()
+    : "Multiple paths evaluated";
+  const whyDescription = whyMatch
+    ? whyMatch[1].trim().substring(0, 300)
+    : "Best path selected by reasoning quality";
+  const synthesisContent = synthesisMatch
+    ? synthesisMatch[1].trim().substring(0, 300)
+    : "Insights synthesized across paths";
+
+  // Extract per-path confidence values if present, derive overall
+  const pathConfidences = [
+    ...response.matchAll(/(?:Confidence|CONFIDENCE)[:\s]+([\d.]+)/gi),
+  ]
+    .map((m) => parseFloat(m[1]))
+    .filter((n) => !isNaN(n) && n >= 0 && n <= 1);
+  const overallConfidence =
+    pathConfidences.length > 0
+      ? pathConfidences.reduce((s, n) => s + n, 0) / pathConfidences.length
+      : finalResponse !== response
+        ? 0.8
+        : 0.65; // derived from parse success
+
   const steps: TypeReasoningStep[] = [
     {
-      id: 'path-exploration',
-      type: 'hypothesis',
-      content: 'Explored multiple reasoning paths',
-      evidence: ['analytical', 'creative', 'conservative'],
-      confidence: 0.8,
-      dependencies: []
+      id: "path-exploration",
+      type: "hypothesis",
+      content: `Explored 3 reasoning paths. Selected: ${pathDescription}`,
+      evidence: [
+        "analytical approach",
+        "creative approach",
+        "conservative approach",
+      ],
+      confidence: overallConfidence,
+      dependencies: [],
     },
     {
-      id: 'path-evaluation',
-      type: 'validation',
-      content: 'Evaluated and selected best reasoning path',
+      id: "path-evaluation",
+      type: "validation",
+      content: whyDescription,
       evidence: [],
-      confidence: 0.8,
-      dependencies: ['path-exploration']
-    }
+      confidence: overallConfidence,
+      dependencies: ["path-exploration"],
+    },
+    {
+      id: "synthesis",
+      type: "inference",
+      content: synthesisContent,
+      evidence: [],
+      confidence: overallConfidence,
+      dependencies: ["path-evaluation"],
+    },
   ];
 
   const decisions: TypeAgentDecision[] = [
     {
-      action: 'analyze',
-      reasoning: 'Used tree of thought to explore multiple reasoning paths',
-      confidence: 0.8,
-      nextSteps: ['synthesize_insights']
-    }
+      action: "analyze",
+      reasoning: whyDescription,
+      confidence: overallConfidence,
+      nextSteps: ["synthesize_insights"],
+    },
   ];
 
   const reasoningChain: TypeReasoningChain = {
     steps,
     finalConclusion: finalResponse,
-    confidenceScore: 0.8,
-    alternativeViewpoints: ['analytical approach', 'creative approach', 'conservative approach']
+    confidenceScore: overallConfidence,
+    alternativeViewpoints: [
+      "analytical approach",
+      "creative approach",
+      "conservative approach",
+    ],
   };
 
   return { decisions, reasoningChain, finalResponse };
@@ -464,49 +561,102 @@ function parseReActResponse(response: string): {
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 } {
-  
-  // Extract final response
-  const finalResponseMatch = response.match(/RESPONSE:\s*([\s\S]*?)$/);
-  const finalResponse = finalResponseMatch ? finalResponseMatch[1].trim() : response;
+  // Extract final response — look for RESPONSE: or CONCLUSION: markers
+  let finalResponse = response;
+  const finalPatterns = [
+    /RESPONSE:\s*([\s\S]*?)$/i,
+    /CONCLUSION:\s*([\s\S]*?)$/i,
+  ];
+  for (const pattern of finalPatterns) {
+    const m = response.match(pattern);
+    if (m && m[1].trim().length > 20) {
+      finalResponse = m[1].trim();
+      break;
+    }
+  }
 
-  // Extract thoughts and actions
-  const thoughts = response.match(/THOUGHT \d+: \[(.*?)\]/g) || [];
-  const actions = response.match(/ACTION \d+: \[(.*?)\]/g) || [];
+  // Extract thoughts — support both bracketed and unbracketed format
+  const thoughtMatches = [
+    ...response.matchAll(/THOUGHT \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
+  ];
+  const actionMatches = [
+    ...response.matchAll(/ACTION \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
+  ];
+  const observationMatches = [
+    ...response.matchAll(/OBSERVATION \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
+  ];
+
+  // Derive confidence from how much structured content was successfully extracted
+  const structuredCount =
+    thoughtMatches.length + actionMatches.length + observationMatches.length;
+  const derivedConfidence =
+    structuredCount >= 6
+      ? 0.9
+      : structuredCount >= 3
+        ? 0.8
+        : finalResponse !== response
+          ? 0.7
+          : 0.6;
 
   const steps: TypeReasoningStep[] = [];
   const decisions: TypeAgentDecision[] = [];
 
-  thoughts.forEach((thought, index) => {
-    const contentMatch = thought.match(/\[(.*?)\]/);
-    if (contentMatch) {
+  thoughtMatches.forEach((match, index) => {
+    const content = (match[1] || match[2] || "").trim();
+    if (content) {
       steps.push({
         id: `thought-${index + 1}`,
-        type: 'inference',
-        content: contentMatch[1],
+        type: "inference",
+        content,
         evidence: [],
-        confidence: 0.8,
-        dependencies: index > 0 ? [`thought-${index}`] : []
+        confidence: derivedConfidence,
+        dependencies: index > 0 ? [`thought-${index}`] : [],
       });
     }
   });
 
-  actions.forEach((action) => {
-    const contentMatch = action.match(/\[(.*?)\]/);
-    if (contentMatch) {
-      decisions.push({
-        action: 'analyze',
-        reasoning: contentMatch[1],
-        confidence: 0.8,
-        nextSteps: []
+  // Add observation steps interleaved
+  observationMatches.forEach((match, index) => {
+    const content = (match[1] || match[2] || "").trim();
+    if (content) {
+      steps.push({
+        id: `observation-${index + 1}`,
+        type: "observation",
+        content,
+        evidence: [],
+        confidence: derivedConfidence,
+        dependencies: [`thought-${index + 1}`],
       });
     }
   });
+
+  actionMatches.forEach((match) => {
+    const content = (match[1] || match[2] || "").trim();
+    if (content) {
+      decisions.push({
+        action: "analyze",
+        reasoning: content,
+        confidence: derivedConfidence,
+        nextSteps: [],
+      });
+    }
+  });
+
+  // Fallback decision when no structured actions found
+  if (decisions.length === 0) {
+    decisions.push({
+      action: "analyze",
+      reasoning: "ReAct reasoning applied (unstructured format)",
+      confidence: derivedConfidence,
+      nextSteps: [],
+    });
+  }
 
   const reasoningChain: TypeReasoningChain = {
     steps,
     finalConclusion: finalResponse,
-    confidenceScore: 0.8,
-    alternativeViewpoints: []
+    confidenceScore: derivedConfidence,
+    alternativeViewpoints: [],
   };
 
   return { decisions, reasoningChain, finalResponse };
@@ -520,56 +670,108 @@ function parseReflexionResponse(response: string): {
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 } {
-  
   // Extract final response
-  const finalResponseMatch = response.match(/FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE:|$)/);
-  const finalResponse = finalResponseMatch ? finalResponseMatch[1].trim() : response;
+  const finalResponseMatch = response.match(
+    /FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE:|$)/i,
+  );
+  const finalResponse = finalResponseMatch
+    ? finalResponseMatch[1].trim()
+    : response;
+
+  // Extract initial response
+  const initialMatch = response.match(
+    /INITIAL RESPONSE:\s*([\s\S]*?)(?=SELF-REFLECTION:|$)/i,
+  );
+  const initialContent = initialMatch
+    ? initialMatch[1].trim().substring(0, 400)
+    : "Generated initial response";
 
   // Extract self-reflection insights
-  const reflectionMatch = response.match(/SELF-REFLECTION:\s*([\s\S]*?)(?=IDENTIFIED ISSUES:|$)/);
-  const reflection = reflectionMatch ? reflectionMatch[1].trim() : '';
+  const reflectionMatch = response.match(
+    /SELF-REFLECTION:\s*([\s\S]*?)(?=IDENTIFIED ISSUES:|IMPROVED|$)/i,
+  );
+  const reflection = reflectionMatch
+    ? reflectionMatch[1].trim().substring(0, 500)
+    : "";
+
+  // Extract identified issues
+  const issuesMatch = response.match(
+    /IDENTIFIED ISSUES:\s*([\s\S]*?)(?=IMPROVED REASONING:|FINAL|$)/i,
+  );
+  const issues = issuesMatch ? issuesMatch[1].trim().substring(0, 400) : "";
+
+  // Extract improved reasoning
+  const improvedMatch = response.match(
+    /IMPROVED REASONING:\s*([\s\S]*?)(?=FINAL RESPONSE:|$)/i,
+  );
+  const improved = improvedMatch
+    ? improvedMatch[1].trim().substring(0, 400)
+    : "Improved response based on self-reflection";
+
+  // Extract confidence from LLM output
+  const confidenceMatch = response.match(/CONFIDENCE[:\s]+([\d.]+)/i);
+  const parsedConfidence = confidenceMatch
+    ? parseFloat(confidenceMatch[1])
+    : null;
+
+  // Derive confidence from parse success if not explicitly stated
+  const hasStructuredContent = !!(
+    initialMatch &&
+    reflectionMatch &&
+    finalResponseMatch
+  );
+  const derivedConfidence =
+    parsedConfidence ??
+    (hasStructuredContent ? 0.88 : finalResponse !== response ? 0.75 : 0.6);
 
   const steps: TypeReasoningStep[] = [
     {
-      id: 'initial-response',
-      type: 'hypothesis',
-      content: 'Generated initial response',
+      id: "initial-response",
+      type: "hypothesis",
+      content: initialContent,
       evidence: [],
-      confidence: 0.6,
-      dependencies: []
+      confidence: Math.max(derivedConfidence - 0.2, 0.4), // initial is less confident than final
+      dependencies: [],
     },
     {
-      id: 'self-reflection',
-      type: 'validation',
-      content: reflection,
-      evidence: [],
-      confidence: 0.8,
-      dependencies: ['initial-response']
+      id: "self-reflection",
+      type: "validation",
+      content:
+        reflection ||
+        "Self-reflection applied to identify gaps and assumptions",
+      evidence: issues ? [issues] : [],
+      confidence: derivedConfidence - 0.05,
+      dependencies: ["initial-response"],
     },
     {
-      id: 'improvement',
-      type: 'inference',
-      content: 'Improved response based on reflection',
+      id: "improvement",
+      type: "inference",
+      content: improved,
       evidence: [],
-      confidence: 0.9,
-      dependencies: ['self-reflection']
-    }
+      confidence: derivedConfidence,
+      dependencies: ["self-reflection"],
+    },
   ];
 
   const decisions: TypeAgentDecision[] = [
     {
-      action: 'analyze',
-      reasoning: 'Used reflexion to improve initial response',
-      confidence: 0.9,
-      nextSteps: ['self_validate']
-    }
+      action: "analyze",
+      reasoning: reflection
+        ? `Self-reflection identified: ${reflection.substring(0, 200)}`
+        : "Reflexion reasoning applied to improve initial response",
+      confidence: derivedConfidence,
+      nextSteps: ["self_validate"],
+    },
   ];
 
   const reasoningChain: TypeReasoningChain = {
     steps,
     finalConclusion: finalResponse,
-    confidenceScore: 0.9,
-    alternativeViewpoints: ['initial approach', 'reflected approach']
+    confidenceScore: derivedConfidence,
+    alternativeViewpoints: [
+      "initial approach",
+      "reflected and improved approach",
+    ],
   };
 
   return { decisions, reasoningChain, finalResponse };
@@ -583,37 +785,38 @@ function createFallbackReasoning(): {
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 } {
-  
   const steps: TypeReasoningStep[] = [
     {
-      id: 'fallback-analysis',
-      type: 'observation',
-      content: 'Applied fallback reasoning due to system limitations',
+      id: "fallback-analysis",
+      type: "observation",
+      content: "Applied fallback reasoning due to system limitations",
       evidence: [],
       confidence: 0.5,
-      dependencies: []
-    }
+      dependencies: [],
+    },
   ];
 
   const decisions: TypeAgentDecision[] = [
     {
-      action: 'clarify',
-      reasoning: 'Using fallback approach due to advanced reasoning failure',
+      action: "clarify",
+      reasoning: "Using fallback approach due to advanced reasoning failure",
       confidence: 0.5,
-      nextSteps: ['request_clarification']
-    }
+      nextSteps: ["request_clarification"],
+    },
   ];
 
   const reasoningChain: TypeReasoningChain = {
     steps,
-    finalConclusion: 'I encountered some difficulties with advanced reasoning. Please rephrase your question for better assistance.',
+    finalConclusion:
+      "I encountered some difficulties with advanced reasoning. Please rephrase your question for better assistance.",
     confidenceScore: 0.5,
-    alternativeViewpoints: []
+    alternativeViewpoints: [],
   };
 
   return {
     decisions,
     reasoningChain,
-    finalResponse: 'I apologize, but I encountered some difficulties processing your request with advanced reasoning. Could you please rephrase your question or provide more context?'
+    finalResponse:
+      "I apologize, but I encountered some difficulties processing your request with advanced reasoning. Could you please rephrase your question or provide more context?",
   };
 }
