@@ -8,25 +8,7 @@ import { useFiles } from "./useFiles";
 import { getSettingsStats } from "@/app/(dashboard)/settings/actions";
 import { MessageSquare, FileText } from "lucide-react";
 import { QUERY_KEYS } from "@/config/constants";
-
-export interface SettingsStats {
-    totalChats: number;
-    totalFiles: number;
-    estimatedMessages: number;
-    recentChats: number;
-    recentFiles: number;
-    fileTypes: Record<string, number>;
-    accountAge: number;
-    mostActiveDay: string;
-}
-
-export interface ActivityItem {
-    id: string;
-    type: "chat" | "file";
-    title: string;
-    timestamp: string;
-    icon: typeof MessageSquare | typeof FileText;
-}
+import { TypeSettingsStats, TypeActivityItem } from "@/types/settings";
 
 export function useSettings() {
     const { user, avatarUrl, isLoading: userLoading } = useUser();
@@ -35,12 +17,12 @@ export function useSettings() {
     const { data: serverStats, isLoading: serverStatsLoading } = useQuery({
         queryKey: [...QUERY_KEYS.USER, "settings-stats"],
         queryFn: getSettingsStats,
-        enabled: !!user?.id,
+        enabled: !!user?.id && !userLoading,
     });
 
     const isLoading = userLoading || chatsLoading || filesLoading || serverStatsLoading;
 
-    const stats = useMemo((): SettingsStats | null => {
+    const stats = useMemo((): TypeSettingsStats | null => {
         if (chatsLoading || filesLoading) return null;
 
         const totalChats = chats.length;
@@ -86,10 +68,10 @@ export function useSettings() {
         };
     }, [chats, files, chatsLoading, filesLoading, user, serverStats]);
 
-    const recentActivity = useMemo((): ActivityItem[] => {
+    const recentActivity = useMemo((): TypeActivityItem[] => {
         if (chatsLoading || filesLoading) return [];
 
-        const activities: ActivityItem[] = [
+        const activities: TypeActivityItem[] = [
             ...chats.slice(0, 3).map((chat) => ({
                 id: chat.id,
                 type: "chat" as const,

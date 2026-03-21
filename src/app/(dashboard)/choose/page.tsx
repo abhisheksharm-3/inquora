@@ -8,6 +8,7 @@ import {
 import UploadModal from "@/components/upload/UploadModal";
 import { Metadata } from "next";
 import { FileTypes } from "@/constants/file-types";
+import { ChevronDown } from "lucide-react";
 
 /**
  * @description SEO metadata for the new chat/dashboard page.
@@ -38,7 +39,6 @@ const ChoosePage = () => {
           our intelligent AI.
         </p>
 
-        {/* Compact Status Bar with Popover */}
         <div className="mx-auto mt-6 max-w-2xl">
           <div className="flex items-center justify-center gap-4 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 px-6 py-3 shadow-sm">
             <div className="flex items-center gap-2">
@@ -54,19 +54,7 @@ const ChoosePage = () => {
                 <button className="flex items-center gap-2 cursor-pointer text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">
                   <div className="h-2 w-2 bg-amber-500 rounded-full animate-pulse"></div>
                   <span>Important notices</span>
-                  <svg
-                    className="h-3 w-3 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <ChevronDown className="h-3 w-3 transition-transform" />
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-96 p-0" align="center">
@@ -167,7 +155,6 @@ const ChoosePage = () => {
         </div>
       </div>
 
-      {/* Main File Upload Grid */}
       <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:max-w-4xl lg:gap-6">
         {FileTypes.map((fileType) => {
           const IconComponent = fileType.icon;

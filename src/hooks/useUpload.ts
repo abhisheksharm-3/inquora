@@ -24,7 +24,6 @@ import { useUploadErrorHandler } from "./useUploadErrorHandler";
 import { useUploadValidation } from "./useUploadValidation";
 import { EnumUploadActionType } from "@/types/upload";
 
-// --- Constants ---
 const MAX_CHAT_CREATION_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
 const NAVIGATION_DELAY_MS = 1000;
@@ -44,7 +43,6 @@ export const useUploadLogic = ({
   const [state, dispatch] = useReducer(uploadReducer, initialUploadState);
   const { url, selectedFile, isRetrying } = state;
 
-  // --- Hooks ---
   const router = useRouter();
   const { uploadFileAsync, isUploading, updateFileAsync } = useFiles();
   const { startChatWithFileAsync } = useChats();
@@ -54,8 +52,6 @@ export const useUploadLogic = ({
     createUploadError,
   });
   const documentProcessor = useDocumentProcessor();
-
-  // --- Core Logic ---
 
   const _uploadFile = useCallback(
     async (file: File): Promise<TypeFile | null> => {
@@ -80,7 +76,6 @@ export const useUploadLogic = ({
       dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "uploading" });
       const urlType = getUrlType(urlToUpload, fileType);
 
-      // Extract a meaningful filename based on URL type
       let urlFileName: string;
       if (urlType === "github") {
         urlFileName = await _extractGitHubFilename(urlToUpload);
@@ -102,7 +97,6 @@ export const useUploadLogic = ({
         fileData: { url: urlToUpload },
       });
 
-      // Update the file object with the URL for processing
       const updatedFile = { ...uploadedFile, url: urlToUpload };
       return updatedFile;
     },
@@ -157,7 +151,7 @@ export const useUploadLogic = ({
           }
           await new Promise((resolve) =>
             setTimeout(resolve, RETRY_DELAY_MS * 2 ** i),
-          ); // Exponential backoff
+          );
         }
       }
       throw createUploadError(
@@ -169,8 +163,6 @@ export const useUploadLogic = ({
     },
     [startChatWithFileAsync, createUploadError],
   );
-
-  // --- UI Handlers ---
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,7 +213,6 @@ export const useUploadLogic = ({
     try {
       let uploadedFile: TypeFile | null = null;
 
-      // Step 1: Upload the file or URL
       if (selectedFile) {
         uploadedFile = await _uploadFile(selectedFile);
       } else if (url) {
@@ -246,16 +237,11 @@ export const useUploadLogic = ({
         );
       }
 
-      // Step 2: Process the document immediately
       await _processDocument(uploadedFile);
-
-      // Step 3: Create chat only after processing is complete
       const newChat = await _createChatWithRetry(uploadedFile.id);
 
       dispatch({ type: EnumUploadActionType.SET_STATUS, payload: "uploaded" });
       onClose();
-
-      // Navigate to chat immediately since processing is complete
       setTimeout(() => router.push(`/chat/${newChat.id}`), NAVIGATION_DELAY_MS);
     } catch (err) {
       setUploadError(err);
@@ -288,19 +274,14 @@ export const useUploadLogic = ({
   );
 
   return {
-    // State and derived values
     ...state,
     fileTypeConfig: getFileTypeConfig(fileType),
     isUploading,
     isRetrying,
     canRetry: state.error?.retryable ?? false,
-
-    // Document processing state
     isProcessing: documentProcessor.isProcessing,
     processingProgress: documentProcessor.progress,
     processingError: documentProcessor.error,
-
-    // UI event handlers
     handleFileChange,
     handleUrlChange,
     handleRemoveFile,

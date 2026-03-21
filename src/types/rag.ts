@@ -373,7 +373,7 @@ export interface TypeRAGRequest {
 }
 
 export interface TypeRAGResponse {
-  response: string;
+  systemPrompt: string;
   analysis: TypeQueryAnalysis;
   retrievedSources: TypeRetrievalResult[];
   contextInfo: {

@@ -182,10 +182,7 @@ export function useFileById(fileId: string) {
     [supabase]
   );
 
-  const isValidFileId = useMemo(
-    () => !!fileId && typeof fileId === "string" && fileId.trim() !== "",
-    [fileId],
-  );
+  const isValidFileId = !!fileId?.trim();
 
   return useQuery({
     queryKey: [...QUERY_KEYS.FILES, fileId],

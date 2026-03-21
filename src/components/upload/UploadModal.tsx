@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, CircleAlert, Lock, Clock, Upload, Link } from "lucide-react";
+import { X, CircleAlert, Lock, Clock, Upload, Link, Check } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { useUploadLogic } from "@/hooks/useUpload";
 import { getFileTypeConfig } from "@/constants/file-types";
 import { useUser } from "@/hooks/useUser";
@@ -56,7 +57,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     url,
     error,
     selectedFile,
-    isProcessing,
     processingProgress,
     processingError,
     handleFileChange,
@@ -76,19 +76,13 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
 
   const handleClose = () => {
     setOpen(false);
-    // Reset state when closing the modal to ensure a clean slate next time
-    if (resetState) {
-      resetState();
-    }
+    resetState();
   };
 
   const handleDismissError = () => {
-    if (resetState) {
-      resetState();
-    }
+    resetState();
   };
 
-  // Authentication guard
   if (!isAuthenticated) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
@@ -115,7 +109,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     );
   }
 
-  // Coming soon guard
   if (isComingSoon) {
     return (
       <Dialog open={open} onOpenChange={setOpen}>
@@ -143,7 +136,9 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     );
   }
 
-  // Main upload modal
+  const isActivePhase =
+    uploadStatus === "uploading" || uploadStatus === "processing";
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -175,10 +170,8 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
         </DialogHeader>
 
         <div className="px-6 py-6 overflow-y-auto flex-1">
-          {/* Show tabs only in idle state, otherwise show status screens */}
           {uploadStatus === "idle" ? (
             <Tabs defaultValue={isUrlOnly ? "url" : "file"} className="w-full">
-              {/* Only show tabs if not URL-only */}
               {!isUrlOnly && (
                 <TabsList className="grid w-full grid-cols-2 mb-4">
                   <TabsTrigger value="file" className="gap-2">
@@ -192,7 +185,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                 </TabsList>
               )}
 
-              {/* File Upload Tab */}
               {!isUrlOnly && (
                 <TabsContent value="file" className="space-y-4 mt-0">
                   <UploadModalArea
@@ -201,7 +193,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                     handleFileChange={handleFileChange}
                     handleRemoveFile={handleRemoveFile}
                   />
-                  {/* File type specific status message */}
                   {fileTypeConfig.statusMessage && (
                     <Alert
                       className={
@@ -231,7 +222,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                 </TabsContent>
               )}
 
-              {/* URL Import Tab */}
               <TabsContent value="url" className="space-y-4 mt-0">
                 <UploadModalUrlInput
                   url={url}
@@ -243,7 +233,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                   isUploading={isUploading}
                 />
 
-                {/* Access warning alert */}
                 <Alert className="border-primary/20 bg-primary/5">
                   <CircleAlert className="h-4 w-4 text-primary" />
                   <AlertDescription className="text-sm font-medium text-primary">
@@ -251,7 +240,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                   </AlertDescription>
                 </Alert>
 
-                {/* File type specific status message */}
                 {fileTypeConfig.statusMessage && (
                   <Alert
                     className={
@@ -281,12 +269,85 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               </TabsContent>
             </Tabs>
           ) : (
-            /* Status screens when not in idle state */
-            <div className="space-y-4">
-              {/* Upload progress */}
-              {uploadStatus === "uploading" && <UploadModalProgress />}
+            <div className="space-y-6">
+              {isActivePhase && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                        uploadStatus === "uploading"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-emerald-500 text-white",
+                      )}
+                    >
+                      {uploadStatus === "uploading" ? (
+                        "1"
+                      ) : (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </div>
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        uploadStatus !== "uploading" &&
+                          "text-muted-foreground",
+                      )}
+                    >
+                      Upload
+                    </span>
+                  </div>
 
-              {/* Document processing progress */}
+                  <div
+                    className={cn(
+                      "flex-1 h-px transition-colors",
+                      uploadStatus === "processing"
+                        ? "bg-emerald-500"
+                        : "bg-muted",
+                    )}
+                  />
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors",
+                        uploadStatus === "processing"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      2
+                    </div>
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        uploadStatus !== "processing" &&
+                          "text-muted-foreground",
+                      )}
+                    >
+                      Process
+                    </span>
+                  </div>
+
+                  <div className="flex-1 h-px bg-muted" />
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-muted text-muted-foreground">
+                      3
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Ready
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {uploadStatus === "uploading" && (
+                <UploadModalProgress
+                  fileName={fileName || selectedFile?.name}
+                />
+              )}
+
               {uploadStatus === "processing" && (
                 <DocumentProcessingProgress
                   fileName={fileName || selectedFile?.name || "Document"}
@@ -299,7 +360,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                 />
               )}
 
-              {/* Upload success */}
               {uploadStatus === "uploaded" && (
                 <UploadModalSuccess
                   fileName={fileName}
@@ -307,7 +367,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                 />
               )}
 
-              {/* Upload error */}
               {uploadStatus === "error" && (
                 <UploadModalError
                   error={error}
@@ -319,7 +378,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
           )}
         </div>
 
-        {/* Hide footer during active processing to reduce clutter */}
         {uploadStatus === "idle" && (
           <DialogFooter className="border-t border-border/50 bg-muted/30 px-6 py-4 gap-3">
             <Button
@@ -339,7 +397,6 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
           </DialogFooter>
         )}
 
-        {/* Show simplified footer with only close option during/after processing */}
         {(uploadStatus === "uploaded" || uploadStatus === "error") && (
           <DialogFooter className="border-t border-border/50 bg-muted/30 px-6 py-4">
             <Button onClick={handleClose} className="cursor-pointer">

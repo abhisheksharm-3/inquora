@@ -12,8 +12,8 @@ import { createYoutubeSystemPrompt } from "../youtube-utils";
 import { createAgenticRagPrompt } from "../rag/prompt-engineering";
 import { TypeGeminiImageData } from "@/types/content";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { manageMemory, memoryToolDefinition, MemoryAction } from "./memory-tool";
-import { GeminiUserContext, GeminiMessage } from "@/types/gemini";
+import { manageMemory, memoryToolDefinition, TypeMemoryAction } from "./memory-tool";
+import { TypeGeminiUserContext, TypeGeminiMessage } from "@/types/gemini";
 import { env, isGeminiConfigured as checkGeminiConfigured } from "@/config/env";
 import {
   GEMINI_GENERATION_CONFIG,
@@ -30,7 +30,7 @@ if (env.GEMINI_API_KEY) {
 /**
  * Checks if the Gemini API has been configured with an API key.
  */
-export const isGeminiConfigured = async (): Promise<boolean> => checkGeminiConfigured();
+export const isGeminiConfigured = checkGeminiConfigured;
 
 /**
  * Retrieves the configured Gemini generative model.
@@ -55,18 +55,19 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
  */
 const _getSystemInstruction = async (
   fileContent?: string,
-  context?: GeminiUserContext,
+  context?: TypeGeminiUserContext,
 ): Promise<Content | null> => {
   if (!fileContent || fileContent === "IMAGE_FILE") {
-    return null; // No system prompt needed for images or standard chat
+    return null;
   }
 
   let promptText: string;
 
-  if (fileContent === "YOUTUBE_TRANSCRIPT") {
+  if (context?.isAdvancedRAG) {
+    promptText = fileContent;
+  } else if (fileContent === "YOUTUBE_TRANSCRIPT") {
     promptText = createYoutubeSystemPrompt(fileContent, context);
   } else {
-    // Always use advanced RAG prompt
     promptText = await createAgenticRagPrompt(fileContent, context);
   }
 
@@ -87,10 +88,10 @@ const _getSystemInstruction = async (
  * @returns A promise that resolves to the model's text response.
  */
 export const sendMessageToGemini = async (
-  messages: GeminiMessage[],
+  messages: TypeGeminiMessage[],
   fileContent?: string,
   imageData?: TypeGeminiImageData,
-  context?: GeminiUserContext,
+  context?: TypeGeminiUserContext,
   supabaseClient?: SupabaseClient,
 ): Promise<string> => {
   if (!isGeminiConfigured()) {
@@ -144,7 +145,7 @@ export const sendMessageToGemini = async (
       const functionCalls = response.functionCalls();
 
       if (!functionCalls || functionCalls.length === 0) {
-        break; // No tool called, we are done
+        break;
       }
 
       const functionResponses = await Promise.all(functionCalls.map(async (call) => {
@@ -158,7 +159,7 @@ export const sendMessageToGemini = async (
             };
           }
 
-          const args = call.args as { action: MemoryAction; content: string };
+          const args = call.args as { action: TypeMemoryAction; content: string };
           if (!args || typeof args !== "object") {
             return {
               functionResponse: {

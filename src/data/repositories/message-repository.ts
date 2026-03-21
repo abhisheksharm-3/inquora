@@ -67,6 +67,18 @@ export function createMessageRepository(supabase: SupabaseClient<TypeDatabase>) 
         },
 
         /**
+         * Deletes a single message by ID.
+         */
+        async delete(messageId: string): Promise<void> {
+            const { error } = await supabase
+                .from("messages")
+                .delete()
+                .eq("id", messageId);
+
+            if (error) throw error;
+        },
+
+        /**
          * Deletes all messages for a chat.
          */
         async deleteAllByChatId(chatId: string): Promise<void> {

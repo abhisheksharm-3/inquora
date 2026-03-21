@@ -3,13 +3,9 @@
 import { supabaseServerClient } from "@/data/supabase/server";
 import { createMessageRepository } from "@/data/repositories/message-repository";
 import { createChatRepository } from "@/data/repositories/chat-repository";
+import { TypeSettingsStatsPayload } from "@/types/settings";
 
-export type SettingsStatsPayload = {
-    messageCount: number;
-    mostActiveDay: string;
-};
-
-export async function getSettingsStats(): Promise<SettingsStatsPayload | null> {
+export async function getSettingsStats(): Promise<TypeSettingsStatsPayload | null> {
     const supabase = await supabaseServerClient();
     const {
         data: { user },

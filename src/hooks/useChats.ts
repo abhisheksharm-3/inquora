@@ -4,12 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { TypeChat, TypeChatWithFile } from "@/types/database";
 import { useUser } from "./useUser";
-import { createChat as createChatWithFile } from "@/utils/gemini/actions";
+import { createChat as createChatWithFile } from "@/utils/gemini/chat-actions";
 import { useState, useCallback, useMemo } from "react";
 import { createChatRepository } from "@/data/repositories";
 import { QUERY_KEYS, TIMING_CONSTANTS } from "@/config/constants";
 
-interface UpdateChatParams {
+interface TypeUpdateChatParams {
   chatId: string;
   chatData: Partial<TypeChat>;
 }
@@ -59,7 +59,7 @@ export const useChats = (chatId?: string) => {
   });
 
   const updateChatMutation = useMutation({
-    mutationFn: async ({ chatId: id, chatData }: UpdateChatParams) => {
+    mutationFn: async ({ chatId: id, chatData }: TypeUpdateChatParams) => {
       if (!userId) throw new Error("User not authenticated.");
       return chatRepository.update(id, chatData);
     },

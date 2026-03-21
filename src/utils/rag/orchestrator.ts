@@ -6,13 +6,28 @@ import {
   decomposeQuery,
   generateStepBackQuery,
 } from "./query-analysis";
+
+type TypeAgenticResult = {
+  decisions: TypeAgentDecision[];
+  reasoningChain: TypeReasoningChain;
+  finalResponse: string;
+} | null;
+
+const STOP_WORDS = new Set([
+  "what", "how", "why", "when", "where", "who", "which",
+  "is", "are", "was", "were", "the", "a", "an", "and", "or", "but",
+  "in", "on", "at", "to", "for", "of", "with",
+  "do", "does", "did", "will", "would", "could", "should", "can",
+  "has", "have", "had", "this", "that", "it",
+  "me", "my", "you", "your",
+  "tell", "about", "explain", "please", "give", "show", "find", "some", "more",
+]);
 import { retrieveRelevantDocuments } from "./retrieval-engine";
 import { createSystemPrompt } from "./prompt-engineering";
 import {
   prepareConversationContext,
   analyzeConversation,
 } from "./context-manager";
-import { sendMessageToGemini } from "../gemini/client";
 import {
   TypeRAGRequest,
   TypeRAGResponse,
@@ -120,7 +135,6 @@ export async function processRAGRequest(
       analysis.stepBackQuery = stepBackQuery;
     }
 
-    // PHASE 2: Retrieval — run main query + sub-question retrieval in parallel
     const retrievalOptions = {
       conversationHistory: request.conversationHistory?.map((turn) => ({
         role: turn.userQuery ? "user" : "assistant",
@@ -142,7 +156,6 @@ export async function processRAGRequest(
       stepBackQuery: stepBackQuery ?? undefined,
     };
 
-    // Main retrieval pass (includes step-back search via options)
     const mainRetrievalPromise = retrieveRelevantDocuments(
       analysis,
       request.namespace,
@@ -150,15 +163,14 @@ export async function processRAGRequest(
       config.retrieval,
     );
 
-    // Sub-question retrieval passes (only when decomposed into multiple sub-questions)
     const subQuestionRetrievalPromises =
       subQuestions.length > 1
         ? subQuestions.map((subQ) =>
             retrieveRelevantDocuments(
               { ...analysis, expandedQuery: subQ },
               request.namespace,
-              { ...retrievalOptions, stepBackQuery: undefined }, // No step-back for sub-questions
-              { ...config.retrieval, maxResults: 3 }, // Fewer results per sub-question
+              { ...retrievalOptions, stepBackQuery: undefined },
+              { ...config.retrieval, maxResults: 3 },
             ).catch((error) => {
               console.warn(
                 `Sub-question retrieval failed for "${subQ}":`,
@@ -178,7 +190,6 @@ export async function processRAGRequest(
     const allResults = [...mainResults];
     for (const subResults of subQuestionResults) {
       for (const result of subResults) {
-        // Skip duplicates (by first 100 chars of content)
         const isDuplicate = allResults.some(
           (existing) =>
             existing.document.pageContent.substring(0, 100) ===
@@ -207,10 +218,7 @@ export async function processRAGRequest(
       documentContext: request.documentContext,
     };
 
-    // Dynamically select reasoning framework based on query analysis
     const selectedFramework = selectDynamicReasoningFramework(analysis);
-
-    // PARALLELIZATION: Create system prompt and prepare agent in parallel
     const specializationToUse =
       analysis.suggestedSpecialization || config.agent.agentSpecialization;
 
@@ -236,30 +244,11 @@ export async function processRAGRequest(
             selectedFramework,
           )
         : Promise.resolve(null),
-    ])) as [
-      string,
-      {
-        decisions: TypeAgentDecision[];
-        reasoningChain: TypeReasoningChain;
-        finalResponse: string;
-      } | null,
-    ];
+    ])) as [string, TypeAgenticResult];
 
-    // Build final system prompt — inject agentic reasoning chain as additional context
-    // rather than bypassing sendMessageToGemini (which carries source-adaptive prompting).
     const finalSystemPrompt = agenticResponse
       ? `${systemPrompt}\n\n**AGENTIC PRE-ANALYSIS (use as reasoning scaffold):**\n${agenticResponse.finalResponse}`
       : systemPrompt;
-
-    const response = await sendMessageToGemini(
-      [{ role: "user", content: request.query }],
-      finalSystemPrompt,
-      undefined,
-      {
-        currentDateTime: new Date().toISOString(),
-        userName: request.userContext?.name,
-      },
-    );
 
     const processingTime = Date.now() - startTime;
     const contextWindowUsage = calculateContextWindowUsage(
@@ -269,7 +258,7 @@ export async function processRAGRequest(
     );
 
     return {
-      response,
+      systemPrompt: finalSystemPrompt,
       analysis,
       retrievedSources,
       contextInfo: {
@@ -347,70 +336,14 @@ function determineContinuityType(
   if (history.length === 0) return "new";
   if (history.length === 1) return "initial";
 
-  // Check topic overlap between the last two turns
-  const stopWords = new Set([
-    "what",
-    "how",
-    "why",
-    "when",
-    "where",
-    "who",
-    "which",
-    "is",
-    "are",
-    "was",
-    "were",
-    "the",
-    "a",
-    "an",
-    "and",
-    "or",
-    "but",
-    "in",
-    "on",
-    "at",
-    "to",
-    "for",
-    "of",
-    "with",
-    "do",
-    "does",
-    "did",
-    "will",
-    "would",
-    "could",
-    "should",
-    "can",
-    "has",
-    "have",
-    "had",
-    "this",
-    "that",
-    "it",
-    "me",
-    "my",
-    "you",
-    "your",
-    "tell",
-    "about",
-    "explain",
-    "please",
-    "give",
-    "show",
-    "find",
-    "some",
-    "more",
-  ]);
-
   const extractWords = (text: string): Set<string> => {
     const words = text
       .toLowerCase()
       .split(/\s+/)
-      .filter((w) => w.length > 2 && !stopWords.has(w));
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
     return new Set(words);
   };
 
-  // Compare last two turns for topic continuity
   const lastQuery = history[history.length - 1].userQuery;
   const prevQuery = history[history.length - 2].userQuery;
   const lastWords = extractWords(lastQuery);
@@ -421,11 +354,9 @@ function determineContinuityType(
   const overlap = union > 0 ? intersection / union : 0;
 
   if (overlap > 0.4) {
-    // High word overlap → actively deepening the same topic
     return history.length > 4 ? "deep" : "developing";
   }
 
-  // Low overlap → user shifted to a new topic
   return "shifted";
 }
 
@@ -437,7 +368,6 @@ function calculateContextWindowUsage(
   userQuery: string,
   maxTokens: number = 4000,
 ): number {
-  // More sophisticated token estimation: words * 1.3
   const words = (systemPrompt + userQuery).trim().split(/\s+/).length;
   const estimatedTokens = Math.ceil(words * 1.3);
 
@@ -605,8 +535,7 @@ function createFallbackResponse(
   processingTime: number,
 ): TypeRAGResponse {
   return {
-    response:
-      "I apologize, but I encountered an error while processing your request. Please try rephrasing your question or contact support if the issue persists.",
+    systemPrompt: "",
     analysis: {
       intent: {
         type: "factual",

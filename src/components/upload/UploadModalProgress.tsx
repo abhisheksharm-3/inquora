@@ -1,53 +1,95 @@
-import React from "react";
-import { Loader2, Upload } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+"use client";
 
-/**
- * A presentational component that displays a visual indicator for an ongoing file upload.
- *
- * It features an animated spinner with upload icon and enhanced visual feedback
- * to inform the user that their file is currently being uploaded. This component
- * takes no props and uses shadcn theming for consistent design.
- *
- * @component
- * @returns {JSX.Element} The rendered upload progress indicator.
- */
-const UploadModalProgress: React.FC = () => {
+import React, { useEffect, useState } from "react";
+import { Upload } from "lucide-react";
+
+interface UploadModalProgressProps {
+  fileName?: string;
+}
+
+const SIMULATED_DURATION_MS = 8000;
+const STEPS = 30;
+
+const UploadModalProgress: React.FC<UploadModalProgressProps> = ({
+  fileName,
+}) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const intervalMs = SIMULATED_DURATION_MS / STEPS;
+    const increment = 90 / STEPS;
+    let current = 0;
+
+    const id = setInterval(() => {
+      current = Math.min(current + increment, 90);
+      setProgress(Math.round(current));
+      if (current >= 90) clearInterval(id);
+    }, intervalMs);
+
+    return () => clearInterval(id);
+  }, []);
+
+  const circumference = 2 * Math.PI * 28;
+  const strokeOffset = circumference * (1 - progress / 100);
+
   return (
-    <Card className="border-dashed border-2 border-muted-foreground/25 bg-muted/10 mb-4 transition-all duration-200 hover:border-muted-foreground/40">
-      <CardContent className="p-8 text-center flex flex-col items-center justify-center space-y-4">
-        {/* Enhanced loading indicator with icon combination */}
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-muted-foreground/20 flex items-center justify-center">
-            <Upload className="w-5 h-5 text-muted-foreground/60" />
-          </div>
-          <Loader2 className="w-12 h-12 text-primary animate-spin absolute inset-0" />
+    <div className="flex flex-col items-center gap-6 py-4">
+      <div className="relative w-20 h-20">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <Upload className="h-8 w-8 text-primary" />
         </div>
+        <svg
+          className="absolute inset-0 w-20 h-20 -rotate-90"
+          viewBox="0 0 64 64"
+        >
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
+            fill="none"
+            stroke="currentColor"
+            className="text-muted/40"
+            strokeWidth="3"
+          />
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
+            fill="none"
+            stroke="currentColor"
+            className="text-primary transition-all duration-500"
+            strokeWidth="3"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeOffset}
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
 
-        {/* Progress text with better typography */}
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-foreground">
-            Uploading your file...
+      <div className="text-center space-y-1 w-full">
+        <p className="text-sm font-medium text-foreground">
+          Uploading your file...
+        </p>
+        {fileName && (
+          <p className="text-xs text-muted-foreground truncate px-8">
+            {fileName}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Please wait while we process your upload
-          </p>
-        </div>
+        )}
+      </div>
 
-        {/* Optional animated progress dots */}
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+      <div className="w-full space-y-2">
+        <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
           <div
-            className="w-2 h-2 bg-primary/70 rounded-full animate-pulse"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
-          <div
-            className="w-2 h-2 bg-primary/40 rounded-full animate-pulse"
-            style={{ animationDelay: "0.4s" }}
-          ></div>
+            className="h-2 rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{progress}% uploaded</span>
+          <span>Please wait...</span>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -4,11 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { TypeMessage } from "@/types/database";
 import { useUser } from "./useUser";
-import { sendMessage as sendMessageToGemini } from "@/utils/gemini/actions";
+import { sendMessage as sendMessageToGemini } from "@/utils/gemini/message-actions";
 import { useMemo, useCallback, useTransition, useOptimistic } from "react";
 import { getSessionMetadata } from "@/utils/session-metadata";
 import { createMessageRepository } from "@/data/repositories";
 import { QUERY_KEYS, TIMING_CONSTANTS } from "@/config/constants";
+import { TypeGeminiMessage } from "@/types/gemini";
 
 const createOptimisticMessages = (chatId: string, content: string) => {
   const timestamp = new Date().toISOString();
@@ -43,10 +44,7 @@ export const useMessages = (chatId: string) => {
     [supabase]
   );
 
-  const isValidChatId = useMemo(
-    () => !!chatId && typeof chatId === "string" && chatId.trim() !== "",
-    [chatId],
-  );
+  const isValidChatId = !!chatId?.trim();
 
   const queryKey = useMemo(() => [...QUERY_KEYS.MESSAGES, chatId], [chatId]);
 
@@ -116,7 +114,7 @@ export const useMessages = (chatId: string) => {
           (msg) => !msg.id.startsWith("temp-") && msg.content !== "...",
         );
 
-        const formattedMessages: { role: "user" | "model"; content: string }[] =
+        const formattedMessages: TypeGeminiMessage[] =
           currentMessages.map((msg) => ({
             role: msg.role === "user" ? "user" : "model",
             content: msg.content,
@@ -176,12 +174,7 @@ export const useMessages = (chatId: string) => {
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string): Promise<string> => {
       if (!isValidChatId) throw new Error("No chat ID provided");
-      const { error } = await supabase
-        .from("messages")
-        .delete()
-        .eq("id", messageId)
-        .eq("chat_id", chatId);
-      if (error) throw error;
+      await messageRepository.delete(messageId);
       return messageId;
     },
     onSuccess: (deletedMessageId) => {

@@ -1,6 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-export type MemoryAction = "add" | "delete";
+export type TypeMemoryAction = "add" | "delete";
 
 function escapeIlikePattern(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
@@ -8,7 +8,7 @@ function escapeIlikePattern(value: string): string {
 
 export const manageMemory = async (
     userId: string,
-    action: MemoryAction,
+    action: TypeMemoryAction,
     content: string,
     supabase: SupabaseClient
 ): Promise<string> => {

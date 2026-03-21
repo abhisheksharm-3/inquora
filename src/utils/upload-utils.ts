@@ -26,10 +26,9 @@ export const isValidUrl = (url: string): boolean => {
  * @returns {'youtube' | 'github' | 'web'} The determined type of the URL.
  */
 export const getUrlType = (url: string, fileType: string): string => {
-  // Check for YouTube URLs first
   if (
     fileType === "youtube" ||
-    fileType === "video" || // Handle the case where fileType is "video" from FileTypes config
+    fileType === "video" ||
     url.includes("youtube.com/watch") ||
     url.includes("youtu.be/") ||
     url.includes("youtube.com/embed/") ||
@@ -44,7 +43,6 @@ export const getUrlType = (url: string, fileType: string): string => {
     return "github";
   }
 
-  // All other URLs are treated as web pages for scraping
   return "web";
 };
 
@@ -60,7 +58,7 @@ export const getErrorMessage = (error: unknown): string => {
   const { message } = error;
 
   if (message.includes("NEXT_REDIRECT")) {
-    return ""; // Not actually an error
+    return "";
   }
 
   if (message.includes("new row violates row-level security policy")) {
@@ -135,7 +133,7 @@ export const initialUploadState: TypeUploadState = {
   isRetrying: false,
 };
 
-export type UploadAction =
+export type TypeUploadAction =
   | {
       type: EnumUploadActionType.SET_STATUS;
       payload: TypeUploadState["uploadStatus"];
@@ -150,7 +148,7 @@ export type UploadAction =
 
 export const uploadReducer = (
   state: TypeUploadState,
-  action: UploadAction,
+  action: TypeUploadAction,
 ): TypeUploadState => {
   switch (action.type) {
     case EnumUploadActionType.SET_STATUS:

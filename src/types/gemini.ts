@@ -1,7 +1,7 @@
 import { TypeSessionMetadata } from "@/types/rag";
 import { TypeGeminiImageData } from "./content";
 
-export interface GeminiUserContext {
+export interface TypeGeminiUserContext {
     currentDateTime?: string;
     userName?: string;
     chatId?: string;
@@ -16,15 +16,12 @@ export interface GeminiUserContext {
     userId?: string;
 }
 
-export interface GeminiMessage {
+export interface TypeGeminiMessage {
     role: "user" | "model";
     content: string;
 }
 
-/**
- * Result type for prepareContextForGemini function.
- */
-export interface PrepareContextResultType {
+export interface TypeGeminiContextResult {
     fileContent?: string;
     imageData?: TypeGeminiImageData;
     error?: string;

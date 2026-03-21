@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { getErrorMessage, UploadAction } from "@/utils/upload-utils";
-import { TypeUploadError } from "@/types/upload";
-import { EnumUploadActionType } from "@/types/upload";
+import { getErrorMessage, TypeUploadAction } from "@/utils/upload-utils";
+import { TypeUploadError, EnumUploadActionType } from "@/types/upload";
 
 /** A map of regular expressions to error types for categorizing errors by their message. */
 const errorTypeMap = new Map<RegExp, TypeUploadError["type"]>([
@@ -27,11 +26,11 @@ const errorTypeMap = new Map<RegExp, TypeUploadError["type"]>([
  * It offers memoized utility functions to create, categorize, and dispatch
  * structured error objects to a `useReducer` state manager.
  *
- * @param {React.Dispatch<UploadAction>} dispatch - The dispatch function from a `useReducer` hook that manages the upload state.
+ * @param {React.Dispatch<TypeUploadAction>} dispatch - The dispatch function from a `useReducer` hook that manages the upload state.
  * @returns {UseUploadErrorHandlerReturn} An object containing the error handling utility functions.
  */
 export const useUploadErrorHandler = (
-  dispatch: React.Dispatch<UploadAction>,
+  dispatch: React.Dispatch<TypeUploadAction>,
 ) => {
   /**
    * Creates a structured error object and logs it to the console.

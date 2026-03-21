@@ -9,6 +9,7 @@ import {
   RiGlobalLine,
 } from "@remixicon/react";
 import { TypeFileTypeConfig } from "@/types/upload";
+import { VersionConfig } from "./version-config";
 
 /**
  * An array of configuration objects for each supported file type.
@@ -26,8 +27,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     iconColor: "#DC2626", // Red for PDF
     accept: ".pdf,application/pdf",
     maxSize: 10 * 1024 * 1024, // 10MB
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -38,8 +38,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     maxSize: 10 * 1024 * 1024, // 10MB
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -49,8 +48,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     iconColor: "#16A34A", // Green for images
     accept: ".jpg,.jpeg,.png,image/jpeg,image/png",
     maxSize: 5 * 1024 * 1024, // 5MB
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -61,8 +59,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     maxSize: 10 * 1024 * 1024, // 10MB
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -73,8 +70,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept:
       ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation",
     maxSize: 10 * 1024 * 1024, // 10MB
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -85,8 +81,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -97,8 +92,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
   {
@@ -109,8 +103,7 @@ export const FileTypes: TypeFileTypeConfig[] = [
     accept: "",
     maxSize: 0,
     urlOnly: true,
-    statusMessage:
-      "Chats created before January 14, 2026 are view-only and won't support new messages.",
+    statusMessage: VersionConfig.LEGACY_CHAT_MESSAGE,
     statusType: "info",
   },
 ];

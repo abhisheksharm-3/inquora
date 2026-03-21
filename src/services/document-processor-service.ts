@@ -61,6 +61,34 @@ export class DocumentProcessor {
   }
 
   /**
+   * Starts an interval that gradually increments emitted progress from `start` to `end`
+   * over approximately `durationMs` milliseconds. Returns a stop function that clears
+   * the interval and emits a final snapshot at `end`.
+   */
+  private startProgressAnimation(
+    fileId: string,
+    start: number,
+    end: number,
+    durationMs: number,
+  ): () => void {
+    const STEPS = 25;
+    const intervalMs = durationMs / STEPS;
+    const increment = (end - start) / STEPS;
+    let current = start;
+
+    const id = setInterval(() => {
+      current = Math.min(current + increment, end);
+      this.emitProgress({ fileId, status: "processing", progress: Math.round(current) });
+      if (current >= end) clearInterval(id);
+    }, intervalMs);
+
+    return () => {
+      clearInterval(id);
+      this.emitProgress({ fileId, status: "processing", progress: end });
+    };
+  }
+
+  /**
    * Update file processing status in database
    */
   private async updateFileStatus(
@@ -193,30 +221,30 @@ export class DocumentProcessor {
         numDocs?: number;
       };
 
-      // Process based on file type
+      let stopAnimation: (() => void) | null = null;
+
       switch (type) {
         case "youtube":
         case "video":
           if (!url) throw new Error("YouTube URL is required");
-          this.emitProgress({ fileId, status: "processing", progress: 25 });
+          stopAnimation = this.startProgressAnimation(fileId, 10, 72, 45000);
           processingResult = await processYoutubeVideo(url, fileId);
           break;
 
         case "github":
           if (!url) throw new Error("GitHub URL is required");
-          this.emitProgress({ fileId, status: "processing", progress: 25 });
-          // Orchestrator automatically handles fallback: Clone → ZIP → API
+          stopAnimation = this.startProgressAnimation(fileId, 10, 72, 60000);
           processingResult = await processGitHubRepository(url, fileId);
           break;
 
         case "web":
           if (!url) throw new Error("Web URL is required");
-          this.emitProgress({ fileId, status: "processing", progress: 25 });
+          stopAnimation = this.startProgressAnimation(fileId, 10, 72, 30000);
           processingResult = await processWebPage(url, fileId);
           break;
 
         case "pdf":
-          this.emitProgress({ fileId, status: "processing", progress: 25 });
+          stopAnimation = this.startProgressAnimation(fileId, 10, 72, 20000);
           const pdfBlob = await this.getFileBlob(file);
           if (!pdfBlob) throw new Error("Could not read PDF file from storage");
           processingResult = await processPdfDocument(pdfBlob, fileId);
@@ -227,7 +255,7 @@ export class DocumentProcessor {
         case "sheet":
         case "sheets":
         case "slides":
-          this.emitProgress({ fileId, status: "processing", progress: 25 });
+          stopAnimation = this.startProgressAnimation(fileId, 10, 72, 25000);
           const docBlob = await this.getFileBlob(file);
           if (!docBlob)
             throw new Error(`Could not read ${type} file from storage`);
@@ -238,8 +266,7 @@ export class DocumentProcessor {
           );
           break;
 
-        case "image":
-          // Images don't need vector processing
+        case "image": {
           const result: ProcessingResult = {
             success: true,
             status: "completed",
@@ -253,12 +280,14 @@ export class DocumentProcessor {
           });
 
           return result;
+        }
 
         default:
           throw new Error(`Unsupported file type: ${type}`);
       }
 
-      this.emitProgress({ fileId, status: "processing", progress: 75 });
+      stopAnimation?.();
+      this.emitProgress({ fileId, status: "processing", progress: 80 });
 
       if (!processingResult.success) {
         throw new Error(processingResult.error || "Processing failed");

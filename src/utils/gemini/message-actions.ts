@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { sendMessageToGemini, isGeminiConfigured } from "@/utils/gemini/client";
 import { supabaseServerClient } from "@/data/supabase/server";
 import { getFileContent, getImageData } from "../file-processing-utils";
@@ -10,94 +9,7 @@ import { TypeChat, TypeFile } from "@/types/database";
 import { processRAGRequest } from "../rag/orchestrator";
 import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/types/rag";
 import { VersionConfig } from "@/constants/version-config";
-import { GeminiMessage, GeminiUserContext, PrepareContextResultType } from "@/types/gemini";
-
-const FILE_TYPE_MAP = new Map([
-  ["youtube", "video"],
-  ["web", "video"],
-  ["url", "video"],
-  ["doc", "doc"],
-  ["docs", "doc"],
-  ["docx", "doc"],
-  ["sheet", "sheet"],
-  ["sheets", "sheet"],
-  ["xls", "sheet"],
-  ["xlsx", "sheet"],
-  ["slides", "slides"],
-  ["ppt", "slides"],
-  ["pptx", "slides"],
-  ["github", "github"],
-  ["web", "web"],
-]);
-
-const VALID_CHAT_TYPES = new Set([
-  "pdf",
-  "image",
-  "doc",
-  "video",
-  "sheet",
-  "slides",
-  "github",
-  "web",
-]);
-
-const mapFileTypeToChatType = (fileType: string | null): TypeChat["type"] => {
-  if (!fileType) return null;
-
-  if (FILE_TYPE_MAP.has(fileType)) {
-    return FILE_TYPE_MAP.get(fileType)! as TypeChat["type"];
-  }
-
-  return VALID_CHAT_TYPES.has(fileType) ? (fileType as TypeChat["type"]) : null;
-};
-
-export const createChat = async (fileId: string, userId?: string) => {
-  if (!isGeminiConfigured()) {
-    throw new Error("Gemini API is not configured.");
-  }
-  if (!userId) {
-    throw new Error("Authentication required to create a chat.");
-  }
-
-  const supabase = await supabaseServerClient();
-
-  try {
-    const { data: file, error: fileError } = await supabase
-      .from("files")
-      .select("id, name, type")
-      .eq("id", fileId)
-      .single();
-
-    if (fileError || !file) {
-      throw new Error(
-        `File not found with ID: ${fileId}. ${fileError?.message || ""}`,
-      );
-    }
-
-    const chatType = mapFileTypeToChatType(file.type);
-
-    const { data: chat, error: chatError } = await supabase
-      .from("chats")
-      .insert({
-        user_id: userId,
-        file_id: fileId,
-        title: `Chat about ${file.name || "file"}`,
-        type: chatType,
-      })
-      .select()
-      .single();
-
-    if (chatError || !chat) {
-      throw new Error(`Failed to create chat: ${chatError?.message}`);
-    }
-
-    revalidatePath("/chat");
-    return chat;
-  } catch (error) {
-    console.error("Error in createChat:", error);
-    throw error;
-  }
-};
+import { TypeGeminiMessage, TypeGeminiUserContext, TypeGeminiContextResult } from "@/types/gemini";
 
 const RAG_SUPPORTED_TYPES = new Set([
   "pdf",
@@ -114,8 +26,8 @@ const prepareContextForGemini = async (
   userQuery: string,
   supabase: SupabaseClient,
   conversationHistory?: Array<{ role: string, content: string }>,
-  userContext?: GeminiUserContext
-): Promise<PrepareContextResultType> => {
+  userContext?: TypeGeminiUserContext
+): Promise<TypeGeminiContextResult> => {
   if (!chat.file_id) return {};
 
   const fileContent = await getFileContent(chat.file_id);
@@ -202,11 +114,8 @@ const prepareContextForGemini = async (
           const ragResponse = await processRAGRequest(ragRequest);
 
           if (ragResponse.retrievedSources && ragResponse.retrievedSources.length > 0) {
-            const combinedContent = ragResponse.retrievedSources
-              .map((result: { document: { pageContent: string } }) => result.document.pageContent)
-              .join("\n\n");
             return {
-              fileContent: combinedContent,
+              fileContent: ragResponse.systemPrompt,
               isAdvancedRAG: true
             };
           }
@@ -215,7 +124,6 @@ const prepareContextForGemini = async (
         }
       }
 
-      // Fallback to basic RAG
       const relevantDocs = await queryDocuments(userQuery, chat.file_id, 5);
 
       if (!relevantDocs || relevantDocs.length === 0) {
@@ -261,7 +169,7 @@ const saveAssistantMessage = async (
 export const sendMessage = async (
   chatId: string,
   content: string,
-  messages?: GeminiMessage[],
+  messages?: TypeGeminiMessage[],
   sessionMetadata?: TypeSessionMetadata,
 ) => {
   if (!isGeminiConfigured()) {
@@ -283,7 +191,6 @@ export const sendMessage = async (
 
     if (chatError || !chat) throw new Error("Chat not found.");
 
-    // Check if this is a legacy chat (read-only)
     if (VersionConfig.isLegacyChat(chat.created_at)) {
       return saveAssistantMessage(
         chatId,
@@ -292,8 +199,7 @@ export const sendMessage = async (
       );
     }
 
-    // Get user information for context
-    const userContext: GeminiUserContext = {
+    const userContext: TypeGeminiUserContext = {
       currentDateTime: new Date().toLocaleString("en-US", {
         timeZone: "UTC",
         year: "numeric",
@@ -316,7 +222,6 @@ export const sendMessage = async (
         userContext.userName = user.name || "Anonymous";
       }
 
-      // Fetch User Memories
       const { data: memories } = await supabase
         .from("user_memories")
         .select("content")
@@ -326,12 +231,11 @@ export const sendMessage = async (
         userContext.memories = memories.map(m => m.content);
       }
 
-      // Fetch Recent Conversations
       const { data: recentChats } = await supabase
         .from("chats")
         .select("id, title, created_at")
         .eq("user_id", chat.user_id)
-        .neq("id", chatId) // Exclude current chat
+        .neq("id", chatId)
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -352,7 +256,6 @@ export const sendMessage = async (
       .from("messages")
       .insert({ chat_id: chatId, role: "user", content });
 
-    // Prepare conversation history for advanced RAG
     const conversationHistory = messages?.map(msg => ({
       role: msg.role === "model" ? "assistant" : msg.role,
       content: msg.content
@@ -370,12 +273,11 @@ export const sendMessage = async (
       return await saveAssistantMessage(chatId, context.error, supabase);
     }
 
-    const formattedMessages: GeminiMessage[] = [
+    const formattedMessages: TypeGeminiMessage[] = [
       ...(messages || []),
       { role: "user", content },
     ];
 
-    // Enhanced context information for Gemini
     const enhancedUserContext = {
       ...userContext,
       chatId,
