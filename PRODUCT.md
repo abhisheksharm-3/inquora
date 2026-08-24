@@ -85,12 +85,14 @@ double the visual QA, and both themes ship or neither does.
    decorative choice. Nothing goes behind body text.
 3. **Personality lives in the seams.** Empty states, first run, loading, transitions, error copy.
    Not behind the transcript.
-4. **Two registers, deliberately.** One refined and one unexpected, colliding. Which second
-   register is decided in the shape step from rendered variants, not chosen in a document.
+4. **Two registers, deliberately.** A humanist serif carries everything read; an engineered mono
+   carries everything recorded. The collision is structural, which is why it survives ten surfaces
+   without becoming a motif that tires.
 5. **Offset, not centred.** Composition is asymmetric by default. The centred hero and the centred
    column are both banned shapes.
-6. **Illustrated over photographic.** Anything atmospheric is authored, not stock and not generic
-   generated imagery. Authorship is what survives being copied.
+6. **Authored, never stock.** The shape run settled on no imagery at all: the landing page argues
+   through typography and composition. If atmosphere is ever added, it is authored rather than
+   stock or generically generated, because authorship is what survives being copied.
 7. **Speed is a design feature.** Instant navigation, streamed reveals and optimistic feedback are
    part of the visual design, not an engineering afterthought.
 
@@ -152,9 +154,18 @@ Match and refuse. If about to write one of these, restructure the element instea
 - Placeholder text used as the only label.
 - Animating layout properties. Transform and opacity only.
 
-## Open, resolved in the shape step
+## Resolved in the shape step
 
-- The second visual register. Three directions rendered as variants, then chosen.
-- The palette, derived from the chosen register. OKLCH, tinted neutrals, no pure black or white.
-- Whether the landing page carries an illustrated world at all, or reaches its ambition
-  typographically.
+Closed on 2026-08-25 against three rendered directions. See
+`.polaris/specs/2026-08-25-ui-shape-brief.md` and `DESIGN.md`.
+
+- **The second visual register** is a humanist serif carrying everything read against an engineered
+  mono carrying everything recorded. Structural rather than decorative, which is why it survives
+  ten surfaces.
+- **The palette** is tinted neutrals plus one oxide mark, shifting lightness rather than hue
+  between themes.
+- **The landing page carries no illustrated world.** It reaches its ambition through typography and
+  composition: claims on the left, numbered specimens backing them on the right. The page argues
+  the way the product argues.
+- **The system is called The Apparatus**, after the scholarly matter a critical edition sets beside
+  its text. Substance left, apparatus right, on every surface.

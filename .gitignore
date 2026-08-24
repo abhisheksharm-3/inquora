@@ -45,3 +45,7 @@ client_secret*.json
 # Polaris local state (specs and ADRs are committed)
 .polaris/work/
 .polaris/runs/
+
+# Design references are described in the specs, not checked in
+docs/design/references/
+docs/design/screens/

@@ -1,0 +1,591 @@
+<title>Inquora Surfaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&display=swap">
+
+<style>
+:root{--ground:#EDEEEA;--sunk:#E3E5DF;--ink:#16191B;--soft:#4E5459;--faint:#878D91;--rule:#C8CBC4;--signal:#9C3D26;--measure:64ch}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#101316;--sunk:#0B0E10;--ink:#E4E7E2;--soft:#9BA2A6;--faint:#676E72;--rule:#262C30;--signal:#D2705A}}
+:root[data-theme="dark"]{--ground:#101316;--sunk:#0B0E10;--ink:#E4E7E2;--soft:#9BA2A6;--faint:#676E72;--rule:#262C30;--signal:#D2705A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+.head{padding:60px 0 26px;display:grid;gap:16px}
+.kicker{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0}
+h1{font-family:"Newsreader",Georgia,serif;font-weight:400;font-size:clamp(2rem,5.5vw,3.4rem);line-height:1.05;letter-spacing:-.015em;margin:0;max-width:17ch;text-wrap:balance}
+.head p{max-width:var(--measure);margin:0;color:var(--soft);font-size:.85rem;line-height:1.65}
+.head p b{color:var(--ink);font-weight:500}
+.law{border-left:2px solid var(--signal);padding:2px 0 2px 16px;max-width:var(--measure);font-size:.82rem;line-height:1.6;color:var(--soft)}
+.law b{color:var(--ink);font-weight:500}
+
+.sec{padding:52px 0 0}
+.sec-head{display:grid;gap:11px;margin-bottom:18px}
+.sec-id{display:flex;gap:13px;align-items:baseline;font-size:.7rem;letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+.sec-id b{color:var(--signal);font-weight:500}
+h2{font-family:"Newsreader",serif;font-weight:400;font-size:1.85rem;line-height:1.1;letter-spacing:-.012em;margin:0}
+.sec-head>p{margin:0;max-width:var(--measure);font-size:.85rem;line-height:1.6;color:var(--soft)}
+.sec-head>p b{color:var(--ink);font-weight:500}
+.frame{border:1px solid var(--rule);border-radius:2px;overflow:hidden;box-shadow:0 18px 44px -30px rgba(0,0,0,.5);margin-top:16px}
+.scroller{overflow-x:auto}
+
+/* ============ shared surface tokens ============ */
+.s{--g:#E7E8E3;--pn:#EFF0EC;--k:#191C1A;--sf:#565D5A;--ft:#8A918D;--rl:#C6CAC2;--mk:#9C3D26;--wash:rgba(156,61,38,.13);
+   background:var(--g);color:var(--k);min-width:880px;min-height:520px;display:grid;grid-template-columns:1fr 330px}
+.s.dk{--g:#0F1215;--pn:#14181B;--k:#E3E7E2;--sf:#99A0A4;--ft:#656C70;--rl:#242A2E;--mk:#D2705A;--wash:rgba(210,112,90,.16)}
+.s.solo{grid-template-columns:1fr}
+.main{padding:26px 40px 0 34px;display:flex;flex-direction:column}
+.ap{background:var(--pn);border-left:1px solid var(--rl);padding:26px 24px 0;font-size:.72rem;overflow:hidden}
+.ap-h{display:flex;justify-content:space-between;align-items:baseline;font-size:.63rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ft);border-bottom:1px solid var(--rl);padding-bottom:9px;margin-bottom:18px}
+.op{display:grid;grid-template-columns:26px 1fr;gap:12px;margin-bottom:14px;color:var(--sf);line-height:1.5}
+.op .tk{color:var(--ft);font-size:.61rem;padding-top:2px}
+.op b{color:var(--k);font-weight:500}
+.op .arg{color:var(--ft);display:block}
+.sp{display:grid;grid-template-columns:26px 1fr;gap:12px;margin-bottom:18px}
+.sp .no{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--mk);color:var(--mk);border-radius:2px;font-size:.65rem;font-weight:600}
+.sp .src{color:var(--ft);font-size:.62rem;margin:0 0 6px;display:flex;gap:8px;flex-wrap:wrap}
+.sp .src b{color:var(--sf);font-weight:500}
+.sp .qt{font-family:"Newsreader",serif;font-weight:300;font-style:italic;font-size:.86rem;line-height:1.55;color:var(--k);margin:0}
+.sp .qt mark{background:var(--wash);color:inherit;font-style:normal;padding:0 2px}
+.hair{height:1px;background:var(--rl);margin:2px 0 14px 38px}
+.setbar{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--rl);padding-bottom:11px;margin-bottom:26px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ft)}
+.setbar .t{color:var(--sf)}
+.setbar .d{display:flex;gap:5px;align-items:center}
+.setbar .d.off{opacity:.4}
+.setbar .d i{width:4px;height:4px;border-radius:50%;background:var(--mk);font-style:normal}
+.setbar .d.off i{background:var(--ft)}
+.serif{font-family:"Newsreader",Georgia,serif;font-weight:300}
+.compose{margin-top:auto;border-top:1px solid var(--rl);padding:15px 0 20px;display:flex;align-items:center;gap:10px;font-family:"Newsreader",serif;font-weight:300;font-size:1.04rem;color:var(--ft)}
+.compose .cr{width:1.5px;height:19px;background:var(--mk)}
+.mk{color:inherit;text-decoration:none;border-bottom:1px solid var(--mk);padding-bottom:1px}
+.mk sup{font-family:"IBM Plex Mono",monospace;font-size:.57rem;font-weight:500;color:var(--mk);margin-left:3px;vertical-align:.42em}
+.mk:focus-visible{outline:2px solid var(--mk);outline-offset:3px}
+table.g{border-collapse:collapse;width:100%;font-size:.65rem;margin-top:2px}
+table.g th{text-align:left;font-weight:400;color:var(--ft);padding:2px 9px 3px 0;border-bottom:1px solid var(--rl);font-size:.57rem;letter-spacing:.07em;text-transform:uppercase}
+table.g td{padding:3px 9px 3px 0;border-bottom:1px dotted var(--rl);font-variant-numeric:tabular-nums;color:var(--sf)}
+table.g td.n{color:var(--mk)}
+
+/* ============ 01 landing ============ */
+.lp{--g:#0E1114;--pn:#12161A;--k:#E6E9E4;--sf:#98A0A4;--ft:#5F676B;--rl:#232A2E;--mk:#D2705A;
+    background:var(--g);color:var(--k);min-width:880px;display:grid;grid-template-columns:1fr 320px}
+.lp .nv{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:16px 30px;border-bottom:1px solid var(--rl);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ft)}
+.lp .nv .wm{font-family:"Newsreader",serif;font-size:1rem;letter-spacing:.02em;text-transform:none;color:var(--k)}
+.lp .nv nav{display:flex;gap:22px}
+.lp .stage{padding:56px 40px 46px 34px}
+.lp .thesis{font-family:"Newsreader",serif;font-weight:300;font-size:clamp(2.1rem,4.6vw,3.5rem);line-height:1.08;letter-spacing:-.02em;margin:0 0 24px;max-width:15ch}
+.lp .thesis em{font-style:italic;color:var(--mk)}
+.lp .sub{max-width:46ch;color:var(--sf);font-size:.86rem;line-height:1.7;margin:0 0 30px}
+.lp .cta{display:flex;gap:16px;align-items:center;font-size:.7rem;letter-spacing:.13em;text-transform:uppercase}
+.lp .cta a{color:var(--k);text-decoration:none;border-bottom:1px solid var(--mk);padding-bottom:4px}
+.lp .cta a.q{color:var(--ft);border-bottom-color:var(--rl)}
+.lp .cta a:focus-visible{outline:2px solid var(--mk);outline-offset:4px}
+.lp .strip{grid-column:1/-1;border-top:1px solid var(--rl);display:grid;grid-template-columns:repeat(3,1fr)}
+.lp .cell{padding:22px 26px;border-right:1px solid var(--rl)}
+.lp .cell:last-child{border-right:0}
+.lp .cell h4{font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ft);margin:0 0 8px;font-weight:400}
+.lp .cell p{margin:0;font-family:"Newsreader",serif;font-weight:300;font-size:1rem;line-height:1.5;color:var(--k)}
+.lp .ap{background:var(--pn);border-left:1px solid var(--rl);padding:56px 24px 0;font-size:.72rem}
+
+/* ============ 02 auth ============ */
+.au .main{justify-content:center;padding:0 34px}
+.au .box{max-width:34ch}
+.au h3{font-family:"Newsreader",serif;font-weight:300;font-size:2rem;line-height:1.15;margin:0 0 10px;letter-spacing:-.015em}
+.au p.l{color:var(--sf);font-size:.82rem;margin:0 0 26px;line-height:1.6}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ft);margin-bottom:6px}
+.fld .in{border:0;border-bottom:1px solid var(--rl);padding:6px 0;font-family:"Newsreader",serif;font-weight:300;font-size:1.02rem;color:var(--k)}
+.fld .in.on{border-bottom-color:var(--mk)}
+.fld .in .cr{display:inline-block;width:1.5px;height:17px;background:var(--mk);vertical-align:-3px}
+.btn{margin-top:22px;display:inline-flex;align-items:center;gap:9px;border:1px solid var(--mk);color:var(--mk);padding:8px 16px;border-radius:2px;font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;text-decoration:none;background:none}
+.alt{margin-top:20px;font-size:.68rem;color:var(--ft);display:flex;gap:14px}
+.alt span{border-bottom:1px solid var(--rl);padding-bottom:3px}
+
+/* ============ 03 choose ============ */
+.ch .entry{display:grid;grid-template-columns:26px 1fr auto;gap:14px;padding:13px 0;border-bottom:1px solid var(--rl);align-items:baseline}
+.ch .entry .kd{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ft)}
+.ch .entry .nm{font-family:"Newsreader",serif;font-weight:300;font-size:1.06rem;color:var(--k)}
+.ch .entry .nm span{display:block;font-family:"IBM Plex Mono",monospace;font-size:.62rem;color:var(--ft);margin-top:3px}
+.ch .entry .st{font-size:.62rem;color:var(--ft);text-align:right}
+.ch .entry .st.rdy{color:var(--sf)}
+.ch .entry.sel{background:var(--wash)}
+.ch .entry.sel .kd{color:var(--mk)}
+.ch h3{font-family:"Newsreader",serif;font-weight:300;font-size:1.55rem;margin:0 0 4px;letter-spacing:-.01em}
+.ch p.l{color:var(--sf);font-size:.8rem;margin:0 0 22px}
+
+/* ============ 04 upload ============ */
+.up .drop{border:1px dashed var(--rl);padding:30px 26px;margin-bottom:22px;display:grid;gap:8px}
+.up .drop.act{border-color:var(--mk);background:var(--wash)}
+.up .drop .big{font-family:"Newsreader",serif;font-weight:300;font-size:1.25rem;color:var(--k)}
+.up .drop .sm{font-size:.66rem;color:var(--ft);letter-spacing:.06em}
+.up .row{display:grid;grid-template-columns:1fr 84px 56px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rl);font-size:.68rem}
+.up .row .fn{color:var(--k);font-family:"Newsreader",serif;font-weight:300;font-size:1rem}
+.up .row .fn span{display:block;font-family:"IBM Plex Mono",monospace;font-size:.6rem;color:var(--ft);margin-top:2px}
+.up .bar{height:3px;background:var(--rl);position:relative}
+.up .bar i{position:absolute;inset:0 auto 0 0;background:var(--mk)}
+.up .pct{text-align:right;font-variant-numeric:tabular-nums;color:var(--sf)}
+.up .pct.done{color:var(--ft)}
+
+/* ============ 05 empty ============ */
+.em .main{justify-content:center;padding:0 34px}
+.em .plate{max-width:40ch}
+.em .num{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ft);margin:0 0 16px}
+.em h3{font-family:"Newsreader",serif;font-weight:300;font-size:1.9rem;line-height:1.25;margin:0 0 14px;letter-spacing:-.015em}
+.em p{color:var(--sf);font-size:.85rem;line-height:1.65;margin:0 0 22px;max-width:36ch}
+.em .seeds{display:grid;gap:1px;background:var(--rl);border:1px solid var(--rl)}
+.em .seed{background:var(--g);padding:10px 13px;font-family:"Newsreader",serif;font-weight:300;font-size:.95rem;color:var(--sf)}
+.em .seed b{color:var(--mk);font-family:"IBM Plex Mono",monospace;font-size:.6rem;font-weight:500;margin-right:9px}
+
+/* ============ 07 viewer ============ */
+.vw .pgbar{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--rl);padding-bottom:10px;margin-bottom:22px;font-size:.63rem;letter-spacing:.11em;text-transform:uppercase;color:var(--ft)}
+.vw .pgbar b{color:var(--sf);font-weight:500}
+.vw .back{color:var(--mk);border-bottom:1px solid var(--mk);padding-bottom:2px;text-decoration:none}
+.vw .page{font-family:"Newsreader",serif;font-weight:300;font-size:.98rem;line-height:1.78;max-width:58ch;color:var(--sf)}
+.vw .page p{margin:0 0 13px}
+.vw .page .hit{background:var(--wash);color:var(--k);padding:1px 2px;box-shadow:-3px 0 0 var(--mk)}
+
+/* ============ 08 history ============ */
+.hi .yr{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ft);border-bottom:1px solid var(--rl);padding-bottom:7px;margin:0 0 4px}
+.hi .rec{display:grid;grid-template-columns:56px 1fr auto;gap:16px;padding:12px 0;border-bottom:1px solid var(--rl);align-items:baseline}
+.hi .rec .dt{font-size:.62rem;color:var(--ft);font-variant-numeric:tabular-nums}
+.hi .rec .ti{font-family:"Newsreader",serif;font-weight:300;font-size:1.04rem;color:var(--k)}
+.hi .rec .ti span{display:block;font-family:"IBM Plex Mono",monospace;font-size:.61rem;color:var(--ft);margin-top:3px}
+.hi .rec .ct{font-size:.61rem;color:var(--ft);text-align:right}
+.hi .rec .ct b{color:var(--mk);font-weight:500}
+
+/* ============ 09 settings ============ */
+.se .grp{margin-bottom:26px}
+.se .grp h4{font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ft);margin:0 0 12px;font-weight:400;border-bottom:1px solid var(--rl);padding-bottom:7px}
+.se .opt{display:grid;grid-template-columns:1fr 66px;gap:16px;padding:10px 0;align-items:baseline}
+.se .opt .lb{font-family:"Newsreader",serif;font-weight:300;font-size:1.02rem;color:var(--k)}
+.se .opt .lb span{display:block;font-family:"IBM Plex Mono",monospace;font-size:.63rem;color:var(--ft);margin-top:3px;line-height:1.5}
+.se .opt .vl{text-align:right;font-size:.66rem;color:var(--mk);border-bottom:1px solid var(--mk);padding-bottom:2px;justify-self:end}
+.se .opt .vl.off{color:var(--ft);border-bottom-color:var(--rl)}
+
+footer{padding:64px 0 88px;border-top:1px solid var(--rule);margin-top:60px}
+footer h2{margin-bottom:12px}
+footer p,footer li{max-width:var(--measure);color:var(--soft);font-size:.85rem;line-height:1.65}
+footer ol{padding-left:1.2em}
+footer li{margin-bottom:10px}
+footer strong{color:var(--ink);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* ============ 10 phone ============ */
+.phones{display:flex;gap:22px;flex-wrap:wrap;padding:26px;background:var(--sunk);border-top:1px solid var(--rule)}
+.ph{--g:#E7E8E3;--pn:#EFF0EC;--k:#191C1A;--sf:#565D5A;--ft:#8A918D;--rl:#C6CAC2;--mk:#9C3D26;--wash:rgba(156,61,38,.13);
+    width:352px;flex:none;background:var(--g);color:var(--k);border:1px solid var(--rl);border-radius:14px;overflow:hidden;
+    display:flex;flex-direction:column;height:660px;box-shadow:0 14px 34px -22px rgba(0,0,0,.55)}
+.ph .cap{font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--ft);padding:9px 16px;border-bottom:1px solid var(--rl);display:flex;justify-content:space-between}
+.ph .cap b{color:var(--mk);font-weight:500}
+.ph .scr{flex:1;overflow:hidden;padding:16px 18px 0;display:flex;flex-direction:column}
+.ph .rec1{font-size:.6rem;color:var(--ft);letter-spacing:.05em;padding-bottom:11px;border-bottom:1px solid var(--rl);margin-bottom:16px;line-height:1.5}
+.ph .rec1 b{color:var(--sf);font-weight:500}
+.ph .askm{font-family:"Newsreader",serif;font-weight:300;font-size:1.24rem;line-height:1.34;letter-spacing:-.01em;margin:0 0 18px}
+.ph .bodym{font-family:"Newsreader",serif;font-weight:300;font-size:1rem;line-height:1.68;color:var(--k)}
+.ph .bodym p{margin:0 0 12px}
+.ph .bodym em{font-style:italic}
+.ph .notes{margin-top:6px;border-top:1px solid var(--rl);padding-top:13px}
+.ph .notes h5{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ft);margin:0 0 12px;font-weight:400}
+.ph .nt{display:grid;grid-template-columns:22px 1fr;gap:10px;margin-bottom:13px}
+.ph .nt .no{width:19px;height:19px;display:grid;place-items:center;border:1px solid var(--mk);color:var(--mk);border-radius:2px;font-size:.6rem;font-weight:600}
+.ph .nt .sr{color:var(--ft);font-size:.58rem;margin:0 0 4px;display:flex;gap:7px}
+.ph .nt .sr b{color:var(--sf);font-weight:500}
+.ph .nt .qt{font-family:"Newsreader",serif;font-weight:300;font-style:italic;font-size:.82rem;line-height:1.5;margin:0;color:var(--k)}
+.ph .nt .qt mark{background:var(--wash);font-style:normal;padding:0 2px}
+.ph .bar2{margin-top:auto;border-top:1px solid var(--rl);padding:12px 0 14px;display:flex;align-items:center;gap:9px;font-family:"Newsreader",serif;font-weight:300;font-size:1rem;color:var(--ft)}
+.ph .bar2 .cr{width:1.5px;height:18px;background:var(--mk)}
+.ph .pgb{display:flex;justify-content:space-between;align-items:baseline;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ft);padding-bottom:10px;border-bottom:1px solid var(--rl);margin-bottom:16px}
+.ph .pgb b{color:var(--sf);font-weight:500}
+.ph .pgb a{color:var(--mk);text-decoration:none;border-bottom:1px solid var(--mk);padding-bottom:2px}
+.ph .pg{font-family:"Newsreader",serif;font-weight:300;font-size:.94rem;line-height:1.75;color:var(--sf)}
+.ph .pg p{margin:0 0 12px}
+.ph .pg .hit{background:var(--wash);color:var(--k);padding:1px 2px;box-shadow:-3px 0 0 var(--mk)}
+.ph .ent{display:grid;grid-template-columns:24px 1fr;gap:11px;padding:11px 0;border-bottom:1px solid var(--rl);align-items:baseline}
+.ph .ent .kd{font-size:.55rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ft)}
+.ph .ent .nm{font-family:"Newsreader",serif;font-weight:300;font-size:.99rem}
+.ph .ent .nm span{display:block;font-family:"IBM Plex Mono",monospace;font-size:.57rem;color:var(--ft);margin-top:3px}
+.ph .ent.on{background:var(--wash)}
+.ph .ent.on .kd{color:var(--mk)}
+.ph .mkm{color:inherit;text-decoration:none;border-bottom:1px solid var(--mk);padding-bottom:1px}
+.ph .mkm sup{font-family:"IBM Plex Mono",monospace;font-size:.55rem;font-weight:500;color:var(--mk);margin-left:2px;vertical-align:.42em}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="kicker">Impeccable · shape · the apparatus applied · 25 Aug 2026</p>
+    <h1>Every surface, one language</h1>
+    <p><b>Substance left, apparatus right.</b> The rule that made the chat screen work generalises: whatever the surface is about goes on the left, and everything that supports, explains or records it goes in the right column. Nine surfaces, one grammar.</p>
+    <div class="law"><b>It also settles the open question.</b> The document viewer replaces the text column, not the apparatus. Click a specimen and the left side becomes the page it came from, marked. The apparatus never moves, so the layout never becomes three columns.</div>
+    <p>Shown in light except the landing page, which commits to dark because the brand register is allowed a statement the product register is not. Both themes ship for every surface.</p>
+  </header>
+
+  <!-- 01 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>01</b> <span>Brand register · dark · committed</span></p>
+      <h2>Landing</h2>
+      <p>No centred hero, no split hero, no atmospheric photograph. <b>The landing page is built like the product:</b> a claim on the left, and an apparatus on the right that backs each claim with a numbered specimen. The page argues the way the product argues.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="lp">
+        <div class="nv">
+          <span class="wm">Inquora</span>
+          <nav><span>How it reads</span><span>Pricing</span><span>Sign in</span></nav>
+        </div>
+        <div class="stage">
+          <h3 class="thesis">Every answer, traced to the <em>passage</em> it came from.</h3>
+          <p class="sub">Ask a question of your documents and watch the work happen. Inquora shows what it searched, what it read, and the exact lines behind every claim, in the same view as the answer.</p>
+          <p class="cta"><a href="#" tabindex="0">Start reading</a><a class="q" href="#" tabindex="0">See a worked example</a></p>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>3 specimens</span></div>
+          <div class="sp"><span class="no">1</span><div>
+            <p class="src"><b>Retrieval</b></p>
+            <p class="qt">Vector similarity and full text search run as one query and are fused by rank, so exact terms and meaning both count.</p></div></div>
+          <div class="hair"></div>
+          <div class="sp"><span class="no">2</span><div>
+            <p class="src"><b>Provenance</b></p>
+            <p class="qt">Every answer stores the passages it used. Reopen a conversation a month later and the sources are still attached.</p></div></div>
+          <div class="hair"></div>
+          <div class="sp"><span class="no">3</span><div>
+            <p class="src"><b>Spreadsheets</b></p>
+            <p class="qt">Tables are queried as tables. Numbers are read from cells, not guessed from a paragraph describing them.</p></div></div>
+        </div>
+        <div class="strip">
+          <div class="cell"><h4>Documents</h4><p>PDFs, documents, spreadsheets, slides, repositories, recorded video.</p></div>
+          <div class="cell"><h4>Together</h4><p>Several documents in one conversation, each one switchable in and out of scope.</p></div>
+          <div class="cell"><h4>Honest</h4><p>When the answer is not in your documents, it says so instead of inventing one.</p></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 02 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>02</b> <span>Product register · minimal apparatus</span></p>
+      <h2>Sign in</h2>
+      <p>Underlined fields rather than boxes, so the form reads as a line of writing. The apparatus carries the one thing a sign-in screen owes you: <b>what happens to your documents</b>.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s au" style="min-height:430px">
+        <div class="main">
+          <div class="box">
+            <h3>Pick up where you left off.</h3>
+            <p class="l">Nine conversations, four documents indexed.</p>
+            <div class="fld"><label for="e">Email</label><div class="in on">abhitiku2003@gmail.com<span class="cr"></span></div></div>
+            <div class="fld"><label for="p">Password</label><div class="in">••••••••••</div></div>
+            <a class="btn" href="#" tabindex="0">Continue</a>
+            <p class="alt"><span>Use GitHub instead</span><span>Create an account</span></p>
+          </div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>2 notes</span></div>
+          <div class="op"><span class="tk">01</span><span><b>Your documents stay yours.</b><span class="arg">Indexed to your account, readable by nobody else, deleted with it.</span></span></div>
+          <div class="op"><span class="tk">02</span><span><b>Nothing trains on your files.</b><span class="arg">Content is read to answer your question and is not retained for any other purpose.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 03 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>03</b> <span>The register of documents</span></p>
+      <h2>New conversation</h2>
+      <p>Documents as entries in a register, not as a grid of cards. Kind, name, size and readiness on one line. The apparatus shows <b>what selecting them actually buys you</b>: which tools become available.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s ch" style="min-height:470px">
+        <div class="main">
+          <h3>What are we reading?</h3>
+          <p class="l">Pick one or several. You can add more later without starting over.</p>
+          <div class="entry sel"><span class="kd">xls</span><span class="nm">q3-forecast.xlsx<span>4 tabs · 812 rows · indexed 2 days ago</span></span><span class="st rdy">selected</span></div>
+          <div class="entry sel"><span class="kd">pdf</span><span class="nm">revenue-review-q3.pdf<span>14 pages · 96 passages · indexed 2 days ago</span></span><span class="st rdy">selected</span></div>
+          <div class="entry"><span class="kd">git</span><span class="nm">scriptwriter<span>431 files · 2,904 passages · indexed 6 days ago</span></span><span class="st rdy">ready</span></div>
+          <div class="entry"><span class="kd">vid</span><span class="nm">board-review-aug.mp4<span>52 minutes · transcript ready</span></span><span class="st rdy">ready</span></div>
+          <div class="entry"><span class="kd">pdf</span><span class="nm">pricing-appendix.pdf<span>reading pages · 31 of 88 passages</span></span><span class="st">indexing</span></div>
+          <div class="compose"><span class="cr"></span> Or drop a file to add one</div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>2 selected</span></div>
+          <div class="op"><span class="tk">→</span><span><b>Search across both</b><span class="arg">One query, ranked over 908 passages.</span></span></div>
+          <div class="op"><span class="tk">→</span><span><b>Query the spreadsheet</b><span class="arg">q3-forecast can be read as tables, so figures come from cells.</span></span></div>
+          <div class="op"><span class="tk">→</span><span><b>Read around a hit</b><span class="arg">Passages either side of a match, when an answer spans a break.</span></span></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">◦</span><span><b>Not available</b><span class="arg">Code search needs the repository in scope. Add scriptwriter to switch it on.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 04 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>04</b> <span>Progress as a fraction, not a spinner</span></p>
+      <h2>Adding a document</h2>
+      <p>The apparatus is the ingestion log, live. Extraction, chunking and embedding are separate operations with real timings, and the bar is a <b>true fraction</b> because the extractor records an expected chunk count before embedding starts.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s up" style="min-height:440px">
+        <div class="main">
+          <div class="drop act">
+            <span class="big">Drop files, or paste a link</span>
+            <span class="sm">PDF · Word · Excel · Slides · GitHub URL · YouTube URL · up to 50 MB</span>
+          </div>
+          <div class="row"><span class="fn">pricing-appendix.pdf<span>88 pages · embedding</span></span><span class="bar"><i style="width:35%"></i></span><span class="pct">35%</span></div>
+          <div class="row"><span class="fn">board-review-aug.mp4<span>52 min · transcript extracted</span></span><span class="bar"><i style="width:100%"></i></span><span class="pct done">ready</span></div>
+          <div class="row"><span class="fn">2024-annual.pdf<span>could not read · encrypted</span></span><span class="bar"><i style="width:100%;background:var(--ft)"></i></span><span class="pct done">retry</span></div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>pricing-appendix</span></div>
+          <div class="op"><span class="tk">✓</span><span><b>extracted</b> 88 pages<span class="arg">text layer present, no fallback needed · 1.4s</span></span></div>
+          <div class="op"><span class="tk">✓</span><span><b>chunked</b> 88 expected<span class="arg">by heading, 1000 characters, 200 overlap · 0.2s</span></span></div>
+          <div class="op"><span class="tk">·</span><span><b>embedding</b> 31 of 88<span class="arg">batches of 100 · about 20s remaining</span></span></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">!</span><span><b>2024-annual.pdf failed</b><span class="arg">The file is password protected. Remove the password and add it again.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 05 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>05</b> <span>Personality lives here</span></p>
+      <h2>Empty conversation</h2>
+      <p>The one screen with room to have a voice. Openers are <b>generated from the documents in scope</b>, not generic prompts, and the apparatus shows what it already knows about them before you have asked anything.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s em" style="min-height:440px">
+        <div class="main">
+          <div class="setbar"><span class="t">Untitled</span><span class="d"><i></i> q3-forecast.xlsx</span><span class="d"><i></i> revenue-review-q3.pdf</span></div>
+          <div class="plate">
+            <p class="num">Nothing asked yet</p>
+            <h3>908 passages, read and waiting.</h3>
+            <p>Ask anything. If the answer is not in these two documents, you will be told that rather than given a guess.</p>
+            <div class="seeds">
+              <div class="seed"><b>01</b> Where did the quarter actually go wrong?</div>
+              <div class="seed"><b>02</b> Which segment held up, and by how much?</div>
+              <div class="seed"><b>03</b> What does the review claim that the numbers do not support?</div>
+            </div>
+          </div>
+          <div class="compose"><span class="cr"></span> Ask about these documents</div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>in scope</span></div>
+          <div class="op"><span class="tk">01</span><span><b>revenue-review-q3.pdf</b><span class="arg">14 pages, 96 passages. Sections: summary, pipeline, segments, outlook.</span></span></div>
+          <div class="op"><span class="tk">02</span><span><b>q3-forecast.xlsx</b><span class="arg">4 tabs, 812 rows. Deals, Pipeline, Segments, Assumptions.</span></span></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">◦</span><span><b>Overlap</b><span class="arg">Both cover Q3 segments. Numbers can be cross checked against the write-up.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 06 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>06</b> <span>The screen you already approved</span></p>
+      <h2>In conversation</h2>
+      <p>Unchanged. Operations and specimens interleave chronologically, so the apparatus reads as what happened as well as what backs it.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s" style="min-height:520px">
+        <div class="main">
+          <div class="setbar"><span class="t">Q3 revenue variance</span><span class="d"><i></i> q3-forecast.xlsx</span><span class="d"><i></i> revenue-review-q3.pdf</span><span class="d off"><i></i> scriptwriter</span></div>
+          <p class="serif" style="font-size:1.6rem;line-height:1.32;letter-spacing:-.012em;max-width:25ch;margin:0 0 26px">Why is Q3 revenue 12% under forecast when pipeline coverage was above target all quarter?</p>
+          <div class="serif" style="font-size:1.08rem;line-height:1.74;max-width:58ch">
+            <p style="margin:0 0 15px">Coverage held. It was measured on the wrong thing.</p>
+            <p style="margin:0 0 15px">The review states that coverage is calculated on <a class="mk" href="#" tabindex="0">unweighted opportunity value<sup>1</sup></a>, which does not adjust for a falling average deal size. Opportunity count rose 18%, so the ratio stayed above the 3.0x target while the value behind each opportunity thinned.</p>
+            <p style="margin:0 0 15px">Enterprise landed <a class="mk" href="#" tabindex="0">21.4% under plan<sup>2</sup></a> and carried almost the whole miss. Mid-market finished 4.1% ahead.</p>
+            <p style="margin:0"><em>Neither document says why deal size fell.</em></p>
+          </div>
+          <div class="compose"><span class="cr"></span> Continue</div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>2 ops · 2 specimens</span></div>
+          <div class="op"><span class="tk">14:02</span><span><b>searched</b> 2 documents, 6 passages<span class="arg">"revenue variance pipeline coverage" · 240ms</span></span></div>
+          <div class="sp"><span class="no">1</span><div><p class="src"><b>revenue-review-q3.pdf</b><span>page 4</span></p>
+            <p class="qt">Coverage remained above the 3.0x target throughout. <mark>Coverage is calculated on unweighted opportunity value</mark>, which does not adjust for the decline in average deal size.</p></div></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">14:02</span><span><b>queried</b> q3-forecast.xlsx, 3 rows<span class="arg">Deals · 31ms</span></span></div>
+          <div class="sp"><span class="no">2</span><div><p class="src"><b>q3-forecast.xlsx</b><span>Deals!A12:F14</span></p>
+            <table class="g"><thead><tr><th>segment</th><th>avg deal</th><th>var</th></tr></thead>
+            <tbody><tr><td>enterprise</td><td>39,600</td><td class="n">−21.4%</td></tr>
+            <tr><td>mid-market</td><td>21,400</td><td>+4.1%</td></tr></tbody></table></div></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 07 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>07</b> <span>Resolves the open question</span></p>
+      <h2>Following a citation</h2>
+      <p>Clicking specimen 1 swaps the <b>text column</b> for the page it came from, marked in place. The apparatus does not move, so the sources stay where they were and one click returns you to the answer. Two columns throughout.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s vw" style="min-height:480px">
+        <div class="main">
+          <div class="pgbar"><span><b>revenue-review-q3.pdf</b> · page 4 of 14</span><a class="back" href="#" tabindex="0">Back to the answer</a></div>
+          <div class="page">
+            <p>Pipeline coverage is reported weekly and reviewed against the 3.0x standard set in the annual plan. Throughout Q3 the reported figure did not fall below 3.2x in any week, and peaked at 3.9x in the second week of August.</p>
+            <p><span class="hit">Coverage remained above the 3.0x target throughout the quarter. Coverage is calculated on unweighted opportunity value, which does not adjust for the observed decline in average deal size.</span></p>
+            <p>The finance team has raised this definition previously. A weighted coverage measure was proposed in the Q1 review and deferred pending a change to the reporting pipeline, which remains outstanding.</p>
+            <p>Opportunity count grew 18% quarter on quarter, which explains the stability of the ratio in a quarter where closed value fell materially short of plan.</p>
+          </div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>unchanged</span></div>
+          <div class="op"><span class="tk">14:02</span><span><b>searched</b> 2 documents, 6 passages<span class="arg">"revenue variance pipeline coverage" · 240ms</span></span></div>
+          <div class="sp"><span class="no">1</span><div><p class="src"><b>revenue-review-q3.pdf</b><span>page 4</span><span style="color:var(--mk)">open</span></p>
+            <p class="qt">Coverage remained above the 3.0x target throughout. <mark>Coverage is calculated on unweighted opportunity value</mark>, which does not adjust for the decline in average deal size.</p></div></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">14:02</span><span><b>queried</b> q3-forecast.xlsx, 3 rows<span class="arg">Deals · 31ms</span></span></div>
+          <div class="sp"><span class="no">2</span><div><p class="src"><b>q3-forecast.xlsx</b><span>Deals!A12:F14</span></p>
+            <p class="qt">Enterprise average deal size $39,600 against a plan of $50,400.</p></div></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 08 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>08</b> <span>A register, not a sidebar of titles</span></p>
+      <h2>History</h2>
+      <p>Dated entries with the documents they concerned, ordered by <b>last activity</b> rather than creation, which is the bug the schema change fixes. The apparatus is search and filter, because that is what supports a list.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s hi" style="min-height:450px">
+        <div class="main">
+          <p class="yr">August 2026</p>
+          <div class="rec"><span class="dt">25 Aug</span><span class="ti">Q3 revenue variance<span>q3-forecast.xlsx · revenue-review-q3.pdf</span></span><span class="ct">7 turns · <b>2 sources</b></span></div>
+          <div class="rec"><span class="dt">24 Aug</span><span class="ti">Retry logic in the ingestion queue<span>scriptwriter</span></span><span class="ct">14 turns · <b>9 sources</b></span></div>
+          <div class="rec"><span class="dt">22 Aug</span><span class="ti">What the board actually agreed<span>board-review-aug.mp4</span></span><span class="ct">4 turns · <b>3 sources</b></span></div>
+          <div class="rec"><span class="dt">19 Aug</span><span class="ti">Pricing appendix, clause by clause<span>pricing-appendix.pdf · contract-v4.pdf</span></span><span class="ct">21 turns · <b>16 sources</b></span></div>
+          <p class="yr" style="margin-top:24px">July 2026</p>
+          <div class="rec"><span class="dt">31 Jul</span><span class="ti">Chunking strategy for spreadsheets<span>scriptwriter</span></span><span class="ct">9 turns · <b>5 sources</b></span></div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>34 conversations</span></div>
+          <div class="compose" style="margin:0 0 18px;padding:0 0 12px;border-top:0;border-bottom:1px solid var(--rl);font-size:.95rem"><span class="cr"></span> Search everything</div>
+          <div class="op"><span class="tk">◦</span><span><b>By document</b><span class="arg">scriptwriter 11 · q3-forecast 6 · pricing-appendix 4</span></span></div>
+          <div class="op"><span class="tk">◦</span><span><b>By kind</b><span class="arg">pdf 18 · repository 11 · spreadsheet 6 · video 3</span></span></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">◦</span><span><b>Most cited passage</b><span class="arg">revenue-review-q3.pdf page 4, in 6 answers.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 09 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>09</b> <span>Every setting says what it costs</span></p>
+      <h2>Settings</h2>
+      <p>No toggles floating without consequence. The apparatus reports <b>what this account has actually used</b>, from the columns the schema now records on every message.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="s se" style="min-height:470px">
+        <div class="main">
+          <div class="grp"><h4>Reading</h4>
+            <div class="opt"><span class="lb">Theme<span>Follows the system unless you choose.</span></span><span class="vl">system</span></div>
+            <div class="opt"><span class="lb">Answer length<span>Longer answers cite more passages and cost more.</span></span><span class="vl">measured</span></div>
+            <div class="opt"><span class="lb">Show reasoning<span>Reveals the model's working in the apparatus.</span></span><span class="vl off">off</span></div>
+          </div>
+          <div class="grp"><h4>Tools</h4>
+            <div class="opt"><span class="lb">Query spreadsheets<span>Reads figures from cells instead of from prose about them.</span></span><span class="vl">on</span></div>
+            <div class="opt"><span class="lb">Search the web<span>Answers may cite sources outside your documents. Marked differently when they do.</span></span><span class="vl off">off</span></div>
+          </div>
+          <div class="grp"><h4>Memory</h4>
+            <div class="opt"><span class="lb">Remember about you<span>Two facts stored. Review or clear them.</span></span><span class="vl">review</span></div>
+          </div>
+        </div>
+        <div class="ap">
+          <div class="ap-h"><span>Apparatus</span><span>this account</span></div>
+          <div class="op"><span class="tk">◦</span><span><b>4 documents</b><span class="arg">1,847 passages indexed · 34 conversations</span></span></div>
+          <div class="op"><span class="tk">◦</span><span><b>612 answers</b><span class="arg">1,204 sources cited · 2.1s median to first word</span></span></div>
+          <div class="hair"></div>
+          <div class="op"><span class="tk">◦</span><span><b>Cost this month</b><span class="arg">$3.41 across 612 answers · $0.006 each</span></span></div>
+          <div class="op"><span class="tk">◦</span><span><b>Export</b><span class="arg">Every conversation with its sources, as markdown or JSON.</span></span></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+
+  <!-- 10 -->
+  <section class="sec">
+    <div class="sec-head">
+      <p class="sec-id"><b>10</b> <span>352px · the apparatus becomes footnotes</span></p>
+      <h2>On a phone</h2>
+      <p>Two columns cannot survive 352px, and squeezing them would wreck the measure. The answer comes from the thing this already is: <b>a critical edition sets its apparatus in the margin when there is a margin, and at the foot of the page when there is not.</b></p>
+      <p>Specimens become numbered footnotes below the answer, still tappable from the mark in the text. Operations collapse to one line of record at the top of the turn, because on a phone nobody reads four timings. The document viewer takes the whole screen and one tap returns.</p>
+    </div>
+    <div class="frame"><div class="scroller">
+      <div class="phones">
+
+        <div class="ph">
+          <div class="cap"><span>In conversation</span><span><b>2 notes</b></span></div>
+          <div class="scr">
+            <p class="rec1"><b>Q3 revenue variance</b> · 2 documents<br>searched 6 passages · queried 3 rows · 1.9s</p>
+            <p class="askm">Why is Q3 revenue 12% under forecast when pipeline coverage was above target?</p>
+            <div class="bodym">
+              <p>Coverage held. It was measured on the wrong thing.</p>
+              <p>The review calculates coverage on <a class="mkm" href="#" tabindex="0">unweighted opportunity value<sup>1</sup></a>, which does not adjust for falling deal size. Enterprise landed <a class="mkm" href="#" tabindex="0">21.4% under plan<sup>2</sup></a> and carried the miss.</p>
+              <p><em>Neither document says why deal size fell.</em></p>
+            </div>
+            <div class="notes">
+              <h5>Notes</h5>
+              <div class="nt"><span class="no">1</span><div>
+                <p class="sr"><b>revenue-review-q3.pdf</b><span>p.4</span></p>
+                <p class="qt"><mark>Coverage is calculated on unweighted opportunity value</mark>, which does not adjust for the decline in average deal size.</p></div></div>
+              <div class="nt"><span class="no">2</span><div>
+                <p class="sr"><b>q3-forecast.xlsx</b><span>Deals!A12</span></p>
+                <p class="qt">Enterprise average deal size $39,600 against a plan of $50,400.</p></div></div>
+            </div>
+            <div class="bar2"><span class="cr"></span> Continue</div>
+          </div>
+        </div>
+
+        <div class="ph">
+          <div class="cap"><span>Following note 1</span><span><b>full screen</b></span></div>
+          <div class="scr">
+            <div class="pgb"><span><b>revenue-review-q3.pdf</b> · p.4 of 14</span><a href="#" tabindex="0">Back</a></div>
+            <div class="pg">
+              <p>Pipeline coverage is reported weekly against the 3.0x standard set in the annual plan. Throughout Q3 the reported figure did not fall below 3.2x in any week.</p>
+              <p><span class="hit">Coverage remained above the 3.0x target throughout the quarter. Coverage is calculated on unweighted opportunity value, which does not adjust for the observed decline in average deal size.</span></p>
+              <p>The finance team has raised this definition previously. A weighted measure was proposed in the Q1 review and deferred pending a reporting change, which remains outstanding.</p>
+              <p>Opportunity count grew 18% quarter on quarter, which explains the stability of the ratio in a quarter where closed value fell short of plan.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ph">
+          <div class="cap"><span>New conversation</span><span><b>2 selected</b></span></div>
+          <div class="scr">
+            <p class="rec1"><b>What are we reading?</b><br>Pick one or several. Add more later.</p>
+            <div class="ent on"><span class="kd">xls</span><span class="nm">q3-forecast.xlsx<span>4 tabs · 812 rows</span></span></div>
+            <div class="ent on"><span class="kd">pdf</span><span class="nm">revenue-review-q3.pdf<span>14 pages · 96 passages</span></span></div>
+            <div class="ent"><span class="kd">git</span><span class="nm">scriptwriter<span>431 files · 2,904 passages</span></span></div>
+            <div class="ent"><span class="kd">vid</span><span class="nm">board-review-aug.mp4<span>52 min · transcript ready</span></span></div>
+            <div class="ent"><span class="kd">pdf</span><span class="nm">pricing-appendix.pdf<span>indexing · 31 of 88</span></span></div>
+            <div class="bar2"><span class="cr"></span> Or drop a file</div>
+          </div>
+        </div>
+
+      </div>
+    </div></div>
+  </section>
+
+  <footer>
+    <h2>What this settles, and what it does not</h2>
+    <p><strong>Settled:</strong> the grammar. Substance left, apparatus right, on every surface. Newsreader carries anything read, IBM Plex Mono carries anything recorded. One oxide mark, adjusted for lightness per theme. Citations reachable in one action, and returnable in one more.</p>
+    <ol>
+      <li><strong>The tablet range, roughly 700 to 1150px, is still unanswered.</strong> Too narrow for two columns, too wide for footnotes to feel right. The likely answer is footnotes with a wider measure, but it needs building before anyone believes it.</li>
+      <li><strong>Operations accumulate forever.</strong> Twenty turns in, the apparatus is mostly timings. Proposal: operations fade to a single summary line once a turn completes, specimens persist.</li>
+      <li><strong>The second register is still typographic only.</strong> Serif against mono is a real collision, and it is quiet. The empty state is where something drawn could earn its place, and I have deliberately not added it yet rather than decorate.</li>
+      <li><strong>The landing page has one screen.</strong> What follows the fold is unwritten. The apparatus device could run the length of the page, which would be distinctive, or become exhausting.</li>
+    </ol>
+  </footer>
+</div>

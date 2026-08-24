@@ -2,9 +2,37 @@
 
 Companion to `PRODUCT.md`, which owns who and why. This file owns how it looks.
 
-**Status: partial and deliberately so.** The palette and the second visual register are decided in
-the shape step from rendered variants, not chosen in a document. Everything below is settled and
-binding regardless of which variant wins.
+**Status: settled.** The shape run closed on 2026-08-25 against three rendered directions. The
+system is called **The Apparatus**, after the *apparatus criticus* a critical edition sets beside
+its text. Brief at `.polaris/specs/2026-08-25-ui-shape-brief.md`; mockups at `docs/design/`.
+
+## The layout law
+
+**Substance on the left, apparatus on the right.** On every surface. Whatever the surface is about
+occupies the reading column; everything that supports, explains or records it occupies the right
+column.
+
+```
+┌────────────────────────────────┬──────────────────┐
+│  substance                     │  apparatus       │
+│  58ch, Newsreader 300          │  330px, Plex Mono│
+└────────────────────────────────┴──────────────────┘
+```
+
+Two entry kinds in the apparatus: an **operation** (something ran, timestamped, with a duration) and
+a **specimen** (something cited, numbered, with a source line and the passage). They interleave
+chronologically, so the column reads as what happened as well as what backs it.
+
+Specimen numbers are the only connective tissue between an assertion and its evidence: a superscript
+mark in the text, a numbered box in the apparatus, each reaching the other.
+
+**Following a citation swaps the reading column, never the apparatus.** The document opens where the
+text was, the passage marked in place. One action returns. This is why the layout never needs a
+third column.
+
+**Below 1150px the apparatus becomes footnotes**, which is what an apparatus has always done on a
+narrow page. Specimens move below the answer as numbered notes; operations collapse to one line of
+record; the viewer takes the full screen.
 
 ## Colour
 
@@ -15,22 +43,32 @@ approaches either extreme, because high chroma at the ends reads as garish.
 brand hue at chroma 0.005 to 0.01, which is enough to read as intentional without reading as
 coloured.
 
-**Strategy: restrained for product, committed for brand.** The working surfaces use tinted neutrals
-plus one accent held under ten percent of the surface. The landing page is permitted to commit a
-saturated colour across thirty to sixty percent, because the register is different and the reading
-load is not there.
+**Strategy: restrained, on both registers.** Tinted neutrals plus one mark held under ten percent
+of the surface. The landing page differs by committing to the **dark ground** rather than by
+introducing a saturated colour, which is the statement the brand register is allowed and the
+product register is not.
 
 **Semantic tokens only.** A component never contains a raw colour value. It references a role.
 Roles are defined once and both themes redefine the same role set.
 
 ```
---surface, --surface-raised, --surface-sunken
---text-primary, --text-secondary, --text-muted
---border-subtle, --border-strong
---accent, --accent-contrast
---source, --source-contrast     (citations, which are the product's core act)
---success, --warning, --danger
+                      light        dark
+--ground              #E7E8E3      #0F1215
+--panel               #EFF0EC      #14181B     the apparatus column
+--ink                 #191C1A      #E3E7E2
+--soft                #565D5A      #99A0A4
+--faint               #8A918D      #656C70
+--rule                #C6CAC2      #242A2E
+--mark                #9C3D26      #D2705A     oxide; citations and carets
+--wash                mark @ 13%   mark @ 16%  marked passages
+--success --warning --danger                   semantic, separate from the mark
 ```
+
+The mark shifts **lightness** between themes rather than hue, so it stays one colour idea on both
+grounds. Values are authored in OKLCH in the implementation; the hex above is the reference.
+
+There is exactly one accent. Citations use it, the composer caret uses it, and nothing decorative
+does.
 
 Both themes define **every** role. A role defined only inside a media query is a defect, because
 the fallback then borrows the host's theme.
@@ -51,12 +89,18 @@ Both themes are designed to the same standard and reviewed together. Neither is 
 
 ## Typography
 
-- **Display: an editorial serif with real presence.** Used for headings, the landing page, and
-  nowhere inside body text.
-- **Body: a clean sans with excellent screen rendering**, because the primary act is reading for an
-  hour.
-- **Code and citations: a mono** with a distinguishable zero and clear bracket forms. Repositories
-  are a first-class document type.
+Two faces, and the pairing is the design rather than a delivery vehicle for it.
+
+```
+Reading and display   Newsreader      300 / 400, italic available
+Apparatus and labels  IBM Plex Mono   400 / 500 / 600
+```
+
+A humanist serif carries everything **read**. An engineered mono carries everything **recorded**.
+That is the two-register collision `PRODUCT.md` principle four requires, and it is structural rather
+than decorative, which is why it holds across ten surfaces without tiring.
+
+IBM Plex Mono also carries code and repository content, so no third face is needed.
 
 Rules:
 
@@ -121,13 +165,17 @@ Restated here because they are visual, and enforced at review:
 - Grey text on grey background.
 - Raw hex values inside components.
 
-## Pending the shape step
+## Still open
 
-Decided from rendered variants, not from a document:
+Named in the shape brief, and left for the implementer rather than guessed at here:
 
-1. **The second visual register.** Three directions, built and compared. `PRODUCT.md` principle
-   four requires the collision; it does not name the second register.
-2. **The palette**, derived from whichever register wins, then validated for 4.5:1 in both themes
-   before any component consumes it.
-3. **Whether the landing page carries an illustrated world**, or reaches its ambition through
-   typography and composition alone.
+1. **The tablet range, roughly 700 to 1150px.** Too narrow for two columns, too wide for footnotes
+   to sit comfortably. Likely footnotes at a wider measure, unproven.
+2. **Whether operations persist.** Twenty turns in, the apparatus is mostly timings. Proposal: an
+   operation collapses to one summary line once its turn completes, specimens persist.
+3. **The landing page below the fold.** One screen exists. Whether the apparatus device runs the
+   full length of the page is unanswered.
+
+The landing page reaches its ambition through **typography and composition**, not an illustrated
+world. The answer to the third question in the previous draft is: no image. The page argues the way
+the product argues, with claims on the left and specimens backing them on the right.

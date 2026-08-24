@@ -1,9 +1,10 @@
 # Inquora non-UI core: design
 
 Date: 2026-08-25
-Status: approved, not yet implemented
+Status: approved, not yet implemented. Revised 2026-08-25 for tool calling (ADR 0005) and the
+UI scope findings.
 Scope: every layer except visual UI — data, retrieval, transport, ingestion, cross-cutting
-Related: `docs/adr/0001`–`0004`
+Related: `docs/adr/0001`–`0005`
 Reference docs: LangChain v1 (docs.langchain.com/oss/javascript), Sentry OTLP
 (docs.sentry.io/concepts/otlp), Langfuse (langfuse.com/docs), OpenTelemetry (opentelemetry.io/docs)
 
@@ -15,9 +16,11 @@ configuration against this design rather than a rebuild.
 
 The target for the default query path:
 
+Revised on 2026-08-25 by `docs/adr/0005`: retrieval became a tool rather than a fixed step.
+
 | | Today | Target |
 |---|---|---|
-| LLM calls before the answer | 5–8 | 0, or 1 on a follow-up needing rewriting |
+| LLM turns per message | 5–8 pre-answer, then 1 | 1, or 2 when the model searches |
 | Embedding calls | 4–8 | 1, Redis-cached |
 | Vector store roundtrips | 4–8 | 1 (`search_chunks`) |
 | Supabase roundtrips before generation | 6, sequential | 2 (`get_chat_context`, `search_chunks`) |
@@ -71,6 +74,8 @@ Recorded as ADRs; summarized here.
   TypeScript. See `docs/adr/0003`.
 - **Instrumentation is OpenTelemetry; Sentry takes exceptions, Langfuse takes LLM traces.**
   Grafana is deferred. See `docs/adr/0004`.
+- **Retrieval is a tool, not a pipeline step**, with the first search dispatched speculatively so
+  the common path keeps its fast first token. See `docs/adr/0005`.
 - **Standard before hand-rolled**, at every level: HTTP status codes and RFC 9457 over an invented
   error enum, `AbortSignal.timeout` over the `AbortController` dance, Web Streams over custom SSE
   plumbing, `crypto.subtle.digest` over a hash package, Postgres `FOR UPDATE SKIP LOCKED` over a
@@ -128,16 +133,23 @@ values that never change, `server/platform/env.ts` for everything read from the 
 profiles            id references auth.users(id) on delete cascade
 documents           kind document_kind, status processing_status, content_hash, chunk_count
 document_chunks     content, embedding vector(1024), tsv generated, metadata jsonb
+document_tables     one per sheet or tab, so a spreadsheet stays a table
+document_rows       the cells themselves, queryable by `query_table`
 chats               no type column, no file_id
-chat_documents      (chat_id, document_id) — multi-document chat
-messages            role message_role, latency_ms, retrieval_ms, tokens_in, tokens_out, model
-message_citations   (message_id, chunk_id, rank)
+chat_documents      (chat_id, document_id, position, enabled) — multi-document chat
+messages            parent_id for branching, role, latency_ms, retrieval_ms, tokens, model
+message_parts       ordered text / reasoning / tool_call / tool_result / source parts
 user_memories       user_id gains its missing foreign key
 ```
 
 `chat_documents` is what makes several documents in one chat a `WHERE document_id = ANY($1)`
-instead of a rebuild. `message_citations` preserves chunk identity, which is thrown away today the
-moment the prompt is built, and is what lets the product show its sources.
+instead of a rebuild, and `position` and `enabled` are what make the document rail and the
+per-chat scope toggle possible without a second migration.
+
+`message_parts` is why a message stops being a string. A conversation replayed without its tool
+calls loses the reason an answer said what it said, and the source part kind absorbs what would
+otherwise have been a separate citations table. `parent_id` makes the conversation a tree, which is
+what message editing and branch navigation require.
 
 Enums replace free text and stop the `youtube`/`video` and `doc`/`docs` drift recurring:
 
@@ -145,6 +157,7 @@ Enums replace free text and stop the `youtube`/`video` and `doc`/`docs` drift re
 create type document_kind     as enum ('pdf','doc','sheet','slides','image','video','github','web');
 create type processing_status as enum ('pending','processing','ready','failed');
 create type message_role      as enum ('user','assistant');
+create type message_part_kind as enum ('text','reasoning','tool_call','tool_result','source');
 ```
 
 ### Triggers
@@ -229,18 +242,49 @@ embeddings cached in Upstash Redis with a 30-day TTL, plus a keep-alive ping. **
 first query after an idle period pays a Space cold start. This is the largest remaining latency
 spike in the design.**
 
+
+## Tools
+
+All tiers ship together, decided 2026-08-25. Retrieval is exposed to the model rather than run
+ahead of it, so the model can search again with a refined query, read around a hit when an answer
+straddles a chunk boundary, or skip retrieval entirely for a question about the conversation.
+
+| Tool | What it does | What it needs |
+|---|---|---|
+| `search_documents(query, document_ids?, limit?)` | Hybrid RRF search. Pre-warmed speculatively. | `search_chunks` |
+| `read_chunks(document_id, from, to)` | Passages either side of a hit. | nothing |
+| `list_documents()` | What is attached, its kind and status. | nothing |
+| `get_outline(document_id)` | Headings, sheet names, file tree, chapter timestamps. | `documents.outline jsonb` |
+| `grep_document(document_id, pattern)` | Literal and regex over raw text. Beats embeddings for error codes and identifiers. | retained extracted text |
+| `read_file(document_id, path, from_line, to_line)` | A file from a repository. | file paths in chunk metadata |
+| `get_transcript(document_id, start_s, end_s)` | A video segment, timestamped for deep links. | timestamps in chunk metadata |
+| `query_table(document_id, sql)` | Read-only SQL over a spreadsheet. | `document_tables`, `document_rows` |
+| `remember(content)` / `forget(query)` | Long-term facts about the user. | `user_memories` |
+| `calculate(expression)` | Sandboxed arithmetic. | nothing |
+| `web_search(query)` | Off by default, per-chat toggle, citations marked differently. | nothing |
+
+`query_table` is the expensive one and the differentiating one. `excel-extractor.ts` currently
+flattens a workbook into `=== Sheet: name ===` text and embeds it, destroying columns, types and
+row identity, which is why spreadsheet questions fail here and in every product that does the same.
+Landing sheets as real rows and handing the model SQL is what makes tabular documents work.
+
+Guards, because a tool loop is a new failure mode: a hard cap on tool turns per message, a
+per-message token budget enforced in middleware, and every call recorded with its latency so a
+runaway shows up in Langfuse rather than only on the bill.
+
 ## Transport
 
-`POST /api/chats/[chatId]/messages`, server-sent events:
+`POST /api/chats/[chatId]/messages`, streaming LangGraph's own format.
 
-```
-event: status      {"phase":"retrieving"}
-event: citations   [{"chunkId":"…","documentId":"…","title":"…","snippet":"…"}]
-event: delta       {"text":"The "}
-event: done        {"messageId":"…","tokensIn":…,"tokensOut":…}
-```
+The bespoke four-event contract in the first draft of this design is **withdrawn**. LangChain v1's
+`createAgent` is LangGraph underneath, and `@assistant-ui/react-langgraph`'s `useLangGraphRuntime`
+already reads that stream: text, tool calls, interrupts, cancellation. Writing a protocol between
+two things that already share one was hand-rolling. See `docs/adr/0005`.
 
-Citations ship before the first token, because retrieval completes before generation starts.
+One risk to retire early: that runtime is built against the LangGraph server API, and serving the
+same shape from a plain Next route handler is supported but unproven here. Phase 3 opens with a
+spike that streams one tool call end to end. The fallback is assistant-ui's `assistant-transport`
+runtime, still an adopted format rather than an invented one.
 
 Server actions cannot stream partial results, cannot be cleanly aborted, and serialize through the
 RSC protocol. Token streaming, stop-generation and HTTP observability need a real endpoint.

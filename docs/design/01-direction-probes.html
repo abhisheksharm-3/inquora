@@ -1,0 +1,712 @@
+<title>Inquora Direction Probes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ============================================================
+   CONTAINER — theme-aware. The three variant screens below
+   carry their own fixed palettes, because they are three
+   design worlds rather than three themes of one.
+   ============================================================ */
+:root {
+  --ground:        #EDEEEA;
+  --ground-sunk:   #E1E3DD;
+  --ink:           #15171A;
+  --ink-soft:      #4C5157;
+  --ink-faint:     #858B90;
+  --rule:          #C9CCC5;
+  --signal:        #B04A34;
+  --ok:            #3F6B52;
+  --warn:          #8A6A22;
+
+  --measure: 62ch;
+  --step--1: 0.813rem;
+  --step-0:  1rem;
+  --step-1:  1.32rem;
+  --step-2:  1.75rem;
+  --step-3:  2.44rem;
+  --step-4:  3.4rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #15171A;
+    --ground-sunk: #0F1113;
+    --ink:         #E7E9E4;
+    --ink-soft:    #A0A6AB;
+    --ink-faint:   #6B7176;
+    --rule:        #2B2F34;
+    --signal:      #D9705A;
+    --ok:          #7FB394;
+    --warn:        #C7A052;
+  }
+}
+:root[data-theme="dark"] {
+  --ground:      #15171A;
+  --ground-sunk: #0F1113;
+  --ink:         #E7E9E4;
+  --ink-soft:    #A0A6AB;
+  --ink-faint:   #6B7176;
+  --rule:        #2B2F34;
+  --signal:      #D9705A;
+  --ok:          #7FB394;
+  --warn:        #C7A052;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--step-0);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* --- masthead --- */
+.masthead { padding: 72px 0 40px; display: grid; gap: 20px; }
+.eyebrow {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: var(--step--1);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0;
+}
+h1 {
+  font-size: clamp(2rem, 5vw, var(--step-4));
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  margin: 0;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+.lede { max-width: var(--measure); color: var(--ink-soft); font-size: var(--step-1); line-height: 1.5; margin: 0; }
+.masthead p:not(.eyebrow):not(.lede) { max-width: var(--measure); margin: 0; color: var(--ink-soft); }
+
+.brief {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 22px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 20px 32px;
+  margin-top: 12px;
+}
+.brief dt {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-faint); margin-bottom: 5px;
+}
+.brief dd { margin: 0; font-size: var(--step--1); line-height: 1.5; color: var(--ink); }
+
+/* --- direction block --- */
+.direction { padding: 68px 0 12px; }
+.dir-head { display: grid; gap: 16px; margin-bottom: 26px; }
+.dir-id {
+  display: flex; align-items: baseline; gap: 14px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: var(--step--1); color: var(--ink-faint);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.dir-id b { color: var(--signal); font-weight: 500; }
+h2 { font-size: var(--step-3); line-height: 1.05; letter-spacing: -0.02em; margin: 0; font-weight: 600; text-wrap: balance; }
+.thesis { max-width: var(--measure); font-size: var(--step-1); line-height: 1.5; color: var(--ink); margin: 0; }
+
+.facets { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px 30px; margin-top: 6px; }
+.facet { border-top: 2px solid var(--ink); padding-top: 10px; }
+.facet.risk { border-top-color: var(--signal); }
+.facet h3 {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+  margin: 0 0 6px; color: var(--ink-faint); font-weight: 500;
+}
+.facet p { margin: 0; font-size: var(--step--1); line-height: 1.55; color: var(--ink-soft); }
+
+/* --- the screen frame --- */
+.screen {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 30px;
+  box-shadow: 0 24px 60px -30px rgba(0,0,0,0.45);
+}
+.screen-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: var(--ground-sunk);
+  border-bottom: 1px solid var(--rule);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); flex: none; }
+.screen-body { overflow-x: auto; }
+.stage { min-width: 900px; }
+
+footer { padding: 80px 0 100px; border-top: 1px solid var(--rule); margin-top: 80px; }
+footer h2 { font-size: var(--step-2); margin-bottom: 14px; }
+footer p { max-width: var(--measure); color: var(--ink-soft); }
+footer ol { max-width: var(--measure); color: var(--ink-soft); padding-left: 1.1em; }
+footer li { margin-bottom: 10px; }
+footer strong { color: var(--ink); font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ============================================================
+   A — THE LEDGER
+   Limestone ground, ink, oxide. Archival cataloguing:
+   every cited passage becomes a numbered specimen that stays.
+   ============================================================ */
+.ledger {
+  --l-ground: #E4E6E0;
+  --l-panel:  #EFF0EC;
+  --l-ink:    #1B1E1C;
+  --l-soft:   #5B6360;
+  --l-faint:  #8E9591;
+  --l-rule:   #C6CAC2;
+  --l-oxide:  #9C3D26;
+  background: var(--l-ground);
+  color: var(--l-ink);
+  font-family: "IBM Plex Sans", sans-serif;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  min-height: 620px;
+}
+.ledger .conv { padding: 26px 30px 0; border-right: 1px solid var(--l-rule); display: flex; flex-direction: column; }
+.ledger .docs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 26px; }
+.ledger .doc {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.66rem;
+  border: 1px solid var(--l-rule); padding: 3px 8px; border-radius: 2px;
+  color: var(--l-soft); background: var(--l-panel);
+  display: flex; align-items: center; gap: 6px;
+}
+.ledger .doc.off { opacity: 0.42; text-decoration: line-through; }
+.ledger .doc i { width: 5px; height: 5px; border-radius: 50%; background: var(--l-oxide); flex: none; font-style: normal; }
+.ledger .doc.off i { background: var(--l-faint); }
+
+.ledger .turn { margin-bottom: 24px; }
+.ledger .who {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.64rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--l-faint);
+  margin-bottom: 7px;
+}
+.ledger .ask { font-size: 1.22rem; line-height: 1.4; letter-spacing: -0.01em; max-width: 30ch; }
+.ledger .say { font-size: 0.95rem; line-height: 1.68; max-width: 54ch; }
+.ledger .say p { margin: 0 0 12px; }
+.ledger sup a {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.62rem;
+  color: var(--l-oxide); text-decoration: none;
+  border: 1px solid var(--l-oxide); border-radius: 2px;
+  padding: 0 3px; margin-left: 2px; vertical-align: 0.32em;
+}
+.ledger sup a:focus-visible { outline: 2px solid var(--l-oxide); outline-offset: 2px; }
+
+.ledger .instrument {
+  border-left: 1px solid var(--l-rule);
+  padding: 2px 0 2px 12px; margin: 0 0 14px;
+  font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; color: var(--l-soft);
+}
+.ledger .instrument b { color: var(--l-ink); font-weight: 500; }
+.ledger .instrument .args { color: var(--l-faint); }
+
+.ledger .composer {
+  margin-top: auto; border-top: 1px solid var(--l-rule);
+  padding: 14px 0 18px; display: flex; align-items: center; gap: 10px;
+  color: var(--l-faint); font-size: 0.9rem;
+}
+.ledger .composer .caret { width: 1.5px; height: 17px; background: var(--l-oxide); }
+
+/* evidence rail */
+.ledger .rail { background: var(--l-panel); padding: 26px 26px 0; overflow: hidden; }
+.ledger .rail-head {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.64rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--l-faint);
+  padding-bottom: 9px; border-bottom: 1px solid var(--l-rule); margin-bottom: 18px;
+  display: flex; justify-content: space-between;
+}
+.ledger .specimen { display: grid; grid-template-columns: 30px 1fr; gap: 12px; margin-bottom: 20px; }
+.ledger .sp-no {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; font-weight: 600;
+  color: var(--l-oxide); border: 1px solid var(--l-oxide);
+  width: 24px; height: 24px; display: grid; place-items: center; border-radius: 2px;
+}
+.ledger .sp-src {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.64rem;
+  color: var(--l-faint); margin-bottom: 5px;
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.ledger .sp-src b { color: var(--l-soft); font-weight: 500; }
+.ledger .sp-text { font-size: 0.83rem; line-height: 1.55; color: var(--l-ink); }
+.ledger .sp-text mark { background: rgba(156,61,38,0.16); color: inherit; padding: 0 1px; }
+
+.ledger table.grid { border-collapse: collapse; font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; width: 100%; }
+.ledger table.grid th {
+  text-align: left; font-weight: 500; color: var(--l-faint);
+  border-bottom: 1px solid var(--l-rule); padding: 3px 8px 3px 0;
+  text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.6rem;
+}
+.ledger table.grid td { padding: 3px 8px 3px 0; border-bottom: 1px solid rgba(198,202,194,0.5); font-variant-numeric: tabular-nums; }
+.ledger table.grid td.neg { color: var(--l-oxide); }
+
+/* ============================================================
+   B — THE MARGIN
+   Dark critical edition. No bubbles: the conversation reads as
+   a set text, and everything procedural lives in the margin.
+   ============================================================ */
+.margin-dir {
+  --m-ground: #101316;
+  --m-ink:    #DFE4E3;
+  --m-soft:   #949D9C;
+  --m-faint:  #5F6A6B;
+  --m-rule:   #232A2D;
+  --m-rose:   #C98A8A;
+  --m-chalk:  #F0EDE4;
+  background: var(--m-ground);
+  color: var(--m-ink);
+  font-family: "Newsreader", Georgia, serif;
+  min-height: 620px;
+  padding: 30px 46px 0;
+}
+.margin-dir .rule-top {
+  display: flex; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px solid var(--m-rule); padding-bottom: 12px; margin-bottom: 30px;
+  font-family: "Archivo", sans-serif; font-size: 0.68rem;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--m-faint);
+}
+.margin-dir .rule-top span b { color: var(--m-soft); font-weight: 500; }
+.margin-dir .rule-top .set { display: flex; gap: 16px; }
+.margin-dir .rule-top .set i { font-style: normal; }
+.margin-dir .rule-top .set i.off { opacity: 0.35; }
+
+.margin-dir .entry { display: grid; grid-template-columns: 156px 1fr; gap: 30px; margin-bottom: 30px; }
+.margin-dir .gutter {
+  font-family: "Archivo", sans-serif; font-size: 0.66rem; line-height: 1.5;
+  color: var(--m-faint); text-align: right; padding-top: 6px;
+}
+.margin-dir .gutter .lbl { letter-spacing: 0.14em; text-transform: uppercase; color: var(--m-soft); display: block; margin-bottom: 3px; }
+.margin-dir .gutter .op { display: block; margin-top: 9px; color: var(--m-faint); }
+.margin-dir .gutter .op b { color: var(--m-rose); font-weight: 500; }
+
+.margin-dir .body-q { font-size: 1.5rem; line-height: 1.36; font-weight: 300; letter-spacing: -0.008em; max-width: 26ch; color: var(--m-chalk); }
+.margin-dir .body-a { font-size: 1.06rem; line-height: 1.72; font-weight: 300; max-width: 60ch; }
+.margin-dir .body-a p { margin: 0 0 14px; }
+.margin-dir .body-a em { font-style: italic; color: var(--m-chalk); }
+
+.margin-dir .cite {
+  border-bottom: 1px solid var(--m-rose); color: inherit; text-decoration: none;
+  padding-bottom: 1px; cursor: pointer;
+}
+.margin-dir .cite:focus-visible { outline: 2px solid var(--m-rose); outline-offset: 3px; }
+.margin-dir .cite sup { font-family: "Archivo", sans-serif; font-size: 0.6rem; color: var(--m-rose); margin-left: 2px; }
+
+.margin-dir .pulled {
+  border-left: 2px solid var(--m-rose);
+  padding: 4px 0 4px 18px; margin: 18px 0 20px;
+  font-size: 0.95rem; line-height: 1.6; color: var(--m-soft); font-style: italic;
+  max-width: 54ch;
+}
+.margin-dir .pulled cite {
+  display: block; margin-top: 8px; font-style: normal;
+  font-family: "Archivo", sans-serif; font-size: 0.63rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-faint);
+}
+.margin-dir .composer {
+  border-top: 1px solid var(--m-rule); margin-top: 8px;
+  padding: 16px 0 20px; display: grid; grid-template-columns: 156px 1fr; gap: 30px;
+}
+.margin-dir .composer .gutter { padding-top: 2px; }
+.margin-dir .composer .field { color: var(--m-faint); font-size: 1.06rem; font-weight: 300; display: flex; align-items: center; gap: 9px; }
+.margin-dir .composer .field .caret { width: 1.5px; height: 19px; background: var(--m-rose); }
+
+/* ============================================================
+   C — THE WORKBENCH
+   Plotter plate. Ink on cool paper, two plotter pens.
+   Tool calls are rendered as instruments, not hidden.
+   ============================================================ */
+.workbench {
+  --w-ground: #F1F2EF;
+  --w-panel:  #FFFFFE;
+  --w-ink:    #1F2429;
+  --w-soft:   #59626A;
+  --w-faint:  #8C949A;
+  --w-rule:   #CBD0CE;
+  --w-blue:   #23508C;
+  --w-red:    #A83232;
+  background: var(--w-ground);
+  color: var(--w-ink);
+  font-family: "Archivo", sans-serif;
+  min-height: 620px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.workbench .bench {
+  display: flex; gap: 0; border-bottom: 1px solid var(--w-rule); background: var(--w-panel);
+}
+.workbench .plate {
+  padding: 11px 16px; border-right: 1px solid var(--w-rule);
+  font-family: "JetBrains Mono", monospace; font-size: 0.66rem;
+  display: grid; gap: 3px; min-width: 168px;
+}
+.workbench .plate .nm { color: var(--w-ink); font-weight: 500; }
+.workbench .plate .meta { color: var(--w-faint); display: flex; gap: 8px; align-items: center; }
+.workbench .plate .bar { height: 3px; background: var(--w-rule); position: relative; margin-top: 4px; }
+.workbench .plate .bar i { position: absolute; inset: 0 auto 0 0; background: var(--w-blue); }
+.workbench .plate.muted { opacity: 0.44; }
+.workbench .plate.muted .bar i { background: var(--w-faint); }
+.workbench .add {
+  padding: 11px 16px; font-family: "JetBrains Mono", monospace; font-size: 0.66rem;
+  color: var(--w-faint); display: flex; align-items: center;
+}
+
+.workbench .floor { display: grid; grid-template-columns: 1fr 296px; }
+.workbench .thread { padding: 24px 28px 0; display: flex; flex-direction: column; }
+.workbench .q {
+  font-size: 1.3rem; line-height: 1.35; font-weight: 600; letter-spacing: -0.018em;
+  max-width: 30ch; margin-bottom: 20px;
+}
+.workbench .q::before {
+  content: "";
+  display: block; width: 34px; height: 2px; background: var(--w-red); margin-bottom: 12px;
+}
+
+.workbench .instr { border: 1px solid var(--w-rule); background: var(--w-panel); margin-bottom: 14px; }
+.workbench .instr-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 7px 11px; border-bottom: 1px solid var(--w-rule);
+  font-family: "JetBrains Mono", monospace; font-size: 0.66rem; color: var(--w-soft);
+}
+.workbench .instr-head b { color: var(--w-blue); font-weight: 700; }
+.workbench .instr-head .ms { color: var(--w-faint); font-variant-numeric: tabular-nums; }
+.workbench .instr-body { padding: 9px 11px; font-family: "JetBrains Mono", monospace; font-size: 0.66rem; }
+
+.workbench .hits { display: grid; gap: 5px; }
+.workbench .hit { display: grid; grid-template-columns: 15px 1fr 44px; gap: 9px; align-items: center; color: var(--w-soft); }
+.workbench .hit .n { color: var(--w-faint); }
+.workbench .hit .m { height: 6px; background: var(--w-rule); position: relative; }
+.workbench .hit .m i { position: absolute; inset: 0 auto 0 0; background: var(--w-blue); }
+.workbench .hit .s { text-align: right; font-variant-numeric: tabular-nums; color: var(--w-faint); }
+
+.workbench pre.sql { margin: 0 0 8px; color: var(--w-blue); font-size: 0.66rem; line-height: 1.5; white-space: pre-wrap; }
+.workbench table.res { border-collapse: collapse; width: 100%; font-size: 0.66rem; }
+.workbench table.res th {
+  text-align: left; color: var(--w-faint); font-weight: 400; padding: 2px 10px 3px 0;
+  border-bottom: 1px solid var(--w-rule);
+}
+.workbench table.res td { padding: 2px 10px 2px 0; border-bottom: 1px dotted var(--w-rule); font-variant-numeric: tabular-nums; }
+.workbench table.res td.neg { color: var(--w-red); }
+
+.workbench .answer { font-family: "Archivo", sans-serif; font-size: 0.95rem; line-height: 1.66; max-width: 56ch; }
+.workbench .answer p { margin: 0 0 12px; }
+.workbench .ref {
+  font-family: "JetBrains Mono", monospace; font-size: 0.6rem;
+  color: var(--w-blue); border-bottom: 1px solid var(--w-blue);
+  text-decoration: none; padding-bottom: 1px; margin: 0 1px;
+}
+.workbench .ref:focus-visible { outline: 2px solid var(--w-blue); outline-offset: 2px; }
+
+.workbench .composer {
+  margin-top: auto; border-top: 1px solid var(--w-rule);
+  padding: 13px 0 16px; display: flex; align-items: center; gap: 10px;
+  font-size: 0.92rem; color: var(--w-faint);
+}
+.workbench .composer .caret { width: 2px; height: 17px; background: var(--w-red); }
+
+.workbench .side { border-left: 1px solid var(--w-rule); background: var(--w-panel); padding: 22px 20px; }
+.workbench .side h4 {
+  font-family: "JetBrains Mono", monospace; font-size: 0.62rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--w-faint);
+  margin: 0 0 14px; font-weight: 400; padding-bottom: 8px; border-bottom: 1px solid var(--w-rule);
+}
+.workbench .src { margin-bottom: 16px; }
+.workbench .src .tag {
+  font-family: "JetBrains Mono", monospace; font-size: 0.6rem; color: var(--w-blue);
+  display: flex; gap: 7px; margin-bottom: 4px;
+}
+.workbench .src .tag .pg { color: var(--w-faint); }
+.workbench .src p { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--w-soft); }
+.workbench .src p mark { background: rgba(35,80,140,0.13); color: var(--w-ink); }
+
+.legend {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px;
+  font-family: "IBM Plex Mono", monospace; font-size: 0.66rem; color: var(--ink-faint);
+}
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend b { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Impeccable · shape · direction probe · 25 Aug 2026</p>
+    <h1>Three ways Inquora could look at itself</h1>
+    <p class="lede">Same conversation, same three attached documents, same tool calls. Only the topology, density and typographic voice change. Pick the one that feels closest, and say what is wrong with it.</p>
+    <p>Each direction is rendered in its own dominant theme. Every one ships both themes if chosen; showing six panels here would compare themes instead of directions. The surface under test is the chat screen rather than the landing page, because <code>PRODUCT.md</code> puts the personality in the seams rather than behind the text, and a register that survives a transcript will survive a hero.</p>
+
+    <dl class="brief">
+      <div><dt>Under test</dt><dd>The second visual register, per PRODUCT.md principle four.</dd></div>
+      <div><dt>Fixed</dt><dd>Offset composition, no centred column, no message bubbles, citations reachable in one action.</dd></div>
+      <div><dt>Banned</dt><dd>The ChatGPT and Claude shape. SaaS-cream. Cinematic AI landscape. Cream plus terracotta.</dd></div>
+      <div><dt>Content</dt><dd>A real question spanning a spreadsheet and a report, answered with two tool calls.</dd></div>
+    </dl>
+  </header>
+
+  <!-- ================= A ================= -->
+  <section class="direction">
+    <div class="dir-head">
+      <p class="dir-id"><b>Direction A</b> <span>Archival cataloguing · limestone · light</span></p>
+      <h2>The Ledger</h2>
+      <p class="thesis">Evidence is not a panel you open. It is a second column that fills up as you work, where every cited passage becomes a numbered specimen that stays on screen after the answer has scrolled past.</p>
+      <div class="facets">
+        <div class="facet"><h3>Topology</h3><p>Two permanent columns. Conversation left, accumulating evidence right. Neither collapses.</p></div>
+        <div class="facet"><h3>Second register</h3><p>Specimen numbering, hairline rules, catalogue labels. The visual language of a collection.</p></div>
+        <div class="facet"><h3>Why it holds</h3><p>It makes the product thesis structural. Verification is not a click away, it is permanently in view.</p></div>
+        <div class="facet risk"><h3>Risk</h3><p>Two columns halve the reading width. On a laptop the answer gets cramped, and the rail can feel like homework.</p></div>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-bar"><span class="dot"></span> A · the ledger</div>
+      <div class="screen-body"><div class="stage">
+        <div class="ledger">
+          <div class="conv">
+            <div class="docs">
+              <span class="doc"><i></i> q3-forecast.xlsx</span>
+              <span class="doc"><i></i> revenue-review-q3.pdf</span>
+              <span class="doc off"><i></i> scriptwriter</span>
+            </div>
+
+            <div class="turn">
+              <p class="who">You</p>
+              <p class="ask">Why is Q3 revenue 12% under forecast when pipeline coverage was above target all quarter?</p>
+            </div>
+
+            <p class="instrument"><b>search</b> <span class="args">"revenue variance pipeline coverage Q3" · 2 documents · 6 passages</span></p>
+            <p class="instrument"><b>query_table</b> <span class="args">q3-forecast.xlsx · 3 rows</span></p>
+
+            <div class="turn">
+              <p class="who">Inquora</p>
+              <div class="say">
+                <p>Coverage held, but it was measured on opportunity value rather than weighted value. The review names two causes and the spreadsheet confirms both.<sup><a href="#" tabindex="0">1</a></sup></p>
+                <p>Average deal size fell from $48.2k to $39.6k while opportunity count rose 18%, so coverage looked healthy on a metric that ignores the drop.<sup><a href="#" tabindex="0">2</a></sup> Enterprise slipped hardest at 21% under plan; mid-market finished ahead.<sup><a href="#" tabindex="0">3</a></sup></p>
+                <p>Nothing in either document explains why deal size fell. That question is not answerable from what is attached.</p>
+              </div>
+            </div>
+
+            <div class="composer"><span class="caret"></span> Ask about these documents</div>
+          </div>
+
+          <div class="rail">
+            <div class="rail-head"><span>Evidence</span><span>3 specimens</span></div>
+
+            <div class="specimen">
+              <div class="sp-no">1</div>
+              <div>
+                <p class="sp-src"><b>revenue-review-q3.pdf</b> <span>p. 4</span></p>
+                <p class="sp-text">Coverage remained above the 3.0x target throughout the quarter. <mark>Coverage is calculated on unweighted opportunity value</mark>, which does not adjust for the observed decline in average deal size.</p>
+              </div>
+            </div>
+
+            <div class="specimen">
+              <div class="sp-no">2</div>
+              <div>
+                <p class="sp-src"><b>q3-forecast.xlsx</b> <span>Deals · rows 12–14</span></p>
+                <table class="grid">
+                  <thead><tr><th>Segment</th><th>Avg deal</th><th>Var</th></tr></thead>
+                  <tbody>
+                    <tr><td>Enterprise</td><td>$39,600</td><td class="neg">−21.4%</td></tr>
+                    <tr><td>Mid-market</td><td>$21,400</td><td>+4.1%</td></tr>
+                    <tr><td>Blended</td><td>$39,600</td><td class="neg">−17.8%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="specimen">
+              <div class="sp-no">3</div>
+              <div>
+                <p class="sp-src"><b>revenue-review-q3.pdf</b> <span>p. 7</span></p>
+                <p class="sp-text">Enterprise closed at <mark>21% under plan</mark>. Mid-market finished 4% ahead, absorbing part of the shortfall but not enough to hold the blended number.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ================= B ================= -->
+  <section class="direction">
+    <div class="dir-head">
+      <p class="dir-id"><b>Direction B</b> <span>Marginalia · dark · critical edition</span></p>
+      <h2>The Margin</h2>
+      <p class="thesis">There are no messages. The conversation is a set text with a wide margin, and everything procedural, who spoke, what ran, how long it took, lives out there where a scholar would put it.</p>
+      <div class="facets">
+        <div class="facet"><h3>Topology</h3><p>One reading column with a fixed 156px gutter. No bubbles, no avatars, no alternating sides.</p></div>
+        <div class="facet"><h3>Second register</h3><p>Marginalia against precise setting: rules, brackets, pulled quotes, a rose underline where a source resolves.</p></div>
+        <div class="facet"><h3>Why it holds</h3><p>Reading is the primary act and this is the only direction that treats the transcript as something to read rather than operate.</p></div>
+        <div class="facet risk"><h3>Risk</h3><p>Closest to the second-order reflex I warned about in PRODUCT.md. Dark ground and rose pull it away from editorial-serif-on-paper, but only just.</p></div>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-bar"><span class="dot"></span> B · the margin</div>
+      <div class="screen-body"><div class="stage">
+        <div class="margin-dir">
+          <div class="rule-top">
+            <span>Q3 revenue variance · <b>three documents</b></span>
+            <span class="set"><i>q3-forecast.xlsx</i><i>revenue-review-q3.pdf</i><i class="off">scriptwriter</i></span>
+          </div>
+
+          <div class="entry">
+            <div class="gutter"><span class="lbl">Asked</span>14:02</div>
+            <p class="body-q">Why is Q3 revenue 12% under forecast when pipeline coverage was above target all quarter?</p>
+          </div>
+
+          <div class="entry">
+            <div class="gutter">
+              <span class="lbl">Answered</span>14:02
+              <span class="op"><b>searched</b> 2 docs · 6 passages</span>
+              <span class="op"><b>queried</b> q3-forecast · 3 rows</span>
+              <span class="op">1.9s to first word</span>
+            </div>
+            <div class="body-a">
+              <p>Coverage held. It was measured on the wrong thing.</p>
+              <p>The review states plainly that coverage is calculated on <a class="cite" href="#" tabindex="0">unweighted opportunity value<sup>1</sup></a>, which does not adjust for a falling average deal size. Opportunity count rose 18% across the quarter, so the ratio stayed comfortably above target while the value behind it thinned.</p>
+              <blockquote class="pulled">
+                Coverage remained above the 3.0x target throughout the quarter. Coverage is calculated on unweighted opportunity value, which does not adjust for the observed decline in average deal size.
+                <cite>revenue-review-q3.pdf · page 4</cite>
+              </blockquote>
+              <p>The spreadsheet confirms the shape of it: enterprise average deal size fell to $39,600, <a class="cite" href="#" tabindex="0">21.4% under plan<sup>2</sup></a>, while mid-market finished 4% ahead and absorbed part of the gap.</p>
+              <p><em>Neither document says why deal size fell.</em> That is not answerable from what is attached.</p>
+            </div>
+          </div>
+
+          <div class="composer">
+            <div class="gutter"><span class="lbl">Ask</span></div>
+            <div class="field"><span class="caret"></span> Continue</div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ================= C ================= -->
+  <section class="direction">
+    <div class="dir-head">
+      <p class="dir-id"><b>Direction C</b> <span>Plotter plate · two pens · light</span></p>
+      <h2>The Workbench</h2>
+      <p class="thesis">The tools are the interface. A search shows its query and its ranked hits, a table query shows its SQL and its result grid, and both stay in the transcript as instruments rather than collapsing into a spinner.</p>
+      <div class="facets">
+        <div class="facet"><h3>Topology</h3><p>Document bench across the top, dense thread below, sources docked right. Horizontal, not columnar.</p></div>
+        <div class="facet"><h3>Second register</h3><p>Technical plates: two plotter pens, measurement bars, dotted rules, tabular figures throughout.</p></div>
+        <div class="facet"><h3>Why it holds</h3><p>It is the only direction that shows the thing no competitor has. Tool calls become the reason to trust the answer.</p></div>
+        <div class="facet risk"><h3>Risk</h3><p>Density is a taste. It reads as a professional instrument to one person and as a Bloomberg terminal to the next, and it is the least calm of the three for a one-hour reading session.</p></div>
+      </div>
+    </div>
+
+    <div class="screen">
+      <div class="screen-bar"><span class="dot"></span> C · the workbench</div>
+      <div class="screen-body"><div class="stage">
+        <div class="workbench">
+          <div class="bench">
+            <div class="plate">
+              <span class="nm">q3-forecast.xlsx</span>
+              <span class="meta">sheet · 4 tabs · 812 rows</span>
+              <span class="bar"><i style="width:100%"></i></span>
+            </div>
+            <div class="plate">
+              <span class="nm">revenue-review-q3.pdf</span>
+              <span class="meta">report · 14 pp · 96 chunks</span>
+              <span class="bar"><i style="width:100%"></i></span>
+            </div>
+            <div class="plate muted">
+              <span class="nm">scriptwriter</span>
+              <span class="meta">repo · excluded</span>
+              <span class="bar"><i style="width:100%"></i></span>
+            </div>
+            <div class="add">+ attach</div>
+          </div>
+
+          <div class="floor">
+            <div class="thread">
+              <p class="q">Why is Q3 revenue 12% under forecast when pipeline coverage was above target all quarter?</p>
+
+              <div class="instr">
+                <div class="instr-head"><span><b>search_documents</b> "revenue variance pipeline coverage Q3"</span><span class="ms">240 ms · 6 hits</span></div>
+                <div class="instr-body">
+                  <div class="hits">
+                    <div class="hit"><span class="n">1</span><span class="m"><i style="width:92%"></i></span><span class="s">0.91</span></div>
+                    <div class="hit"><span class="n">2</span><span class="m"><i style="width:74%"></i></span><span class="s">0.74</span></div>
+                    <div class="hit"><span class="n">3</span><span class="m"><i style="width:61%"></i></span><span class="s">0.61</span></div>
+                    <div class="hit"><span class="n">4</span><span class="m"><i style="width:38%"></i></span><span class="s">0.38</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="instr">
+                <div class="instr-head"><span><b>query_table</b> q3-forecast.xlsx</span><span class="ms">31 ms · 3 rows</span></div>
+                <div class="instr-body">
+<pre class="sql">select segment, avg_deal, variance_pct
+from deals where quarter = 'Q3' order by variance_pct</pre>
+                  <table class="res">
+                    <thead><tr><th>segment</th><th>avg_deal</th><th>variance_pct</th></tr></thead>
+                    <tbody>
+                      <tr><td>enterprise</td><td>39,600</td><td class="neg">−21.4</td></tr>
+                      <tr><td>blended</td><td>39,600</td><td class="neg">−17.8</td></tr>
+                      <tr><td>mid_market</td><td>21,400</td><td>+4.1</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="answer">
+                <p>Coverage was measured on unweighted opportunity value, so it stayed above the 3.0x target while the value behind each opportunity fell.<a class="ref" href="#" tabindex="0">[1]</a></p>
+                <p>Enterprise carried the miss at 21.4% under plan; mid-market finished 4.1% ahead and absorbed part of it.<a class="ref" href="#" tabindex="0">[2]</a> Opportunity count rose 18% over the same period, which is what kept the ratio looking healthy.</p>
+                <p>Neither document explains why average deal size fell. Not answerable from what is attached.</p>
+              </div>
+
+              <div class="composer"><span class="caret"></span> Ask about these documents</div>
+            </div>
+
+            <div class="side">
+              <h4>Sources · 2</h4>
+              <div class="src">
+                <p class="tag">[1] revenue-review-q3.pdf <span class="pg">p.4</span></p>
+                <p>Coverage remained above the 3.0x target throughout the quarter. <mark>Coverage is calculated on unweighted opportunity value</mark>, which does not adjust for the observed decline in average deal size.</p>
+              </div>
+              <div class="src">
+                <p class="tag">[2] q3-forecast.xlsx <span class="pg">Deals!A12:F14</span></p>
+                <p>Enterprise average deal size <mark>$39,600</mark> against a plan of $50,400. Mid-market $21,400 against $20,550.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <footer>
+    <h2>What I need from you</h2>
+    <p>Not "which is prettiest". These differ in what they make structurally important, and that choice is harder to change later than any colour.</p>
+    <ol>
+      <li><strong>Which topology is right?</strong> A makes evidence permanent and co-equal. B makes the transcript a text you read. C makes the tools the proof.</li>
+      <li><strong>What is wrong with the one you pick?</strong> Every direction has a named risk above. Tell me if the risk I named is the one that actually bothers you, or if it is something else.</li>
+      <li><strong>Does anything cross over?</strong> C's instrument rendering could live inside A's left column. B's gutter could replace A's specimen numbers. The winner does not have to win whole.</li>
+    </ol>
+    <div class="legend">
+      <span><b style="background:#9C3D26"></b> A oxide</span>
+      <span><b style="background:#C98A8A"></b> B rose</span>
+      <span><b style="background:#23508C"></b> C plotter blue</span>
+      <span><b style="background:#A83232"></b> C plotter red</span>
+    </div>
+  </footer>
+
+</div>
