@@ -42,3 +42,6 @@ next-env.d.ts
 client_secret*.json
 
 .cursor/plans
+# Polaris local state (specs and ADRs are committed)
+.polaris/work/
+.polaris/runs/
