@@ -60,7 +60,7 @@ Phase 1 creates:
 | `supabase/migrations/0001_extensions_and_enums.sql` | extensions, enum types |
 | `supabase/migrations/0002_profiles.sql` | profiles + `auth.users` trigger |
 | `supabase/migrations/0003_documents_and_chunks.sql` | documents, chunks, indexes, count/status triggers |
-| `supabase/migrations/0004_chats_and_messages.sql` | chats, chat_documents, messages, citations |
+| `supabase/migrations/0004_chats_and_messages.sql` | chats, chat_documents, messages, parts |
 | `supabase/migrations/0005_rls.sql` | row-level security on every table |
 | `supabase/migrations/0006_search_chunks.sql` | hybrid retrieval function |
 | `supabase/migrations/0007_rpc.sql` | context, append, create, bulk-insert functions |
@@ -784,9 +784,14 @@ Create `supabase/tests/0001_enums.test.sql`:
 
 ```sql
 begin;
-select plan(7);
+select plan(8);
 
 select has_type('public', 'document_kind', 'document_kind enum exists');
+select is(
+  enum_range(null::public.message_part_kind)::text,
+  '{text,reasoning,tool_call,tool_result,source}',
+  'message_part_kind covers every part a tool-calling turn produces'
+);
 select has_type('public', 'processing_status', 'processing_status enum exists');
 select has_type('public', 'message_role', 'message_role enum exists');
 
@@ -844,6 +849,10 @@ create type public.processing_status as enum
   ('pending', 'processing', 'ready', 'failed');
 
 create type public.message_role as enum ('user', 'assistant');
+
+-- A message is an ordered list of parts. See docs/adr/0005.
+create type public.message_part_kind as enum
+  ('text', 'reasoning', 'tool_call', 'tool_result', 'source');
 ```
 
 - [ ] **Step 4: Apply and re-run the test**
@@ -987,7 +996,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 12 tests total across both files.
+Expected: PASS, 13 tests total across both files.
 
 - [ ] **Step 5: Commit**
 
@@ -1099,6 +1108,9 @@ create table public.documents (
   status       public.processing_status not null default 'pending',
   error        text,
   chunk_count  integer not null default 0,
+  -- Written by the extractor before embedding starts, so ingestion progress is a
+  -- fraction rather than one of four words.
+  expected_chunks integer,
   content_hash text not null,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
@@ -1192,7 +1204,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 18 tests total.
+Expected: PASS, 19 tests total.
 
 - [ ] **Step 5: Commit**
 
@@ -1219,9 +1231,10 @@ trigger now recounts once per insert rather than once per row."
 - Produces:
   - `public.chats (id, user_id, title, created_at, updated_at)` — no `type`, no `file_id`
   - `public.chat_documents (chat_id, document_id, added_at)` — composite primary key
-  - `public.messages (id, chat_id, role, content, tokens_in, tokens_out, latency_ms,
-    retrieval_ms, model, created_at)`
-  - `public.message_citations (message_id, chunk_id, rank)` — composite primary key
+  - `public.messages (id, chat_id, parent_id, role, tokens_in, tokens_out, latency_ms,
+    retrieval_ms, model, created_at)` — content lives in `message_parts`
+  - `public.message_parts (id, message_id, position, kind, text, tool_call_id, tool_name,
+    tool_args, tool_result, chunk_id)` — unique on `(message_id, position)`
 
 - [ ] **Step 1: Write the failing pgTAP test**
 
@@ -1229,9 +1242,13 @@ Create `supabase/tests/0004_chats.test.sql`:
 
 ```sql
 begin;
-select plan(4);
+select plan(6);
 
 select has_table('public', 'chat_documents', 'the chat-to-document join exists');
+select has_column('public', 'messages', 'parent_id',
+  'messages form a tree, so a branch can be edited and regenerated');
+select has_table('public', 'message_parts',
+  'a message is an ordered list of parts, not a string');
 select hasnt_column('public', 'chats', 'file_id', 'chats no longer holds a single file');
 select hasnt_column('public', 'chats', 'type', 'chats no longer duplicates the document kind');
 
@@ -1250,8 +1267,8 @@ update public.chats
 set updated_at = now() - interval '10 days'
 where id = '55555555-5555-5555-5555-555555555555';
 
-insert into public.messages (chat_id, role, content)
-values ('55555555-5555-5555-5555-555555555555', 'user', 'hello');
+insert into public.messages (chat_id, role)
+values ('55555555-5555-5555-5555-555555555555', 'user');
 
 select ok(
   (select updated_at from public.chats where id = '55555555-5555-5555-5555-555555555555')
@@ -1293,20 +1310,28 @@ create trigger chats_set_updated_at
 
 -- The join that makes several documents in one chat an array parameter rather
 -- than a rebuild.
+-- position orders the document rail in the UI. enabled is the per-chat toggle
+-- for "search only these two of my five", which is a scope change rather than
+-- removing the document from the conversation.
 create table public.chat_documents (
   chat_id     uuid not null references public.chats (id) on delete cascade,
   document_id uuid not null references public.documents (id) on delete cascade,
+  position    integer not null default 0,
+  enabled     boolean not null default true,
   added_at    timestamptz not null default now(),
   primary key (chat_id, document_id)
 );
 
 create index chat_documents_document_idx on public.chat_documents (document_id);
 
+-- parent_id makes the conversation a tree rather than a list, which is what
+-- message editing and branch navigation require. assistant-ui ships BranchPicker
+-- as a built-in; without a parent pointer it has nothing to walk.
 create table public.messages (
   id            uuid primary key default gen_random_uuid(),
   chat_id       uuid not null references public.chats (id) on delete cascade,
+  parent_id     uuid references public.messages (id) on delete cascade,
   role          public.message_role not null,
-  content       text not null,
   tokens_in     integer,
   tokens_out    integer,
   latency_ms    integer,
@@ -1316,17 +1341,45 @@ create table public.messages (
 );
 
 create index messages_chat_created_idx on public.messages (chat_id, created_at);
+create index messages_chat_parent_idx  on public.messages (chat_id, parent_id);
 
--- Which passages an answer stood on. The old pipeline discarded chunk identity
--- the moment the prompt was assembled, so an answer could not cite its sources.
-create table public.message_citations (
-  message_id uuid not null references public.messages (id) on delete cascade,
-  chunk_id   uuid not null references public.document_chunks (id) on delete cascade,
-  rank       integer not null,
-  primary key (message_id, chunk_id)
+-- A message is an ordered list of parts, not a string. This is how both
+-- LangGraph and assistant-ui model one, and it is what lets a tool call and its
+-- result survive a page reload: a conversation replayed without them loses the
+-- reason an answer said what it said.
+--
+-- The source kind absorbs what was going to be a separate citations table.
+create table public.message_parts (
+  id           uuid primary key default gen_random_uuid(),
+  message_id   uuid not null references public.messages (id) on delete cascade,
+  position     integer not null,
+  kind         public.message_part_kind not null,
+
+  text         text,    -- text, reasoning
+  tool_call_id text,    -- tool_call, tool_result
+  tool_name    text,    -- tool_call, tool_result
+  tool_args    jsonb,   -- tool_call
+  tool_result  jsonb,   -- tool_result
+  chunk_id     uuid references public.document_chunks (id) on delete set null,  -- source
+
+  created_at   timestamptz not null default now(),
+
+  constraint message_parts_shape check (
+    case kind
+      when 'text'        then text is not null
+      when 'reasoning'   then text is not null
+      when 'tool_call'   then tool_call_id is not null and tool_name is not null
+      when 'tool_result' then tool_call_id is not null
+      when 'source'      then chunk_id is not null
+    end
+  )
 );
 
-create index message_citations_chunk_idx on public.message_citations (chunk_id);
+create unique index message_parts_message_position_key
+  on public.message_parts (message_id, position);
+
+create index message_parts_chunk_idx on public.message_parts (chunk_id)
+  where kind = 'source';
 
 create function public.touch_chat_on_message()
 returns trigger
@@ -1367,7 +1420,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 22 tests total.
+Expected: PASS, 25 tests total.
 
 - [ ] **Step 5: Commit**
 
@@ -1421,8 +1474,8 @@ select ok(
   (select relrowsecurity from pg_class where oid = 'public.messages'::regclass),
   'RLS is enabled on messages');
 select ok(
-  (select relrowsecurity from pg_class where oid = 'public.message_citations'::regclass),
-  'RLS is enabled on message_citations');
+  (select relrowsecurity from pg_class where oid = 'public.message_parts'::regclass),
+  'RLS is enabled on message_parts');
 select ok(
   (select relrowsecurity from pg_class where oid = 'public.user_memories'::regclass),
   'RLS is enabled on user_memories');
@@ -1450,7 +1503,7 @@ alter table public.document_chunks   enable row level security;
 alter table public.chats             enable row level security;
 alter table public.chat_documents    enable row level security;
 alter table public.messages          enable row level security;
-alter table public.message_citations enable row level security;
+alter table public.message_parts     enable row level security;
 alter table public.user_memories     enable row level security;
 
 -- auth.uid() is wrapped in a subselect throughout so Postgres hoists it into an
@@ -1505,18 +1558,18 @@ create policy messages_via_chat on public.messages
     select 1 from public.chats c
     where c.id = messages.chat_id and c.user_id = (select auth.uid())));
 
-create policy message_citations_via_message on public.message_citations
+create policy message_parts_via_message on public.message_parts
   for all to authenticated
   using (exists (
     select 1
     from public.messages m
     join public.chats c on c.id = m.chat_id
-    where m.id = message_citations.message_id and c.user_id = (select auth.uid())))
+    where m.id = message_parts.message_id and c.user_id = (select auth.uid())))
   with check (exists (
     select 1
     from public.messages m
     join public.chats c on c.id = m.chat_id
-    where m.id = message_citations.message_id and c.user_id = (select auth.uid())));
+    where m.id = message_parts.message_id and c.user_id = (select auth.uid())));
 ```
 
 - [ ] **Step 4: Apply and re-run**
@@ -1526,7 +1579,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 30 tests total.
+Expected: PASS, 33 tests total.
 
 - [ ] **Step 5: Verify isolation from the client side, not only the catalog**
 
@@ -1721,7 +1774,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 33 tests total.
+Expected: PASS, 36 tests total.
 
 - [ ] **Step 5: Confirm the vector index is actually used**
 
@@ -1764,6 +1817,7 @@ fusion, which does not require the two scoring scales to be comparable."
 - Produces:
   - `public.get_chat_context(p_chat_id uuid, p_history_limit integer default 12) returns jsonb`
   - `public.append_message(p_chat_id uuid, p_role public.message_role, p_content text,
+    p_parent_id uuid default null,
     p_citation_chunk_ids uuid[] default '{}', p_tokens_in integer default null,
     p_tokens_out integer default null, p_latency_ms integer default null,
     p_retrieval_ms integer default null, p_model text default null) returns uuid`
@@ -1859,8 +1913,17 @@ as $$
       where cd.chat_id = c.id), '[]'::jsonb),
     'messages', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'id', m.id, 'role', m.role, 'content', m.content,
-               'createdAt', m.created_at)
+               'id', m.id, 'role', m.role, 'parentId', m.parent_id,
+               'createdAt', m.created_at,
+               'parts', coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                          'kind', mp.kind, 'text', mp.text,
+                          'toolCallId', mp.tool_call_id, 'toolName', mp.tool_name,
+                          'toolArgs', mp.tool_args, 'toolResult', mp.tool_result,
+                          'chunkId', mp.chunk_id)
+                        order by mp.position)
+                 from public.message_parts mp
+                 where mp.message_id = m.id), '[]'::jsonb))
              order by m.created_at)
       from (
         select * from public.messages
@@ -1885,6 +1948,7 @@ create function public.append_message(
   p_chat_id            uuid,
   p_role               public.message_role,
   p_content            text,
+  p_parent_id          uuid    default null,
   p_citation_chunk_ids uuid[] default '{}'::uuid[],
   p_tokens_in          integer default null,
   p_tokens_out         integer default null,
@@ -1902,16 +1966,20 @@ declare
   new_id uuid;
 begin
   insert into public.messages
-    (chat_id, role, content, tokens_in, tokens_out, latency_ms, retrieval_ms, model)
+    (chat_id, parent_id, role, tokens_in, tokens_out, latency_ms, retrieval_ms, model)
   values
-    (p_chat_id, p_role, p_content, p_tokens_in, p_tokens_out, p_latency_ms, p_retrieval_ms, p_model)
+    (p_chat_id, p_parent_id, p_role, p_tokens_in, p_tokens_out, p_latency_ms, p_retrieval_ms, p_model)
   returning id into new_id;
 
+  -- The answer text is part zero; each cited chunk follows as a source part, so
+  -- a reload replays the message exactly as it streamed.
+  insert into public.message_parts (message_id, position, kind, text)
+  values (new_id, 0, 'text', p_content);
+
   if array_length(p_citation_chunk_ids, 1) is not null then
-    insert into public.message_citations (message_id, chunk_id, rank)
-    select new_id, chunk_id, ordinality::integer
-    from unnest(p_citation_chunk_ids) with ordinality as t(chunk_id, ordinality)
-    on conflict (message_id, chunk_id) do nothing;
+    insert into public.message_parts (message_id, position, kind, chunk_id)
+    select new_id, ordinality::integer, 'source', chunk_id
+    from unnest(p_citation_chunk_ids) with ordinality as t(chunk_id, ordinality);
   end if;
 
   return new_id;
@@ -1992,7 +2060,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 39 tests total.
+Expected: PASS, 42 tests total.
 
 - [ ] **Step 5: Commit**
 
@@ -2201,7 +2269,7 @@ bunx supabase db reset
 bunx supabase test db
 ```
 
-Expected: PASS, 43 tests total.
+Expected: PASS, 46 tests total.
 
 - [ ] **Step 5: Commit**
 
@@ -2289,7 +2357,7 @@ describe("generated database types", () => {
       "chats",
       "chat_documents",
       "messages",
-      "message_citations",
+      "message_parts",
       "user_memories",
       "ingestion_jobs",
     ];
@@ -2387,7 +2455,7 @@ browser client from a server path."
 
 Before Phase 2 begins, all of these must hold:
 
-- [ ] `bunx supabase test db` passes, 43 pgTAP assertions
+- [ ] `bunx supabase test db` passes, 46 pgTAP assertions
 - [ ] `bunx supabase db diff --linked` reports no differences
 - [ ] An anonymous REST call against `documents`, `chats` and `messages` returns `[]`
 - [ ] `bun run typecheck && bunx eslint src && bun run test && bun run build` all pass
