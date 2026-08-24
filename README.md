@@ -1,235 +1,150 @@
 # Inquora
 
-AI-powered document chat application with intelligent conversation and multi-format support
+Ask a question of your documents and get an answer you can verify without leaving the page.
 
-🚀 **Live Demo**
-Visit [inquora.vercel.app](https://inquora.vercel.app) to see the application in action.
+Verification is the point. Every claim traces to the passage it came from, and reaching that
+passage takes one action. An answer with no traceable source is a worse outcome than no answer.
 
-![Landing Page](public/landing.png)
-
-## 📝 Project Overview
-
-Inquora is a modern AI-powered application that enables users to have intelligent conversations with various types of content. Beyond basic document viewing, Inquora offers AI-powered document processing, intelligent chat capabilities, and support for multiple file formats including PDFs, documents, spreadsheets, presentations, images, YouTube videos, and web URLs.
-
-![Dashboard](public/sample.png)
-
-## ✨ Key Features
-
-### 🔐 Secure Authentication
-- **Supabase Authentication** - Email & password authentication
-- **Session Management** - Secure user sessions and data protection
-
-### 📄 Multi-Format Document Support
-- **PDF Documents** - Full text extraction and chat capabilities
-- **Microsoft Office Files** - Word, Excel, PowerPoint support
-- **Google Workspace** - Docs, Sheets, Slides integration
-- **Images** - Visual content analysis and discussion (coming soon)
-- **YouTube Videos** - Transcript extraction and video-based conversations
-- **Web URLs** - Web page content processing and chat
-- **GitHub Repositories** - Code analysis and discussion (coming soon)
-- **Web Pages** - Content extraction and scraping from any webpage
-
-### 🤖 Inquora AI Agent
-- **Advanced RAG System** - Multi-source retrieval with source awareness
-- **
-Reasoning** - 4 reasoning frameworks (Chain of Thought, Tree of Thought, ReAct, Reflexion)
-- **Anti-Hallucination** - Strict source fidelity, never fabricates information
-- **Multi-Modal Intelligence** - Specialized processing for PDFs, videos, code, web content
-- **Confidence Calibration** - Transparent confidence levels for all responses
-- **Professional Output** - Structured, hierarchical, enterprise-grade responses
-- **Vector Search** - Pinecone-powered semantic search with multi-index support
-
-### 🎨 Modern User Interface
-- **Responsive Design** - Works seamlessly on desktop and mobile
-- **Dark Theme** - Modern, eye-friendly interface
-- **Real-time Updates** - Live message synchronization
-- **File Upload Modal** - Intuitive file and URL input system
-
-## 🛠️ Technology Stack
-
-### Frontend:
-- **Next.js 15** - React framework for production
-- **TypeScript** - Type-safe JavaScript development
-- **Tailwind CSS** - Utility-first CSS framework
-- **shadcn/ui** - Reusable component library
-- **Radix UI** - Accessible component primitives
-
-### Backend & Services:
-- **Supabase** - Authentication, database, and file storage
-- **Google Gemini AI** - AI conversation and document processing
-- **Pinecone** - Vector database for semantic search
-- **LangChain** - Document processing and AI orchestration
-
-### Development Tools:
-- **React Query (TanStack Query)** - Server state management
-- **React Hook Form** - Form handling and validation
-- **Zod** - Schema validation
-- **ESLint** - Code quality and consistency
-
-## 🚦 Getting Started
-
-### Prerequisites
-- Node.js (v20 or later)
-- npm or yarn
-- Supabase account
-- Google Cloud account (for Gemini AI)
-- Pinecone account
-
-### Installation
-
-```markdown
-> ⚠️ **Note:** The repository name will be changed to `inquora` soon. Please check for updates if you are cloning after August 2025.
-```
-
-1. **Clone the repository:**
-```bash
-git clone https://github.com/abhisheksharm-3/inquora.git
-cd inquora
-```
-
-2. **Install dependencies:**
-```bash
-npm install
-# or
-yarn install
-```
-
-3. **Set up environment variables** by creating a `.env.local` file in the project root:
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Google Gemini AI
-GEMINI_API_KEY=your_gemini_api_key
-
-# Pinecone Vector Database
-PINECONE_API_KEY=your_pinecone_api_key
-PINECONE_INDEX_NAME=your_current_index_name
-
-# Optional: Legacy Pinecone indexes for backward compatibility
-# Comma-separated list of old index names
-PINECONE_LEGACY_INDEX_NAMES=old-index-1,old-index-2
-
-# Site Configuration
-SITE_URL=http://localhost:3000
-```
-
-> **Note on Pinecone Indexes:** Inquora supports multiple Pinecone indexes for backward compatibility. New data will be written to `PINECONE_INDEX_NAME`, but queries will automatically check legacy indexes if a namespace isn't found in the current index. This allows seamless migration to new indexes without data loss.
-
-4. **Start the development server:**
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-5. **Open [http://localhost:3000](http://localhost:3000)** with your browser to see the result.
-
-## 🔐 Authentication Setup
-
-### Supabase Configuration
-1. Create a new project in [Supabase](https://supabase.com)
-2. Navigate to the project dashboard and find your project URL and anon key
-3. Add these values to your environment variables
-4. Set up authentication providers in the Supabase dashboard
-
-### Google Gemini AI Setup
-1. Create a new project in [Google Cloud Console](https://console.cloud.google.com)
-2. Enable the Gemini API
-3. Create API credentials and copy the API key
-4. Add the API key to your environment variables
-
-### Pinecone Setup
-1. Create an account at [Pinecone](https://pinecone.io)
-2. Create a new index with appropriate dimensions
-3. Copy your API key and index name
-4. Add these values to your environment variables
-
-## 📁 Project Structure
-
-```
-inquora/
-├── src/
-│   ├── app/                      # Next.js app router structure
-│   │   ├── (auth)/               # Authentication pages (login, signup)
-│   │   ├── (dashboard)/          # Main application dashboard
-│   │   │   ├── chat/             # Chat interface pages
-│   │   │   ├── choose/           # File type selection
-│   │   │   ├── history/          # Chat history
-│   │   │   └── settings/         # User settings
-│   │   ├── globals.css           # Global styles
-│   │   └── layout.tsx            # Root layout
-│   │
-│   ├── components/               # Reusable React components
-│   │   ├── auth/                 # Authentication UI components
-│   │   ├── chat/                 # Chat interface components
-│   │   ├── dashboard/            # Dashboard layout components
-│   │   ├── landing-page/         # Landing page components
-│   │   ├── upload/               # File upload components
-│   │   ├── ui/                   # Base UI components (shadcn/ui)
-│   │   └── shared/               # Common UI patterns
-│   │
-│   ├── hooks/                    # Custom React hooks
-│   │   ├── useAuth.ts            # Authentication state management
-│   │   ├── useChats.ts           # Chat data management
-│   │   ├── useFiles.ts           # File upload and management
-│   │   ├── useMessages.ts        # Message handling
-│   │   └── useUpload.ts          # Upload logic
-│   │
-│   ├── utils/                    # Utilities and service logic
-│   │   ├── gemini/               # Google Gemini AI integration
-│   │   ├── pinecone.ts           # Pinecone vector database
-│   │   ├── processors/           # Document processing logic
-│   │   ├── supabase/             # Supabase client and helpers
-│   │   └── upload-utils.ts       # File upload utilities
-│   │
-│   ├── constants/                # Static data and configurations
-│   │   ├── FileTypes.ts          # Supported file type definitions
-│   │   ├── PricingData.ts        # Pricing information
-│   │   └── NavItems.ts           # Navigation configuration
-│   │
-│   ├── types/                    # TypeScript type definitions
-│   │   ├── auth.ts               # Authentication types
-│   │   ├── chat.ts               # Chat-related types
-│   │   ├── supabase.ts           # Database types
-│   │   └── types.ts              # General application types
-│   │
-│   └── providers/                # React context providers
-│       └── QueryProvider.tsx     # React Query provider setup
-│
-├── public/                       # Static assets
-├── middleware.ts                 # Next.js middleware
-└── package.json                  # Dependencies and scripts
-```
-
-## 🚀 Deployment
-
-### Vercel Deployment (Recommended)
-1. Push your code to GitHub
-2. Connect your repository to [Vercel](https://vercel.com)
-3. Add your environment variables in the Vercel dashboard
-4. Deploy automatically on every push
-
-### Manual Deployment
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Start the production server:
-```bash
-npm start
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**Live:** [inquora.vercel.app](https://inquora.vercel.app)
 
 ---
 
-**Built with ❤️ using Next.js, Supabase, and Google Gemini AI by [Abhishek Sharma](https://github.com/abhisheksharm-3)**
+## Status: mid-rebuild
+
+The application running at that link is version 3. Version 4 is designed and planned but **not
+implemented**, and it replaces almost everything below the interface. If you are reading the code
+in `src/`, you are reading the system being replaced.
+
+Two slices, in order:
+
+| Slice | State | Documents |
+|---|---|---|
+| **Non-UI core** — data, retrieval, transport, ingestion | designed, planned, not started | [design](.polaris/specs/2026-08-25-non-ui-core-design.md) · [plan](.polaris/plans/2026-08-25-non-ui-core.md) |
+| **UI** — every surface, rebuilt from nothing | scoped, shaped, not started | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
+
+Decisions that are expensive to reverse live in [`docs/adr/`](docs/adr/).
+
+### Why
+
+The current system works, and it is expensive and slow in ways that are structural rather than
+incidental. Measured on 2026-08-25 against the live project:
+
+- **Five to eight LLM calls run before a single token of the answer.** Query analysis, expansion,
+  decomposition, step-back generation and a separate agentic reasoning pass, all before the call
+  that writes the reply.
+- **Hybrid search is not hybrid.** All four retrieval "strategies" send dense embedding queries to
+  the same model. There is no lexical arm.
+- **Nothing streams.** The answer arrives complete or not at all.
+- **213 of 241 documents sit at `idle`** because a status write-back in application code rarely
+  fires, so opening a chat re-derives from the vector store what a column should have held.
+- **Ingestion sleeps.** Five chunks, then a five-second pause. A 500-chunk PDF spends roughly eight
+  minutes deliberately idle.
+- **Seven packages implement two YouTube operations**, and the audio path spawns a binary that
+  cannot exist on serverless.
+
+### What replaces it
+
+- **Retrieval moves into Postgres.** pgvector HNSW and full-text search fused with reciprocal rank
+  fusion in one SQL function, so hybrid search is real and multi-document chat is an array
+  parameter rather than a rewrite. ([ADR 0001](docs/adr/0001-retrieval-on-supabase-pgvector.md))
+- **LangChain v1 for the model layer.** Provider as a config string, Zod structured output, native
+  streaming. ([ADR 0002](docs/adr/0002-langchain-v1-model-layer.md))
+- **Integrity and aggregation move into the database.** Triggers maintain what application code kept
+  getting wrong; one RPC replaces six sequential roundtrips.
+  ([ADR 0003](docs/adr/0003-database-first-logic.md))
+- **OpenTelemetry, exported to Sentry and Langfuse.** Instrument once against the standard, choose
+  the backend as config. ([ADR 0004](docs/adr/0004-opentelemetry-sentry-langfuse.md))
+- **Retrieval becomes a tool**, with the first search dispatched speculatively so the common path
+  keeps its fast first token.
+  ([ADR 0005](docs/adr/0005-tool-calling-with-a-speculative-first-search.md))
+
+Target for a single message: **one embedding call, one vector query, two Supabase roundtrips before
+generation, and a streamed first token.**
+
+---
+
+## The interface
+
+The design system is called **The Apparatus**, after the scholarly matter a critical edition sets
+beside its text. One rule holds every surface together:
+
+**Substance on the left, apparatus on the right.**
+
+Whatever a surface is about occupies the reading column. Everything that supports, explains or
+records it occupies the right column, where operations and cited specimens interleave
+chronologically. Following a citation swaps the reading column for the document, marked in place,
+while the apparatus stays put. Below 1150px the apparatus becomes footnotes, which is what an
+apparatus has always done on a narrow page.
+
+Open [`docs/design/03-all-surfaces.html`](docs/design/03-all-surfaces.html) in a browser to see all
+ten surfaces. [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md) are binding.
+
+---
+
+## What it reads
+
+PDFs, Word documents, spreadsheets, slides, images, GitHub repositories, YouTube videos, and web
+pages. Several of them in one conversation, each switchable in and out of retrieval scope.
+
+Spreadsheets are queried as tables rather than embedded as prose about tables, which is why figures
+come from cells instead of from a paragraph describing them.
+
+---
+
+## Stack
+
+| | |
+|---|---|
+| Framework | Next.js 16.3, React 19.2, TypeScript 5 |
+| Database | Supabase Postgres with pgvector |
+| Model layer | LangChain v1 |
+| Embeddings | 1024-dimension, self-hosted |
+| Cache and limits | Upstash Redis |
+| Chat interface | `@assistant-ui/react` primitives, styled from scratch |
+| Client state | TanStack Query |
+| Styling | Tailwind CSS 4, Radix primitives |
+| Observability | OpenTelemetry, Sentry, Langfuse |
+| Tests | Vitest, pgTAP |
+
+Pinecone is on its way out. tRPC was evaluated and rejected: Server Actions, generated database
+types and a shared Zod schema already solve the contract problem it exists for.
+
+---
+
+## Running it
+
+Requires **bun**. There is one lockfile and `npm install` will produce a different tree.
+
+```bash
+git clone https://github.com/abhisheksharm-3/inquora.git
+cd inquora
+bun install
+cp .env.example .env.local   # then fill it in
+bun dev
+```
+
+Environment variables are documented in [`.env.example`](.env.example) and validated by a Zod
+schema at boot, so a missing or malformed value fails immediately rather than at first use.
+
+Once the database rebuild lands, schema work runs through the Supabase CLI:
+
+```bash
+bunx supabase start        # local stack
+bunx supabase db reset     # replay migrations
+bunx supabase test db      # pgTAP
+bun run db:types           # regenerate src/core/database.types.ts
+```
+
+Never hand-edit the generated types file. Drift between it and the database is how the current
+system ended up reading a `full_text` column that does not exist.
+
+---
+
+## Contributing
+
+[`CLAUDE.md`](CLAUDE.md) carries the working rules: the laziness ladder, the layer boundaries, the
+naming standard, and where logic belongs. Read it before changing anything.
+
+Two that catch people out: commits carry no `Co-Authored-By` trailer, and a green test suite is not
+evidence that an AI pipeline works. One live end-to-end run against the real provider, or it is not
+working.
