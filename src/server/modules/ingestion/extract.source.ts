@@ -3,7 +3,8 @@ import type { Chunk } from "@/core/chunking";
 import { AppError } from "@/core/errors";
 import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
-import { chunkSource } from "./extract";
+import { fetchExternal } from "@/server/platform/http/fetch-external";
+import { chunkSource, type Source } from "./extract";
 import type { ClaimedJob } from "./ingestion.worker";
 
 const BUCKET = "documents";
@@ -30,35 +31,41 @@ export const extractDocument = async (
 
   if (error) return err(AppError.badGateway(`could not read the document row: ${error.message}`));
 
-  const text = await readText(db, document);
-  if (!text.ok) return err(text.error);
+  const source = await readSource(db, document);
+  if (!source.ok) return err(source.error);
 
-  const chunks = chunkSource({ kind: document.kind, text: text.value });
+  const chunks = chunkSource(source.value);
   if (!chunks.ok) return err(chunks.error);
 
   return ok({ chunks: chunks.value, expectedChunks: chunks.value.length });
 };
 
-const readText = async (
+type DocumentRow = {
+  kind: Source["kind"];
+  storage_path: string | null;
+  source_url: string | null;
+};
+
+const readSource = async (
   db: SupabaseClient<Database>,
-  document: { kind: string; storage_path: string | null; source_url: string | null },
-): Promise<Result<string, AppError>> => {
+  document: DocumentRow,
+): Promise<Result<Source, AppError>> => {
+  // A video is a URL to a service that already has the transcript, so it never
+  // touches storage. The seven packages that used to do this locally, one of them
+  // spawning a binary from node_modules, are gone.
+  if (document.kind === "video") {
+    if (!document.source_url) return err(AppError.badRequest("a video needs a URL"));
+    return readTranscript(document.source_url);
+  }
+
   if (document.source_url) {
-    try {
-      const response = await fetch(document.source_url, { signal: AbortSignal.timeout(30_000) });
+    // Through fetchExternal, never plain fetch: the URL came from whoever created
+    // the document, and this code runs with a service-role client inside the
+    // deployment's network.
+    const fetched = await fetchExternal(document.source_url);
+    if (!fetched.ok) return err(fetched.error);
 
-      if (!response.ok) {
-        return err(AppError.badGateway(`the source returned ${response.status}`));
-      }
-
-      return ok(stripMarkup(await response.text()));
-    } catch (cause) {
-      return err(
-        AppError.badGateway(
-          `could not fetch the source: ${cause instanceof Error ? cause.message : String(cause)}`,
-        ),
-      );
-    }
+    return ok({ kind: document.kind, text: stripMarkup(fetched.value.text) });
   }
 
   if (!document.storage_path) {
@@ -69,16 +76,161 @@ const readText = async (
 
   if (error) return err(AppError.badGateway(`could not download the file: ${error.message}`));
 
-  // Plain text and markdown need no parser. Binary formats are handled by the
-  // loaders in a follow-up, and until then they fail with a reason rather than
-  // storing an empty document.
-  if (document.kind === "web" || document.kind === "doc") return ok(await data.text());
+  const bytes = new Uint8Array(await data.arrayBuffer());
 
-  return err(
-    AppError.badRequest(
-      `extraction for ${document.kind} is not wired yet, so this document was not indexed`,
-    ),
-  );
+  switch (document.kind) {
+    case "pdf":
+      return readPdf(bytes);
+    case "sheet":
+      return readSheet(bytes);
+    case "doc":
+      return readDoc(bytes, await data.text());
+    default:
+      // Plain text needs no parser.
+      return ok({ kind: document.kind, text: await data.text() });
+  }
+};
+
+/**
+ * Every parser is imported where it is used rather than at module load. A route
+ * that answers a question should not pull a spreadsheet reader into its bundle.
+ */
+const readPdf = async (bytes: Uint8Array): Promise<Result<Source, AppError>> => {
+  try {
+    const { default: parse } = await import("pdf-parse");
+    const parsed = await parse(Buffer.from(bytes));
+
+    return ok({ kind: "pdf", text: parsed.text });
+  } catch (cause) {
+    return err(
+      AppError.badRequest(
+        `that file could not be read as a PDF: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+};
+
+/**
+ * A workbook becomes real rows, not a flattened blob of text. The old extractor
+ * wrote `=== Sheet: name ===` and embedded it, which destroys columns, types and
+ * row identity, and is why spreadsheet questions failed.
+ */
+const readSheet = async (bytes: Uint8Array): Promise<Result<Source, AppError>> => {
+  try {
+    const { default: ExcelJS } = await import("exceljs");
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(bytes as unknown as ArrayBuffer);
+
+    const sheets = workbook.worksheets.map((worksheet) => {
+      const rows: string[][] = [];
+      let header: string[] = [];
+
+      worksheet.eachRow((row, index) => {
+        const values = (row.values as unknown[]).slice(1).map((cell) => cellToText(cell));
+
+        if (index === 1) header = values;
+        else rows.push(values);
+      });
+
+      return { name: worksheet.name, header, rows };
+    });
+
+    return ok({ kind: "sheet", sheets: sheets.filter((sheet) => sheet.rows.length > 0) });
+  } catch (cause) {
+    return err(
+      AppError.badRequest(
+        `that file could not be read as a spreadsheet: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+};
+
+/** A cell keeps its own text. A formula keeps its result, which is what a reader sees. */
+const cellToText = (cell: unknown): string => {
+  if (cell === null || cell === undefined) return "";
+  if (typeof cell === "object" && "result" in cell)
+    return String((cell as { result: unknown }).result ?? "");
+  if (typeof cell === "object" && "text" in cell)
+    return String((cell as { text: unknown }).text ?? "");
+  if (cell instanceof Date) return cell.toISOString().slice(0, 10);
+
+  return String(cell);
+};
+
+const readDoc = async (bytes: Uint8Array, fallback: string): Promise<Result<Source, AppError>> => {
+  // A .docx is a zip; anything else with kind `doc` is already text.
+  const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+
+  if (!isZip) return ok({ kind: "doc", text: fallback });
+
+  try {
+    const mammoth = await import("mammoth");
+    // extractRawText rather than convertToHtml: the text is going to a chunker
+    // and an embedding model, and markup would be embedded as content.
+    const { value } = await mammoth.extractRawText({ buffer: Buffer.from(bytes) });
+
+    return ok({ kind: "doc", text: value });
+  } catch (cause) {
+    return err(
+      AppError.badRequest(
+        `that document could not be read: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+};
+
+/**
+ * Subtitles if the video has them, a transcription if it does not. Both come from
+ * the Space that is already serving them.
+ */
+const readTranscript = async (url: string): Promise<Result<Source, AppError>> => {
+  const { env } = await import("@/server/platform/env");
+  const configuration = env();
+
+  if (!configuration.MULTIUTILITY_API_KEY) {
+    return err(
+      AppError.misconfigured("MULTIUTILITY_API_KEY is not set, so no subtitles can be read"),
+    );
+  }
+
+  // The Space does the fetching, so this is not our network being probed, but a
+  // URL that is not https has no business being passed on either.
+  if (!url.startsWith("https://")) {
+    return err(AppError.badRequest("a video URL must be https"));
+  }
+
+  try {
+    const response = await fetch(`${configuration.EMBEDDINGS_BASE_URL}/api/v1/subtitles/extract`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": configuration.MULTIUTILITY_API_KEY,
+      },
+      body: JSON.stringify({ url, lang: "en" }),
+      signal: AbortSignal.timeout(120_000),
+    });
+
+    if (!response.ok) {
+      return err(AppError.badGateway(`the subtitle service returned ${response.status}`));
+    }
+
+    const body = (await response.json()) as { subtitles?: string[] };
+    const lines = body.subtitles ?? [];
+
+    // The endpoint returns lines without timings, so the window is derived from
+    // position. A real timestamp arrives when the service exposes one; until then
+    // a citation points at a passage rather than a second.
+    return ok({
+      kind: "video",
+      transcript: lines.map((text, index) => ({ start: index * 5, text })),
+    });
+  } catch (cause) {
+    return err(
+      AppError.badGateway(
+        `could not read subtitles: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
 };
 
 /** Enough to make an HTML page readable. Not a parser, and not pretending to be. */
