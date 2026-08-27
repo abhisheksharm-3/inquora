@@ -1,0 +1,158 @@
+import { tool } from "langchain";
+import { z } from "zod";
+import type { AppError } from "@/core/errors";
+import { evaluateArithmetic } from "@/core/arithmetic";
+import type { Result } from "@/core/result";
+import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
+import type { ChatContext } from "./chat.schema";
+
+interface Dependencies {
+  context: ChatContext;
+  retrieval: { retrieve(request: RetrievalRequest): Promise<Result<RetrievedChunk[], AppError>> };
+  chunks: {
+    range(args: {
+      documentId: string;
+      from: number;
+      to: number;
+    }): Promise<Result<RetrievedChunk[], AppError>>;
+  };
+  memories: { remember(content: string): Promise<Result<string, AppError>> };
+  /** Called with the chunk ids a search returned, so the answer can cite them. */
+  onCitations: (chunkIds: string[]) => void;
+}
+
+/** A passage as the model reads it: numbered, attributed, quotable. */
+const renderChunks = (chunks: RetrievedChunk[], context: ChatContext): string =>
+  chunks
+    .map((chunk) => {
+      const document = context.documents.find((d) => d.id === chunk.documentId);
+      return `[${chunk.chunkIndex}] ${document?.title ?? chunk.documentId}\n${chunk.content}`;
+    })
+    .join("\n\n");
+
+/**
+ * The tools the answering agent is given.
+ *
+ * Retrieval is a tool rather than a fixed step, per ADR 0005, so the model can
+ * search again with a better query, read around a hit when an answer straddles a
+ * chunk boundary, or skip retrieval entirely when the question is about the
+ * conversation. A fixed pipeline pays for retrieval either way and gains nothing
+ * on that last case.
+ *
+ * A tool never throws. A failure is a sentence the model can act on, because a
+ * thrown error inside the loop ends the turn with nothing to show.
+ */
+export const createTools = ({
+  context,
+  retrieval,
+  chunks,
+  memories,
+  onCitations,
+}: Dependencies) => {
+  const documentIds = context.documents.map((d) => d.id);
+
+  const searchDocuments = tool(
+    async ({ query, limit }: { query: string; limit?: number }) => {
+      if (documentIds.length === 0) return "No documents are attached to this conversation.";
+
+      const found = await retrieval.retrieve({ query, documentIds, limit: limit ?? 12 });
+
+      if (!found.ok) {
+        return found.error.status === 404
+          ? `Nothing in the attached documents matched "${query}". Try different wording, or say the answer is not in these documents.`
+          : `The search failed: ${found.error.detail ?? found.error.type}`;
+      }
+
+      onCitations(found.value.map((chunk) => chunk.chunkId));
+
+      return renderChunks(found.value, context);
+    },
+    {
+      name: "search_documents",
+      description:
+        "Search the documents attached to this conversation. Returns the passages that matched, " +
+        "each numbered by its position in its document. Use this before answering anything about " +
+        "document content.",
+      schema: z.object({
+        query: z.string().describe("What to look for, in the user's own terms."),
+        limit: z.number().int().min(1).max(30).optional(),
+      }),
+    },
+  );
+
+  const readChunks = tool(
+    async ({ document_id, from, to }: { document_id: string; from: number; to: number }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await chunks.range({ documentId: document_id, from, to });
+
+      if (!found.ok)
+        return `Could not read those passages: ${found.error.detail ?? found.error.type}`;
+      if (found.value.length === 0) return "There are no passages in that range.";
+
+      onCitations(found.value.map((chunk) => chunk.chunkId));
+
+      return renderChunks(found.value, context);
+    },
+    {
+      name: "read_chunks",
+      description:
+        "Read consecutive passages from one document by position. Use this when a search hit looks " +
+        "cut off, to read what comes either side of it.",
+      schema: z.object({
+        document_id: z.guid(),
+        from: z.number().int().min(0),
+        to: z.number().int().min(0),
+      }),
+    },
+  );
+
+  const listDocuments = tool(
+    async () => {
+      if (context.documents.length === 0) return "No documents are attached to this conversation.";
+
+      return context.documents
+        .map((d) => `${d.title} — ${d.kind}, ${d.status}, ${d.chunkCount} passages (id ${d.id})`)
+        .join("\n");
+    },
+    {
+      name: "list_documents",
+      description:
+        "List the documents attached to this conversation, with their kind, whether they are ready " +
+        "to search, and how many passages each holds.",
+      schema: z.object({}),
+    },
+  );
+
+  const remember = tool(
+    async ({ content }: { content: string }) => {
+      const saved = await memories.remember(content);
+      return saved.ok ? "Saved." : `Could not save that: ${saved.error.detail ?? saved.error.type}`;
+    },
+    {
+      name: "remember",
+      description:
+        "Store a durable fact about the user, such as a preference or their role. Only for things " +
+        "that should apply to future conversations.",
+      schema: z.object({ content: z.string().min(1).max(500) }),
+    },
+  );
+
+  const calculate = tool(
+    async ({ expression }: { expression: string }) => {
+      const value = evaluateArithmetic(expression);
+      return value.ok ? String(value.value) : value.error;
+    },
+    {
+      name: "calculate",
+      description:
+        "Evaluate an arithmetic expression exactly. Use this for any number that matters rather " +
+        "than computing it in your head.",
+      schema: z.object({ expression: z.string().min(1).max(200) }),
+    },
+  );
+
+  return [searchDocuments, readChunks, listDocuments, remember, calculate];
+};

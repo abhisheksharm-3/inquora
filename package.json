@@ -15,7 +15,8 @@
     "db:types": "supabase gen types typescript --linked > src/core/database.types.ts",
     "db:test": "bun run scripts/run-pgtap.ts",
     "db:push": "supabase db push --linked",
-    "eval": "bun run scripts/eval-retrieval.ts"
+    "eval": "bun run scripts/eval-retrieval.ts",
+    "live": "bun run scripts/live-answer.ts"
   },
   "description": "Inquora \u2013 Chat with documents, videos, and more using AI.",
   "dependencies": {
