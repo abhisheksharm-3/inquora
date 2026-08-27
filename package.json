@@ -16,7 +16,8 @@
     "db:test": "bun run scripts/run-pgtap.ts",
     "db:push": "supabase db push --linked",
     "eval": "bun run scripts/eval-retrieval.ts",
-    "live": "bun run scripts/live-answer.ts"
+    "live": "bun run scripts/live-answer.ts",
+    "live:deployed": "bun run scripts/live-deployed.ts"
   },
   "description": "Inquora \u2013 Chat with documents, videos, and more using AI.",
   "dependencies": {

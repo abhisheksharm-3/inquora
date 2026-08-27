@@ -239,12 +239,29 @@ that was validated.
 endpoint, but the endpoint returns lines without timings, so a video citation currently points at a
 passage rather than a second.
 
+## Three failures only the deployed run could find
+
+The local suite was green through all of these.
+
+1. **`initChatModel` cannot be bundled.** It resolves the provider package with a fully dynamic
+   import, so the deployed route answered "Cannot find module as expression is too dynamic" while
+   every local test passed against node_modules. Marking the packages external did not help: the
+   transformation happens at build time. The providers are a static map now.
+2. **Externalising `@langchain/core` beside a bundled copy** turned that into "Cannot read
+   properties of undefined" from inside the provider constructor. Only the document parsers stay
+   external.
+3. **`gemini-flash-latest` answered 503**, "this model is currently experiencing high demand". The
+   alias points at whatever is newest, which is what everyone else points at. The default is a
+   pinned `gemini-2.5-flash` with three attempts, and first-event latency went from 89 seconds to
+   3.8.
+
 ## What is not done
 
-- **Generation is unverified against the real provider.** POST to generativelanguage.googleapis.com
-  stalls from the development network — GET returns in 0.36s, POST hangs on IPv4 and IPv6, inside
-  and outside the sandbox. `bun run live` exists and will produce a real answer with resolved
-  citations from any network that allows it.
+- **The ingestion drain is not reachable by the schedule yet.** `pg_cron` runs every minute and
+  calls `poke_ingestion_worker`, which reads `app.settings.ingestion_worker_url` and
+  `app.settings.ingestion_worker_key`. Neither is set, so the poke returns without doing anything
+  and work waits for a manual `POST /api/ingestion/drain`. Setting them, plus
+  `INGESTION_WORKER_SECRET` in the deployment, closes it.
 - **Observability.** ADR 0004's OpenTelemetry, Sentry and Langfuse wiring is not built. The metric
   columns on `messages` are populated for latency; tokens and model are not yet written.
 - **The remaining six tools**, which need schema that phase 4 did not land.

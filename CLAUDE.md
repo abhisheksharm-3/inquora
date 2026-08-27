@@ -19,11 +19,17 @@ Inquora is being rebuilt in two slices.
   Brief: `.polaris/specs/2026-08-25-ui-shape-brief.md`
   Mockups: `docs/design/`
 
-**Measured on 2026-08-27, live rather than mocked:** retrieval scores recall@4 87.5% and MRR 0.933
-over the fixture corpus (`bun run eval`); a real PDF ingests end to end in about three seconds
-(`bun run scripts/live-ingest.ts <file>`). The one thing unverified against a real provider is
-generation: POST to generativelanguage.googleapis.com is blocked from the development network, so
-`bun run live` has to be run from somewhere else.
+**Measured on 2026-08-27, live rather than mocked:**
+
+- Retrieval scores recall@4 87.5% and MRR 0.933 over the fixture corpus. `bun run eval`
+- A real PDF ingests end to end in about three seconds. `bun run scripts/live-ingest.ts <file>`
+- The deployed endpoint answers a real question from a real document through Gemini: 200
+  text/event-stream, first event in 3.8 seconds, 6.5 seconds total, and the assistant message
+  persisted with three source parts. `bun run live:deployed`
+
+The development network blocks POST to generativelanguage.googleapis.com — GET returns in 0.36s,
+POST hangs on IPv4 and IPv6 — so anything touching generation has to be checked against the
+deployment rather than locally.
 
 Decisions that are expensive to reverse are ADRs in `docs/adr/`. Read them before proposing
 something they already settled.
