@@ -1,51 +1,172 @@
-import Features from "@/components/landing-page/Features";
-import Hero from "@/components/landing-page/Hero";
-import Pricing from "@/components/landing-page/Pricing";
-import Faqs from "@/components/landing-page/Faq";
-import Layout from "@/components/layout/Layout";
-import Dither from "@/components/backgrounds/Dither/Dither";
+import type { Metadata } from "next";
+import { IBM_Plex_Mono, Newsreader } from "next/font/google";
+import styles from "./page.module.css";
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Inquora — down for a rebuild",
+  description: "Inquora is offline while it is rebuilt from the database up.",
+};
+
+const specimens = [
+  {
+    source: "Why",
+    passage:
+      "Two hundred and thirteen of two hundred and forty-one documents were stuck unprocessed, and answers were assembled from eight model calls before the first word appeared. That is not a bug list, it is a foundation problem.",
+  },
+  {
+    source: "What is being replaced",
+    passage:
+      "The schema, with derived state maintained by the database rather than by application code that mostly did not run. Retrieval, as one hybrid query instead of four dense ones. Streaming, so the answer arrives as it is written.",
+  },
+  {
+    source: "What is not changing",
+    passage:
+      "Every answer stays traceable to the passage it came from. Your documents stay yours, and nothing trains on them.",
+  },
+];
+
+const budget = [
+  ["Model calls before an answer", "5 to 8", "1, or 2 when it searches"],
+  ["Embedding calls per question", "4 to 8", "1, cached"],
+  ["Vector searches per question", "4 to 8", "1"],
+  ["Database roundtrips per turn", "8, sequential", "3"],
+  ["First word of the answer", "after the whole answer", "as it is written"],
+];
+
+const swaps = [
+  [
+    "Retrieval",
+    "Four dense vector queries to a separate service, re-ranked by counting shared words.",
+    "One query that runs vector and full-text search together and fuses them by rank, in the same database as everything else.",
+  ],
+  [
+    "Correctness of state",
+    "Application code wrote back whether a document had finished processing, and usually did not.",
+    "The database maintains it. A count cannot drift from the rows it counts.",
+  ],
+  [
+    "Failures",
+    "Saved as assistant messages, so every error became a permanent turn in the conversation.",
+    "Errors are errors. They are reported, not remembered as something the assistant said.",
+  ],
+];
 
 /**
- * Renders the main landing page, which assembles the Hero, Features, Pricing,
- * and FAQs sections.
- *
- * It features a unique full-screen dither effect for the hero section that
- * transitions smoothly into a solid background for the subsequent content.
- * @returns {JSX.Element} The complete landing page component.
+ * The landing page while the product is offline. Static on purpose: no client
+ * components and no WebGL, so the one page that has to work cannot be broken by
+ * the rebuild happening behind it.
  */
-const Home = () => {
-  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
+const Home = () => (
+  <main className={`${styles.page} ${newsreader.variable} ${plexMono.variable}`}>
+    <div className={styles.nav}>
+      <span className={styles.wordmark}>Inquora</span>
+      <span>Offline · rebuilding</span>
+    </div>
 
-  return (
-    <Layout showDitherBackground={false} contentClassName="p-0">
-      <div className="relative min-h-screen">
-        <div className="absolute inset-0 z-0">
-          <Dither
-            waveColor={brandViolet}
-            disableAnimation={false}
-            enableMouseInteraction={true}
-            mouseRadius={0.3}
-            colorNum={3}
-            waveAmplitude={0.2}
-            waveFrequency={1.5}
-            waveSpeed={0.02}
-          />
-        </div>
+    <div className={styles.stage}>
+      <h1 className={styles.thesis}>
+        Inquora is down, and is being <em>rebuilt</em>.
+      </h1>
 
-        <div className="relative z-40">
-          <Hero />
-        </div>
+      <p className={styles.sub}>
+        The version that stood here has been taken offline. It is being rebuilt from the database
+        up, so nothing is being patched around: <b>the schema, retrieval, streaming and the
+        interface are all being replaced</b>, in that order.
+      </p>
 
-        <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-background z-30" />
+      <p className={styles.note}>
+        <b>There is nothing to sign in to in the meantime.</b> This page is the whole site until the
+        rebuild reaches a version worth using.
+      </p>
+    </div>
+
+    <aside className={styles.apparatus}>
+      <div className={styles.apparatusHead}>
+        <span>Apparatus</span>
+        <span>{specimens.length} specimens</span>
       </div>
 
-      <div className="bg-white/70 dark:bg-black/70 relative z-20">
-        <Features />
-        <Pricing />
-        <Faqs />
+      {specimens.map((specimen, index) => (
+        <div className={styles.specimen} key={specimen.source}>
+          <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
+          <div>
+            <p className={styles.source}>{specimen.source}</p>
+            <p className={styles.passage}>{specimen.passage}</p>
+          </div>
+        </div>
+      ))}
+    </aside>
+
+    <section className={styles.ledger}>
+      <div className={styles.ledgerMain}>
+        <h2 className={styles.heading}>What the rebuild is measured against</h2>
+        <p className={styles.lede}>
+          The old system was slow because of how much it did per question, not because of where it
+          ran. These are the numbers being designed to, per question asked.
+        </p>
+
+        <div className={styles.scroller}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th scope="col">Per question</th>
+                <th scope="col">Was</th>
+                <th scope="col">Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {budget.map(([metric, was, target]) => (
+                <tr key={metric}>
+                  <td>{metric}</td>
+                  <td>{was}</td>
+                  <td className={styles.target}>{target}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className={styles.caption}>
+          Measured on 2026-08-25 against the running system. Targets are the design budget, not
+          results: they will be published once the rebuild can be measured the same way.
+        </p>
       </div>
-    </Layout>
-  );
-};
+
+      <aside className={styles.ledgerSide}>
+        <p className={styles.sideHead}>Three things changing shape</p>
+        <dl className={styles.swap}>
+          {swaps.map(([title, was, now]) => (
+            <div key={title}>
+              <dt>{title}</dt>
+              <dd>
+                <span className={styles.was}>Was</span>
+                {was}
+              </dd>
+              <dd>
+                <span className={styles.now}>Now</span>
+                <b>{now}</b>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </aside>
+    </section>
+  </main>
+);
 
 export default Home;
