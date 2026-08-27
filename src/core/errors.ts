@@ -1,22 +1,12 @@
-/** RFC 9457 problem document. Sent as `application/problem+json`. */
-export interface ProblemDetails {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  instance: string;
-}
-
-const TITLES: Record<number, string> = {
-  404: "Not Found",
-  409: "Conflict",
-  429: "Too Many Requests",
-  502: "Bad Gateway",
-};
-
 /**
- * An error that already knows its HTTP status. The transport layer serializes it
- * rather than translating a private error vocabulary into one.
+ * An error that already knows its HTTP status. The transport layer renders it as
+ * an RFC 9457 problem document rather than translating a private error
+ * vocabulary into one.
+ *
+ * The status is the whole classification. There is no title here on purpose:
+ * reason phrases are standard and Node ships them as http.STATUS_CODES, so they
+ * are looked up where the document is serialized. `core/` stays free of any
+ * runtime-specific import.
  */
 export class AppError extends Error {
   readonly status: number;
@@ -25,7 +15,7 @@ export class AppError extends Error {
   readonly retryAfterSeconds?: number;
 
   private constructor(status: number, type: string, detail?: string, retryAfterSeconds?: number) {
-    super(detail ?? TITLES[status] ?? "Error");
+    super(detail ?? type);
     this.name = "AppError";
     this.status = status;
     this.type = type;
@@ -38,12 +28,6 @@ export class AppError extends Error {
   static rateLimited = (retryAfterSeconds: number, detail?: string) =>
     new AppError(429, "/errors/rate-limited", detail, retryAfterSeconds);
   static badGateway = (detail?: string) => new AppError(502, "/errors/bad-gateway", detail);
+  /** The environment or a provider is configured wrongly. Never shown to a user. */
+  static misconfigured = (detail?: string) => new AppError(500, "/errors/misconfigured", detail);
 }
-
-export const toProblemDetails = (e: AppError, instance: string): ProblemDetails => ({
-  type: e.type,
-  title: TITLES[e.status] ?? "Error",
-  status: e.status,
-  ...(e.detail === undefined ? {} : { detail: e.detail }),
-  instance,
-});

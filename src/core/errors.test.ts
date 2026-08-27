@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AppError, toProblemDetails } from "./errors";
+import { AppError } from "./errors";
 
 describe("AppError", () => {
   it("carries the HTTP status for a missing resource", () => {
@@ -22,14 +22,7 @@ describe("AppError", () => {
     expect(AppError.badGateway().status).toBe(502);
   });
 
-  it("serializes to an RFC 9457 problem document", () => {
-    const e = AppError.conflict("still processing");
-    expect(toProblemDetails(e, "/api/chats/abc/messages")).toEqual({
-      type: "/errors/conflict",
-      title: "Conflict",
-      status: 409,
-      detail: "still processing",
-      instance: "/api/chats/abc/messages",
-    });
+  it("is a real Error, so an unexpected throw still has a stack", () => {
+    expect(AppError.notFound()).toBeInstanceOf(Error);
   });
 });

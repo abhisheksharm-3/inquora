@@ -30,13 +30,13 @@ Two more, specific to this half:
 
 ## Credentials this half needs
 
-| Variable | Needed by | Status on 2026-08-27 |
-|---|---|---|
-| `SUPABASE_DB_URL` | CI migrate job | set |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | every request | in Vercel, placeholders locally |
-| `MULTIUTILITY_API_KEY` | embeddings, transcription | **missing.** The Space answers `/health` unauthenticated and returns 401 on `/embeddings/generate` without `x-api-key` |
-| `GEMINI_API_KEY` | generation | **missing** |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | embedding cache, rate limits | **missing** |
+| Variable                                                    | Needed by                    | Status on 2026-08-27                                                                                                   |
+| ----------------------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `SUPABASE_DB_URL`                                           | CI migrate job               | set                                                                                                                    |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | every request                | in Vercel, placeholders locally                                                                                        |
+| `MULTIUTILITY_API_KEY`                                      | embeddings, transcription    | **missing.** The Space answers `/health` unauthenticated and returns 401 on `/embeddings/generate` without `x-api-key` |
+| `GEMINI_API_KEY`                                            | generation                   | **missing**                                                                                                            |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`        | embedding cache, rate limits | **missing**                                                                                                            |
 
 Where a credential is absent, the work is built and unit-tested against a fake transport, and the
 live end-to-end run is recorded as not done. A green unit suite is not evidence for an AI pipeline.
