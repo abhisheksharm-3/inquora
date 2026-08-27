@@ -11,15 +11,27 @@ import { err, ok, type Result } from "@/core/result";
  * unchecked is server-side request forgery: the address can name the cloud
  * metadata endpoint, a database on a private subnet, or something on loopback.
  *
- * So: https only, no credentials in the URL, every resolved address checked
- * against the private ranges, and redirects followed by hand so a public URL
- * cannot bounce to a private one.
+ * Four rules: https only, no credentials in the URL, every resolved address
+ * checked against the private ranges, and redirects followed by hand so a public
+ * URL cannot bounce to a private one.
+ *
+ * The fifth problem is DNS rebinding. Validating the hostname and then calling
+ * fetch resolves it twice, and an attacker controlling the name server can answer
+ * the second lookup with a private address. So the connection is pinned: the
+ * socket is opened to the address that was validated, using a lookup that refuses
+ * to return anything else, while the URL keeps its hostname so TLS and the
+ * certificate still verify against the real name.
  */
 
 const MAX_REDIRECTS = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-const assertPublic = async (raw: string): Promise<Result<URL, AppError>> => {
+interface Checked {
+  url: URL;
+  addresses: { address: string; family: number }[];
+}
+
+const assertPublic = async (raw: string): Promise<Result<Checked, AppError>> => {
   let url: URL;
 
   try {
@@ -36,7 +48,7 @@ const assertPublic = async (raw: string): Promise<Result<URL, AppError>> => {
     return err(AppError.badRequest("a URL with credentials in it will not be fetched"));
   }
 
-  let addresses: { address: string }[];
+  let addresses: { address: string; family: number }[];
 
   try {
     addresses = await lookup(url.hostname, { all: true });
@@ -44,13 +56,31 @@ const assertPublic = async (raw: string): Promise<Result<URL, AppError>> => {
     return err(AppError.badRequest(`${url.hostname} does not resolve`));
   }
 
-  // Every address, not the first: a hostname that resolves to one public and one
+  // Every address, not the first: a hostname answering with one public and one
   // private address must not be reachable through the private one.
   if (addresses.length === 0 || addresses.some(({ address }) => isPrivateAddress(address))) {
     return err(AppError.badRequest(`${url.hostname} resolves to an address that is not public`));
   }
 
-  return ok(url);
+  return ok({ url, addresses });
+};
+
+/**
+ * A dispatcher whose DNS lookup can only return the addresses already validated.
+ * This is what closes the window between checking a name and connecting to it.
+ */
+const pinnedDispatcher = async (checked: Checked) => {
+  const { Agent } = await import("undici");
+
+  return new Agent({
+    connect: {
+      lookup: (
+        _hostname: string,
+        _options: unknown,
+        callback: (error: Error | null, addresses: { address: string; family: number }[]) => void,
+      ) => callback(null, checked.addresses),
+    },
+  });
 };
 
 export const fetchExternal = async (
@@ -66,12 +96,15 @@ export const fetchExternal = async (
     let response: Response;
 
     try {
-      response = await fetch(checked.value, {
-        // Manual, so each hop is checked before it is taken.
+      response = await fetch(checked.value.url, {
+        // Manual, so every hop is validated before it is taken.
         redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
         headers: { accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8" },
-      });
+        dispatcher: await pinnedDispatcher(checked.value),
+        // `dispatcher` is undici's, which is what Node's fetch is built on. It is
+        // not in the DOM RequestInit type.
+      } as RequestInit & { dispatcher: unknown });
     } catch (cause) {
       return err(
         AppError.badGateway(
@@ -84,7 +117,7 @@ export const fetchExternal = async (
       const location = response.headers.get("location");
       if (!location) return err(AppError.badGateway("that URL redirected to nowhere"));
 
-      target = new URL(location, checked.value).toString();
+      target = new URL(location, checked.value.url).toString();
       continue;
     }
 
@@ -101,7 +134,7 @@ export const fetchExternal = async (
       return err(AppError.badRequest("that page is larger than 10MB"));
     }
 
-    return ok({ text, url: checked.value.toString() });
+    return ok({ text, url: checked.value.url.toString() });
   }
 
   return err(AppError.badGateway("that URL redirected too many times"));

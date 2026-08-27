@@ -59,6 +59,21 @@ export const parseEnv = (source: Record<string, string | undefined>): Result<Env
   return err(AppError.misconfigured(detail));
 };
 
+/**
+ * Where this deployment is reachable, which an email confirmation link has to be
+ * absolute about. Development is localhost, a deploy preview is whatever Vercel
+ * named it, and production is SITE_URL.
+ */
+export const siteUrl = (): string => {
+  const configuration = env();
+
+  if (configuration.NODE_ENV === "development") return "http://localhost:3000";
+  if (configuration.SITE_URL) return configuration.SITE_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+
+  return "https://inquora.vercel.app";
+};
+
 let cached: Env | undefined;
 
 /**

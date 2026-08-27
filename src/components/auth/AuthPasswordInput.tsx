@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
 import { TypePasswordInputProps } from "@/types/auth";
 import { Button } from "../ui/button";
-import { cn } from "@/utils/cn";
+import { cn } from "@/ui/lib/cn";
 
 /**
  * Renders a password input field with a toggle to show or hide the password text.

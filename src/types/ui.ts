@@ -1,6 +1,8 @@
 import { buttonVariants } from "@/components/ui/button";
 import { VariantProps } from "class-variance-authority";
-import { TypeChat } from "./database";
+import type { Database } from "@/core/database.types";
+
+type TypeChat = Database["public"]["Tables"]["chats"]["Row"];
 import { MotionProps } from "motion/react";
 
 export interface TypeButtonCta extends React.ButtonHTMLAttributes<HTMLButtonElement> {

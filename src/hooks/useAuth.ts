@@ -9,9 +9,9 @@ import {
   TypeSignupFormData,
 } from "@/types/auth";
 import { signIn, signUp } from "@/app/(auth)/actions";
-import { supabaseBrowserClient } from "@/data/supabase/client";
+import { supabaseBrowserClient } from "@/ui/supabase/browser";
 import { EnumAuthErrorType } from "@/types/auth";
-import { categorizeAuthError, handleAuthErrors } from "@/utils/auth-utils";
+import { categorizeAuthError, handleAuthErrors } from "@/ui/lib/auth-errors";
 
 /**
  * A custom hook to manage user authentication processes like login and signup.
@@ -135,25 +135,11 @@ export const useAuth = () => {
         });
       }
 
-      const defaultUser = {
-        id: userId,
-        email: signupData.email,
-        name: signupData.fullName,
-        created_at: new Date().toISOString(),
-      };
-
-      const { error: insertError } = await supabase.from("users").insert(defaultUser);
-
-      if (insertError) {
-        throw categorizeAuthError(insertError, {
-          action: "insertUser",
-          step: "createUserProfile",
-          userId,
-          userEmail: signupData.email,
-        });
-      }
-
-      return defaultUser;
+      // The profile row is created by the on_auth_user_created trigger, which
+      // reads the display name out of the auth metadata. Writing it here as well
+      // is how the old schema ended up with identity in two places and no
+      // relationship between them.
+      return { id: userId, email: signupData.email, name: signupData.fullName };
     } catch (error) {
       if (error && typeof error === "object" && "type" in error) {
         throw error as TypeAuthError;

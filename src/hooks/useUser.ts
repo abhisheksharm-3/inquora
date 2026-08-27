@@ -1,10 +1,15 @@
 "use client";
 
+import type { Database } from "@/core/database.types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabaseBrowserClient } from "@/data/supabase/client";
-import { TypeUser } from "@/types/database";
+import { supabaseBrowserClient } from "@/ui/supabase/browser";
 import { Session } from "@supabase/supabase-js";
-import { QUERY_KEYS } from "@/config/constants";
+
+/** The one cache key this hook owns. It lived in a config module that held nine
+ * unrelated things, most of them for code that no longer exists. */
+const QUERY_KEYS = { USER: ["user"] as const };
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const useUser = () => {
   const queryClient = useQueryClient();
@@ -27,10 +32,10 @@ export const useUser = () => {
 
       const session = { user };
       const { data: profile, error: profileError } = await supabase
-        .from("users")
-        .select("id, email, name, created_at")
+        .from("profiles")
+        .select("id, display_name, created_at")
         .eq("id", user.id)
-        .single<TypeUser>();
+        .single();
 
       if (profileError && profileError.code !== "PGRST116") {
         throw profileError;
@@ -45,15 +50,15 @@ export const useUser = () => {
     mutateAsync: updateUserAsync,
     isPending: isUpdating,
   } = useMutation({
-    mutationFn: async (updatedData: Partial<TypeUser>) => {
+    mutationFn: async (updatedData: { display_name?: string | null }) => {
       if (!userData?.session?.user) throw new Error("User not authenticated.");
 
       const { data, error: updateError } = await supabase
-        .from("users")
+        .from("profiles")
         .update(updatedData)
         .eq("id", userData.session.user.id)
         .select()
-        .single<TypeUser>();
+        .single();
 
       if (updateError) throw updateError;
       return data;
@@ -61,7 +66,7 @@ export const useUser = () => {
     onSuccess: (updatedProfile) => {
       queryClient.setQueryData(
         QUERY_KEYS.USER,
-        (oldData: { session: Session | null; profile: TypeUser | null } | null) => ({
+        (oldData: { session: Session | null; profile: Profile | null } | null) => ({
           ...oldData,
           profile: updatedProfile,
         }),
@@ -83,12 +88,16 @@ export const useUser = () => {
     },
   });
 
-  const userFallback: TypeUser | null = userData?.session?.user
+  // A profile row always exists for an authenticated user, because the
+  // on_auth_user_created trigger writes it. This fallback covers the gap between
+  // sign-up and the first read of it.
+  const userFallback: Profile | null = userData?.session?.user
     ? {
         id: userData.session.user.id,
-        email: userData.session.user.email ?? "",
-        name: userData.session.user.user_metadata?.full_name ?? "",
+        display_name:
+          (userData.session.user.user_metadata?.full_name as string | undefined) ?? null,
         created_at: userData.session.user.created_at ?? new Date().toISOString(),
+        updated_at: userData.session.user.created_at ?? new Date().toISOString(),
       }
     : null;
 

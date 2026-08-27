@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { env } from "@/config/env";
+import { env } from "@/server/platform/env";
 import { isProtectedRoute, isAuthOnlyRoute, AUTH_ROUTES, DASHBOARD_ROUTES } from "@/config/routes";
 
 /**
@@ -14,8 +14,8 @@ export const updateSession = async (request: NextRequest) => {
   });
 
   const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    env().NEXT_PUBLIC_SUPABASE_URL,
+    env().NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),

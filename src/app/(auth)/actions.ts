@@ -1,9 +1,11 @@
 "use server";
 
-import { supabaseServerClient } from "@/data/supabase/server";
-import { getSiteUrl } from "@/config/env";
 import { z } from "zod";
-import { guardSignIn, guardSignUp } from "@/server/modules/auth/auth.service";
+import {
+  signInWithPassword,
+  signUpWithPassword,
+  startGoogleSignIn,
+} from "@/server/modules/auth/auth.service";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -16,108 +18,49 @@ const signupSchema = z.object({
   password: z.string().min(6),
 });
 
-/**
- * Extracts and validates form data.
- */
+/** Reads the named fields out of a form and validates them together. */
 function extractFormData<T extends z.ZodObject<z.ZodRawShape>>(
   formData: FormData,
   schema: T,
 ): z.infer<T> {
   const data: Record<string, unknown> = {};
+
   for (const key of Object.keys(schema.shape)) {
     data[key] = formData.get(key);
   }
+
   return schema.parse(data);
 }
 
 /**
- * Server Action to sign in a user with email and password.
+ * These actions return a message or nothing. Everything else — the rate limit,
+ * the provider call, where a confirmation link points — belongs to the auth
+ * module, so this file stays about reading a form.
  */
 export const signIn = async (formData: FormData) => {
-  const supabase = await supabaseServerClient();
-
   try {
     const { email, password } = extractFormData(formData, loginSchema);
+    const result = await signInWithPassword(email, password);
 
-    const allowed = await guardSignIn(email);
-    if (!allowed.ok) {
-      return "Too many login attempts. Please wait a moment before trying again.";
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      throw error;
-    }
-  } catch (error) {
-    return `${error}`;
+    if (!result.ok) return result.error.detail ?? "Could not sign you in.";
+  } catch {
+    return "Enter an email address and a password.";
   }
 };
 
-/**
- * Server Action to create a new user account.
- */
 export const signUp = async (formData: FormData) => {
-  const supabase = await supabaseServerClient();
-
   try {
     const data = extractFormData(formData, signupSchema);
+    const result = await signUpWithPassword(data.email, data.password, data["full-name"]);
 
-    const allowed = await guardSignUp(data.email);
-    if (!allowed.ok) {
-      return "Too many signup attempts. Please wait before trying again.";
-    }
-
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          full_name: data["full-name"],
-        },
-      },
-    });
-
-    if (error) {
-      throw error;
-    }
-  } catch (error) {
-    return `${error}`;
+    if (!result.ok) return result.error.detail ?? "Could not create your account.";
+  } catch {
+    return "Enter your name, an email address, and a password of at least six characters.";
   }
 };
 
-function isValidNextPath(next: string): boolean {
-  const trimmed = next.trim();
-  return trimmed.startsWith("/") && !trimmed.startsWith("//");
-}
-
 export const signInWithGoogle = async (nextUrl?: string | null) => {
-  const supabase = await supabaseServerClient();
+  const result = await startGoogleSignIn(nextUrl);
 
-  try {
-    const redirectUrl = getSiteUrl();
-    const baseCallback = `${redirectUrl}/api/auth/callback`;
-    const callbackUrl =
-      nextUrl && isValidNextPath(nextUrl)
-        ? `${baseCallback}?next=${encodeURIComponent(nextUrl)}`
-        : baseCallback;
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: callbackUrl,
-      },
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    return `${error}`;
-  }
+  return result.ok ? result.value : (result.error.detail ?? "Could not reach Google.");
 };

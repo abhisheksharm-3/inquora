@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/utils/cn";
+import { cn } from "@/ui/lib/cn";
 import { TypeButtonCta } from "@/types/ui";
 import { ArrowRight } from "lucide-react";
 

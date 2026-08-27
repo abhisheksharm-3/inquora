@@ -1,7 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { supabaseServerClient } from "@/data/supabase/server";
-import type { User } from "@supabase/supabase-js";
+import { completeOAuthSignIn } from "@/server/modules/auth/auth.service";
 
 function validateNextPath(next: string): string {
   const trimmed = next.trim();
@@ -36,18 +35,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return createRedirectResponse(`${origin}/auth/auth-code-error`);
     }
 
-    const supabase = await supabaseServerClient();
-    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
+    const exchanged = await completeOAuthSignIn(code);
 
-    if (error) {
-      console.error("Auth code exchange error:", error.message);
+    if (!exchanged.ok) {
+      console.error("Auth code exchange failed:", exchanged.error.detail);
       return createRedirectResponse(`${origin}/auth/auth-code-error`);
     }
 
-    if (sessionData?.session?.user) {
-      await createUserProfileIfNotExists(supabase, sessionData.session.user);
-    }
-
+    // The profile row is created by the on_auth_user_created trigger, so an
+    // OAuth sign-in needs no write here. The application used to do it, which
+    // is how identity came to live in two places.
     return createRedirectResponse(determineRedirectUrl(request, origin, next));
   } catch (error) {
     console.error("Unexpected error during auth callback:", error);
@@ -96,67 +93,4 @@ function createRedirectResponse(url: string): NextResponse {
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
     },
   });
-}
-
-/**
- * Creates a user profile in the public users table if it doesn't already exist
- * This is necessary for OAuth users since they bypass the normal signup flow
- *
- * @param supabase - The Supabase client instance
- * @param user - The authenticated user object from Supabase auth
- */
-async function createUserProfileIfNotExists(
-  supabase: Awaited<ReturnType<typeof supabaseServerClient>>,
-  user: User,
-): Promise<void> {
-  try {
-    // Check if user profile already exists
-    const { data: existingProfile, error: fetchError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (existingProfile) {
-      return;
-    }
-
-    // If there was an error other than "not found", log it
-    if (fetchError && fetchError.code !== "PGRST116") {
-      console.error("Error checking for existing user profile:", fetchError);
-      return;
-    }
-
-    // Create the user profile
-    const defaultUser = {
-      id: user.id,
-      email: user.email || "",
-      name:
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.user_metadata?.display_name ||
-        null,
-      created_at: new Date().toISOString(),
-    };
-
-    const { error: insertError } = await supabase.from("users").insert(defaultUser);
-
-    if (insertError) {
-      if (insertError.code === "23505") {
-        return;
-      }
-      // Log any other error
-      console.error("Failed to create user profile:", insertError);
-      console.error("Error details:", {
-        code: insertError.code,
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-      });
-      return;
-    }
-  } catch (error) {
-    console.error("Error in createUserProfileIfNotExists:", error);
-    // Don't throw - we don't want to break the OAuth flow
-  }
 }

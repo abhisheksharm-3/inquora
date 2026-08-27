@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useMemo, ReactNode } from "react";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { supabaseBrowserClient } from "@/data/supabase/client";
-import { TypeDatabase } from "@/types/database";
+import { supabaseBrowserClient } from "@/ui/supabase/browser";
+import type { Database } from "@/core/database.types";
 
-type SupabaseContextType = SupabaseClient<TypeDatabase>;
+type SupabaseContextType = SupabaseClient<Database>;
 
 const SupabaseContext = createContext<SupabaseContextType | null>(null);
 
@@ -27,7 +27,7 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
  * Hook to access the Supabase client from context.
  * @throws If used outside of SupabaseProvider
  */
-export function useSupabase(): SupabaseClient<TypeDatabase> {
+export function useSupabase(): SupabaseClient<Database> {
   const context = useContext(SupabaseContext);
 
   if (!context) {

@@ -1,4 +1,6 @@
-import { TypeUser } from "@/types/database";
+import type { Database } from "@/core/database.types";
+
+type TypeUser = Database["public"]["Tables"]["profiles"]["Row"];
 
 /**
  * An array of configuration objects for rendering sections in a desktop settings UI.
@@ -34,12 +36,14 @@ export const MobileSettingsSections = [
   {
     id: "displayName",
     label: "Display name",
-    getUserValue: (user: TypeUser | null) => user?.name || "Not set",
+    getUserValue: (user: TypeUser | null) => user?.display_name || "Not set",
   },
   {
     id: "email",
-    label: "Email Address",
-    getUserValue: (user: TypeUser | null) => user?.email || "Not available",
+    label: "Email address",
+    // The email lives on the auth user, not on the profile row, so this reads it
+    // from the session rather than from the table.
+    getUserValue: () => "From your sign-in",
   },
   {
     id: "plan",

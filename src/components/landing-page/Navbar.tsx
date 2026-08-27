@@ -5,7 +5,7 @@ import { Menu, X, Moon, Sun, Laptop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { CtaButtons, PublicNavbarRoutes } from "@/constants/nav-items";
-import { cn } from "@/utils/cn";
+import { cn } from "@/ui/lib/cn";
 import { ModeToggle } from "@/components/shared/mode-toggle";
 import { useTheme } from "next-themes";
 

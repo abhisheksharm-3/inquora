@@ -1,5 +1,3 @@
-import { TypeFile } from "./database";
-
 export interface TypePricingTier {
   title?: string; // Optional title for the tier
   price: string;
@@ -37,10 +35,10 @@ export interface TypeGeminiImageData {
 
 export type TypeUploadFileParams = {
   file: File;
-  fileData: Omit<TypeFile, "id" | "user_id" | "uploaded_at" | "url">;
+  fileData: Omit<Record<string, unknown>, "id" | "user_id" | "uploaded_at" | "url">;
 };
 
 export type TypeUpdateFileParams = {
   fileId: string;
-  fileData: Partial<TypeFile>;
+  fileData: Partial<Record<string, unknown>>;
 };
