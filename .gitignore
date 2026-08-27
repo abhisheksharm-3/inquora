@@ -50,3 +50,6 @@ client_secret*.json
 # Design references are described in the specs, not checked in
 docs/design/references/
 docs/design/screens/
+
+supabase/.temp/
+supabase/.branches/
