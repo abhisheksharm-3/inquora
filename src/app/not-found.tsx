@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Dither from "@/components/backgrounds/Dither/Dither";
 import { Home } from "lucide-react";
 
 /**
@@ -12,14 +11,8 @@ import { Home } from "lucide-react";
  * @returns {JSX.Element} The rendered 404 page.
  */
 const NotFound = () => {
-  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
-
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
-      <div className="absolute inset-0 -z-10">
-        <Dither waveColor={brandViolet} waveAmplitude={0.1} waveFrequency={2.5} />
-      </div>
-
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
         <h1 className="text-9xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white/50 to-white/10 md:text-[150px]">
           404

@@ -13,21 +13,8 @@ export const metadata: Metadata = {
  * the branding panel dynamically fills the remaining space.
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
-
   return (
-    <Layout
-      showFooter={false}
-      enableNavbarBlur={false}
-      contentClassName="w-full"
-      ditherConfig={{
-        waveColor: brandViolet,
-        fullscreen: true,
-        waveAmplitude: 0.1,
-        waveFrequency: 1.5,
-        waveSpeed: 0.02,
-      }}
-    >
+    <Layout showFooter={false} enableNavbarBlur={false} contentClassName="w-full">
       <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
 
       {/* Mobile-first approach */}

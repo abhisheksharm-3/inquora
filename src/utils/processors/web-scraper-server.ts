@@ -8,7 +8,6 @@ import { Document } from "@langchain/core/documents";
 import { updateFileStatus } from "../file-processing-utils";
 import { supabaseBrowserClient } from "@/data/supabase/client";
 import * as cheerio from "cheerio";
-import { type Element } from "domhandler";
 import type {
   TypeWebScrapingResult,
   TypeWebPageInfo,

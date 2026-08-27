@@ -74,11 +74,6 @@ export interface TypeWordRotateProps {
 export interface LayoutProps {
   children: React.ReactNode;
   /**
-   * Whether to show the dither background behind the navbar
-   * @default true
-   */
-  showDitherBackground?: boolean;
-  /**
    * Whether to apply backdrop blur to the navbar
    * @default true
    */
@@ -92,20 +87,6 @@ export interface LayoutProps {
    * @default true
    */
   showFooter?: boolean;
-  /**
-   * Custom dither configuration
-   */
-  ditherConfig?: {
-    waveColor?: [number, number, number];
-    disableAnimation?: boolean;
-    fullscreen?: boolean;
-    enableMouseInteraction?: boolean;
-    mouseRadius?: number;
-    colorNum?: number;
-    waveAmplitude?: number;
-    waveFrequency?: number;
-    waveSpeed?: number;
-  };
 }
 
 export interface TypeSlide {

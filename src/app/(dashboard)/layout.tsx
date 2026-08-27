@@ -1,4 +1,3 @@
-import Dither from "@/components/backgrounds/Dither/Dither";
 import { DashboardDesktopSidebar } from "@/components/dashboard/DashboardDesktopSidebar";
 import { DashboardMobileSidebar } from "@/components/dashboard/DashboardMobileSidebar";
 import {
@@ -17,15 +16,8 @@ import {
  * @returns {JSX.Element} The rendered dashboard layout.
  */
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
-  const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
-
   return (
     <div className="relative flex min-h-screen w-full text-foreground">
-      <div className="absolute inset-0 -z-10">
-        <Dither waveColor={brandViolet} waveAmplitude={0.1} />
-        <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
-      </div>
-
       <DashboardDesktopSidebar />
       <DashboardMobileSidebar />
 

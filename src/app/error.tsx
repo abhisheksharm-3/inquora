@@ -2,7 +2,6 @@
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Dither from "@/components/backgrounds/Dither/Dither";
 import { TypeErrorProps } from "@/types/ui";
 
 /**
@@ -17,14 +16,8 @@ import { TypeErrorProps } from "@/types/ui";
  * @returns {JSX.Element} The rendered error page.
  */
 const Error = ({ error, reset }: TypeErrorProps) => {
-  const destructiveColor: [number, number, number] = [0.9, 0.2, 0.2];
-
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
-      <div className="absolute inset-0 -z-10">
-        <Dither waveColor={destructiveColor} waveAmplitude={0.1} />
-      </div>
-
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
         <div className="flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full border border-destructive/20 bg-destructive/10">
