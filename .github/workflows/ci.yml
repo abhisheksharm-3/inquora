@@ -39,3 +39,38 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  # Migrations are applied before anything deploys, so app code cannot ship ahead
+  # of the schema it expects. Only on a push to main: a pull request must not
+  # touch the database.
+  migrate:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      # A step-level `if` cannot read the secrets context, only env, so the
+      # secret is lifted here to be testable below.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Report a missing secret
+        if: env.SUPABASE_DB_URL == ''
+        run: |
+          echo "SUPABASE_DB_URL is not set, so migrations cannot be applied and"
+          echo "the 46 pgTAP assertions cannot run. Add it under Settings ->"
+          echo "Secrets and variables -> Actions."
+          exit 1
+
+      - name: Apply migrations
+        run: bunx supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
+      - name: Run the pgTAP suite
+        run: bun run db:test
