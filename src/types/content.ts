@@ -27,13 +27,7 @@ export type TypeFaqItem = {
   answer: string;
 };
 
-export type TypeSpreadsheetRow = (
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-)[];
+export type TypeSpreadsheetRow = (string | number | boolean | null | undefined)[];
 export type TypeSpreadsheetData = TypeSpreadsheetRow[];
 
 export interface TypeGeminiImageData {

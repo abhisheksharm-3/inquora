@@ -79,9 +79,7 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
           disabled={isUploading}
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isValidUrl && (
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-          )}
+          {isValidUrl && <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
           <Button
             size="icon"
             type="button"
@@ -109,8 +107,8 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
             <span className="font-medium">YouTube video detected</span>
             <br />
             <span className="text-xs opacity-90">
-              Videos with captions work best. Private videos and auto-generated
-              captions may have limited support.
+              Videos with captions work best. Private videos and auto-generated captions may have
+              limited support.
             </span>
           </AlertDescription>
         </Alert>
@@ -124,8 +122,7 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
             <span className="font-medium">GitHub repository detected</span>
             <br />
             <span className="text-xs opacity-90">
-              Only public repositories supported. Large repos may take several
-              minutes to process.
+              Only public repositories supported. Large repos may take several minutes to process.
             </span>
           </AlertDescription>
         </Alert>
@@ -139,8 +136,8 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
             <span className="font-medium">Web page detected</span>
             <br />
             <span className="text-xs opacity-90">
-              Page content will be extracted and processed. Complex sites with
-              authentication may have limitations.
+              Page content will be extracted and processed. Complex sites with authentication may
+              have limitations.
             </span>
           </AlertDescription>
         </Alert>
@@ -153,9 +150,7 @@ const UploadModalUrlInput: React.FC<TypeUploadModalUrlInputProps> = ({
           <AlertDescription className="text-amber-600 dark:text-amber-400 text-sm">
             <span className="font-medium">URL format not recognized</span>
             <br />
-            <span className="text-xs opacity-90">
-              Make sure your URL is valid and accessible
-            </span>
+            <span className="text-xs opacity-90">Make sure your URL is valid and accessible</span>
           </AlertDescription>
         </Alert>
       )}

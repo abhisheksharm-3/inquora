@@ -92,9 +92,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             <div className="mx-auto w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <Lock className="h-6 w-6 text-destructive" />
             </div>
-            <DialogTitle className="text-xl font-semibold">
-              Authentication Required
-            </DialogTitle>
+            <DialogTitle className="text-xl font-semibold">Authentication Required</DialogTitle>
             <p className="text-sm text-muted-foreground">
               You need to be logged in to upload files and start chats.
             </p>
@@ -118,12 +116,10 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
             <div className="mx-auto w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
               <Clock className="h-6 w-6 text-amber-500" />
             </div>
-            <DialogTitle className="text-xl font-semibold">
-              Coming Soon
-            </DialogTitle>
+            <DialogTitle className="text-xl font-semibold">Coming Soon</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {fileTypeConfig.name} uploads are coming soon. We&apos;re working
-              hard to bring this feature to you!
+              {fileTypeConfig.name} uploads are coming soon. We&apos;re working hard to bring this
+              feature to you!
             </p>
           </DialogHeader>
           <DialogFooter>
@@ -136,8 +132,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
     );
   }
 
-  const isActivePhase =
-    uploadStatus === "uploading" || uploadStatus === "processing";
+  const isActivePhase = uploadStatus === "uploading" || uploadStatus === "processing";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -149,12 +144,9 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
-              <DialogTitle className="text-2xl font-bold">
-                Upload {fileTypeConfig.name}
-              </DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Upload {fileTypeConfig.name}</DialogTitle>
               <p className="text-sm text-muted-foreground">
-                Add your {fileTypeConfig.name.toLowerCase()} to get started with
-                AI-powered analysis
+                Add your {fileTypeConfig.name.toLowerCase()} to get started with AI-powered analysis
               </p>
             </div>
             <Button
@@ -250,9 +242,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                   >
                     <CircleAlert
                       className={`h-4 w-4 ${
-                        fileTypeConfig.statusType === "warning"
-                          ? "text-amber-400"
-                          : "text-blue-400"
+                        fileTypeConfig.statusType === "warning" ? "text-amber-400" : "text-blue-400"
                       }`}
                     />
                     <AlertDescription
@@ -281,17 +271,12 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                           : "bg-emerald-500 text-white",
                       )}
                     >
-                      {uploadStatus === "uploading" ? (
-                        "1"
-                      ) : (
-                        <Check className="h-3.5 w-3.5" />
-                      )}
+                      {uploadStatus === "uploading" ? "1" : <Check className="h-3.5 w-3.5" />}
                     </div>
                     <span
                       className={cn(
                         "text-sm font-medium",
-                        uploadStatus !== "uploading" &&
-                          "text-muted-foreground",
+                        uploadStatus !== "uploading" && "text-muted-foreground",
                       )}
                     >
                       Upload
@@ -301,9 +286,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                   <div
                     className={cn(
                       "flex-1 h-px transition-colors",
-                      uploadStatus === "processing"
-                        ? "bg-emerald-500"
-                        : "bg-muted",
+                      uploadStatus === "processing" ? "bg-emerald-500" : "bg-muted",
                     )}
                   />
 
@@ -321,8 +304,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                     <span
                       className={cn(
                         "text-sm font-medium",
-                        uploadStatus !== "processing" &&
-                          "text-muted-foreground",
+                        uploadStatus !== "processing" && "text-muted-foreground",
                       )}
                     >
                       Process
@@ -335,17 +317,13 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-muted text-muted-foreground">
                       3
                     </div>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Ready
-                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">Ready</span>
                   </div>
                 </div>
               )}
 
               {uploadStatus === "uploading" && (
-                <UploadModalProgress
-                  fileName={fileName || selectedFile?.name}
-                />
+                <UploadModalProgress fileName={fileName || selectedFile?.name} />
               )}
 
               {uploadStatus === "processing" && (
@@ -361,10 +339,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
               )}
 
               {uploadStatus === "uploaded" && (
-                <UploadModalSuccess
-                  fileName={fileName}
-                  handleRemoveFile={handleRemoveFile}
-                />
+                <UploadModalSuccess fileName={fileName} handleRemoveFile={handleRemoveFile} />
               )}
 
               {uploadStatus === "error" && (
@@ -380,11 +355,7 @@ const UploadModal: React.FC<TypeUploadModalProps> = ({
 
         {uploadStatus === "idle" && (
           <DialogFooter className="border-t border-border/50 bg-muted/30 px-6 py-4 gap-3">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="cursor-pointer"
-            >
+            <Button variant="outline" onClick={handleClose} className="cursor-pointer">
               Cancel
             </Button>
             <Button

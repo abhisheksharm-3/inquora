@@ -11,22 +11,14 @@ import { TypeRAGRequest, TypeConversationTurn, TypeSessionMetadata } from "@/typ
 import { VersionConfig } from "@/constants/version-config";
 import { TypeGeminiMessage, TypeGeminiUserContext, TypeGeminiContextResult } from "@/types/gemini";
 
-const RAG_SUPPORTED_TYPES = new Set([
-  "pdf",
-  "doc",
-  "sheet",
-  "slides",
-  "video",
-  "github",
-  "web",
-]);
+const RAG_SUPPORTED_TYPES = new Set(["pdf", "doc", "sheet", "slides", "video", "github", "web"]);
 
 const prepareContextForGemini = async (
   chat: TypeChat & { files: TypeFile | null },
   userQuery: string,
   supabase: SupabaseClient,
-  conversationHistory?: Array<{ role: string, content: string }>,
-  userContext?: TypeGeminiUserContext
+  conversationHistory?: Array<{ role: string; content: string }>,
+  userContext?: TypeGeminiUserContext,
 ): Promise<TypeGeminiContextResult> => {
   if (!chat.file_id) return {};
 
@@ -42,11 +34,13 @@ const prepareContextForGemini = async (
       };
     } else if (errorMessage.includes("Failed to process")) {
       return {
-        error: "I had trouble processing this document. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.",
+        error:
+          "I had trouble processing this document. This might be due to the document format, content access restrictions, or temporary processing issues. Please try uploading the document again.",
       };
     } else {
       return {
-        error: "I encountered an issue with this document. Please try uploading it again or contact support if the problem persists.",
+        error:
+          "I encountered an issue with this document. Please try uploading it again or contact support if the problem persists.",
       };
     }
   }
@@ -55,8 +49,7 @@ const prepareContextForGemini = async (
     const imageData = await getImageData(supabase, chat.files);
     if (!imageData) {
       return {
-        error:
-          "I couldn't access the image file. Please try uploading it again.",
+        error: "I couldn't access the image file. Please try uploading it again.",
       };
     }
     return { imageData };
@@ -70,45 +63,61 @@ const prepareContextForGemini = async (
             query: userQuery,
             chatId: chat.id,
             namespace: chat.file_id,
-            conversationHistory: conversationHistory.map((msg, index) => ({
-              id: `turn-${index}`,
-              timestamp: new Date().toISOString(),
-              userQuery: msg.role === 'user' ? msg.content : '',
-              aiResponse: msg.role === 'assistant' || msg.role === 'model' ? msg.content : '',
-              confidence: 0.8
-            } as TypeConversationTurn)).filter(turn => turn.userQuery || turn.aiResponse),
+            conversationHistory: conversationHistory
+              .map(
+                (msg, index) =>
+                  ({
+                    id: `turn-${index}`,
+                    timestamp: new Date().toISOString(),
+                    userQuery: msg.role === "user" ? msg.content : "",
+                    aiResponse: msg.role === "assistant" || msg.role === "model" ? msg.content : "",
+                    confidence: 0.8,
+                  }) as TypeConversationTurn,
+              )
+              .filter((turn) => turn.userQuery || turn.aiResponse),
             userContext: {
               name: userContext?.userName,
-              expertise_level: userContext?.sessionMetadata?.expertise_level || 'intermediate',
+              expertise_level: userContext?.sessionMetadata?.expertise_level || "intermediate",
               preferences: {
-                response_style: userContext?.sessionMetadata?.preferences?.response_style || 'detailed',
+                response_style:
+                  userContext?.sessionMetadata?.preferences?.response_style || "detailed",
                 include_sources: userContext?.sessionMetadata?.preferences?.include_sources ?? true,
-                include_reasoning: userContext?.sessionMetadata?.preferences?.include_reasoning ?? true
+                include_reasoning:
+                  userContext?.sessionMetadata?.preferences?.include_reasoning ?? true,
               },
               memories: userContext?.memories,
               sessionMetadata: userContext?.sessionMetadata,
-              recentConversations: userContext?.recentConversations
+              recentConversations: userContext?.recentConversations,
             },
             documentContext: {
-              type: chat.type || 'general',
-              domain: 'general',
+              type: chat.type || "general",
+              domain: "general",
               contentSource: {
-                type: (chat.type as 'pdf' | 'youtube' | 'website' | 'github' | 'doc' | 'sheet' | 'slides' | 'image') || 'document',
-                format: 'extracted_text',
-                extractionMethod: 'automatic_processing',
+                type:
+                  (chat.type as
+                    | "pdf"
+                    | "youtube"
+                    | "website"
+                    | "github"
+                    | "doc"
+                    | "sheet"
+                    | "slides"
+                    | "image") || "document",
+                format: "extracted_text",
+                extractionMethod: "automatic_processing",
                 confidence: 0.8,
                 qualityMetrics: {
-                  readability: 'standard',
-                  completeness: 'complete',
-                  accuracy: 0.85
-                }
+                  readability: "standard",
+                  completeness: "complete",
+                  accuracy: 0.85,
+                },
               },
-              processingQuality: 'high',
+              processingQuality: "high",
               metadata: {
                 contentLength: fileContent.length,
-                timestamp: userContext?.currentDateTime
-              }
-            }
+                timestamp: userContext?.currentDateTime,
+              },
+            },
           };
 
           const ragResponse = await processRAGRequest(ragRequest);
@@ -116,7 +125,7 @@ const prepareContextForGemini = async (
           if (ragResponse.retrievedSources && ragResponse.retrievedSources.length > 0) {
             return {
               fileContent: ragResponse.systemPrompt,
-              isAdvancedRAG: true
+              isAdvancedRAG: true,
             };
           }
         } catch (advancedRAGError) {
@@ -133,9 +142,7 @@ const prepareContextForGemini = async (
         };
       }
 
-      const combinedContent = relevantDocs
-        .map(([doc]) => doc.pageContent)
-        .join("\n\n");
+      const combinedContent = relevantDocs.map(([doc]) => doc.pageContent).join("\n\n");
       return { fileContent: combinedContent };
     } catch (queryError) {
       console.error(`Error querying ${chat.type} content:`, queryError);
@@ -149,11 +156,7 @@ const prepareContextForGemini = async (
   return { fileContent };
 };
 
-const saveAssistantMessage = async (
-  chatId: string,
-  content: string,
-  supabase: SupabaseClient,
-) => {
+const saveAssistantMessage = async (chatId: string, content: string, supabase: SupabaseClient) => {
   const { data, error } = await supabase
     .from("messages")
     .insert({ chat_id: chatId, role: "assistant", content })
@@ -192,11 +195,7 @@ export const sendMessage = async (
     if (chatError || !chat) throw new Error("Chat not found.");
 
     if (VersionConfig.isLegacyChat(chat.created_at)) {
-      return saveAssistantMessage(
-        chatId,
-        VersionConfig.LEGACY_CHAT_MESSAGE,
-        supabase,
-      );
+      return saveAssistantMessage(chatId, VersionConfig.LEGACY_CHAT_MESSAGE, supabase);
     }
 
     const userContext: TypeGeminiUserContext = {
@@ -228,7 +227,7 @@ export const sendMessage = async (
         .eq("user_id", chat.user_id);
 
       if (memories) {
-        userContext.memories = memories.map(m => m.content);
+        userContext.memories = memories.map((m) => m.content);
       }
 
       const { data: recentChats } = await supabase
@@ -240,10 +239,10 @@ export const sendMessage = async (
         .limit(5);
 
       if (recentChats) {
-        userContext.recentConversations = recentChats.map(c => ({
+        userContext.recentConversations = recentChats.map((c) => ({
           id: c.id,
           title: c.title || "Untitled Chat",
-          timestamp: c.created_at
+          timestamp: c.created_at,
         }));
       }
     }
@@ -252,31 +251,27 @@ export const sendMessage = async (
       userContext.sessionMetadata = sessionMetadata;
     }
 
-    await supabase
-      .from("messages")
-      .insert({ chat_id: chatId, role: "user", content });
+    await supabase.from("messages").insert({ chat_id: chatId, role: "user", content });
 
-    const conversationHistory = messages?.map(msg => ({
-      role: msg.role === "model" ? "assistant" : msg.role,
-      content: msg.content
-    })) || [];
+    const conversationHistory =
+      messages?.map((msg) => ({
+        role: msg.role === "model" ? "assistant" : msg.role,
+        content: msg.content,
+      })) || [];
 
     const context = await prepareContextForGemini(
       chat,
       content,
       supabase,
       conversationHistory,
-      userContext
+      userContext,
     );
 
     if (context.error) {
       return await saveAssistantMessage(chatId, context.error, supabase);
     }
 
-    const formattedMessages: TypeGeminiMessage[] = [
-      ...(messages || []),
-      { role: "user", content },
-    ];
+    const formattedMessages: TypeGeminiMessage[] = [...(messages || []), { role: "user", content }];
 
     const enhancedUserContext = {
       ...userContext,
@@ -300,8 +295,7 @@ export const sendMessage = async (
     return await saveAssistantMessage(chatId, response, supabase);
   } catch (error) {
     console.error("Error in sendMessage:", error);
-    const errorMessage =
-      "I'm sorry, an unexpected error occurred. Please try again.";
+    const errorMessage = "I'm sorry, an unexpected error occurred. Please try again.";
     return await saveAssistantMessage(chatId, errorMessage, supabase);
   }
 };

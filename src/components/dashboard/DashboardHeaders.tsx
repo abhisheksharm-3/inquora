@@ -17,13 +17,7 @@ import { ModeToggle } from "@/components/shared/mode-toggle";
  * Displays information about the currently active chat or file in the desktop header.
  * @param {{ chat: TypeChat | null; file: TypeFile | null }} props - Component props.
  */
-const ActiveTab = ({
-  chat,
-  file,
-}: {
-  chat: TypeChat | null;
-  file: TypeFile | null;
-}) => (
+const ActiveTab = ({ chat, file }: { chat: TypeChat | null; file: TypeFile | null }) => (
   <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-2 px-3 shadow-sm">
     <div className="h-full w-1 self-stretch rounded-full bg-primary" />
     <div className="min-w-0">
@@ -93,9 +87,7 @@ export const DashboardDesktopHeader = () => {
   return (
     <header className="hidden h-16 shrink-0 items-center justify-between px-6 md:flex">
       <div className="flex items-center gap-2">
-        {!isHistoryPage && (
-          <ActiveTab chat={chat ?? null} file={file || null} />
-        )}
+        {!isHistoryPage && <ActiveTab chat={chat ?? null} file={file || null} />}
         {!isHistoryPage && <AddTabButton />}
       </div>
       <div className="flex items-center gap-3">

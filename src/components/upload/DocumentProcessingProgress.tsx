@@ -99,9 +99,7 @@ const getStatusMessage = (status: string) => {
   }
 };
 
-export const DocumentProcessingProgress: React.FC<
-  DocumentProcessingProgressProps
-> = ({
+export const DocumentProcessingProgress: React.FC<DocumentProcessingProgressProps> = ({
   fileName,
   fileType,
   status,
@@ -151,10 +149,7 @@ export const DocumentProcessingProgress: React.FC<
             isSuccess && "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
             isError && "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
             isActive && "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
-            !isActive &&
-              !isSuccess &&
-              !isError &&
-              "bg-muted text-muted-foreground",
+            !isActive && !isSuccess && !isError && "bg-muted text-muted-foreground",
           )}
         >
           <FileIcon className="h-5 w-5" />
@@ -164,9 +159,7 @@ export const DocumentProcessingProgress: React.FC<
           <p className="font-medium text-sm truncate" title={fileName}>
             {truncateFileName(fileName)}
           </p>
-          <p className={cn("text-xs mt-0.5", getStatusColor(status))}>
-            {getStatusMessage(status)}
-          </p>
+          <p className={cn("text-xs mt-0.5", getStatusColor(status))}>{getStatusMessage(status)}</p>
         </div>
 
         {isActive && (
@@ -197,7 +190,7 @@ export const DocumentProcessingProgress: React.FC<
               style={{ width: `${progress}%` }}
             />
           </div>
-          
+
           {/* Educational fact about RAG */}
           <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-lg transition-all duration-500">
             <div className="shrink-0 mt-0.5">

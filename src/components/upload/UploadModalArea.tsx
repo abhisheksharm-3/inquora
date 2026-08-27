@@ -34,9 +34,7 @@ const UploadModalArea: React.FC<{
   const [dragError, setDragError] = useState<string | null>(null);
 
   const maxSizeMB = Math.round(fileTypeConfig.maxSize / (1024 * 1024));
-  const fileSizeMB = selectedFile
-    ? (selectedFile.size / (1024 * 1024)).toFixed(2)
-    : "0";
+  const fileSizeMB = selectedFile ? (selectedFile.size / (1024 * 1024)).toFixed(2) : "0";
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -156,23 +154,17 @@ const UploadModalArea: React.FC<{
               <p className="text-base font-semibold text-foreground">
                 {isDragOver ? "Drop your file here" : "Upload your file here"}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Click to browse or drag and drop
-              </p>
+              <p className="text-sm text-muted-foreground">Click to browse or drag and drop</p>
             </div>
 
             {/* File requirements */}
             <div className="flex flex-wrap gap-2 justify-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-muted-foreground/20">
                 <FileIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  {fileTypeConfig.name}
-                </span>
+                <span className="text-xs text-muted-foreground">{fileTypeConfig.name}</span>
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full border border-muted-foreground/20">
-                <span className="text-xs text-muted-foreground">
-                  Max {maxSizeMB}MB
-                </span>
+                <span className="text-xs text-muted-foreground">Max {maxSizeMB}MB</span>
               </div>
             </div>
           </div>
@@ -184,9 +176,7 @@ const UploadModalArea: React.FC<{
               </div>
             </div>
             <div>
-              <p className="text-base font-semibold text-foreground">
-                File selected
-              </p>
+              <p className="text-base font-semibold text-foreground">File selected</p>
               <p className="text-sm text-muted-foreground">Ready to upload</p>
             </div>
           </div>
@@ -205,9 +195,7 @@ const UploadModalArea: React.FC<{
                 <p className="text-sm font-semibold text-foreground truncate">
                   {selectedFile.name}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {fileSizeMB} MB
-                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{fileSizeMB} MB</p>
               </div>
             </div>
             <Button
@@ -248,9 +236,7 @@ const UploadModalArea: React.FC<{
       {/* Additional info */}
       <div className="p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg flex items-start gap-2">
         <div className="h-5 w-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-            i
-          </span>
+          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">i</span>
         </div>
         <p className="text-xs text-blue-600 dark:text-blue-400">
           Your file will be securely processed and stored for analysis.

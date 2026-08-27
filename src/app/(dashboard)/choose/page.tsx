@@ -1,10 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import UploadModal from "@/components/upload/UploadModal";
 import { Metadata } from "next";
 import { FileTypes } from "@/constants/file-types";
@@ -35,17 +31,14 @@ const ChoosePage = () => {
           Start a New Conversation
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-          Choose a source from below to begin uploading your data and chat with
-          our intelligent AI.
+          Choose a source from below to begin uploading your data and chat with our intelligent AI.
         </p>
 
         <div className="mx-auto mt-6 max-w-2xl">
           <div className="flex items-center justify-center gap-4 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 px-6 py-3 shadow-sm">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-muted-foreground">
-                All formats working great
-              </span>
+              <span className="text-sm text-muted-foreground">All formats working great</span>
             </div>
             <div className="h-3 w-px bg-border"></div>
 
@@ -61,9 +54,7 @@ const ChoosePage = () => {
                 <Card className="border-0 shadow-none">
                   <CardContent className="p-4 space-y-4">
                     <div className="text-left">
-                      <h4 className="font-medium text-sm text-foreground mb-3">
-                        Current Status
-                      </h4>
+                      <h4 className="font-medium text-sm text-foreground mb-3">Current Status</h4>
                       <div className="space-y-3 text-xs">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full flex-shrink-0"></div>
@@ -100,9 +91,8 @@ const ChoosePage = () => {
                                 Note:
                               </span>
                               <span className="text-blue-600 dark:text-blue-400 ml-1">
-                                YouTube blocks IPs aggressively. A native
-                                in-house fix is in development and will launch
-                                soon.
+                                YouTube blocks IPs aggressively. A native in-house fix is in
+                                development and will launch soon.
                               </span>
                             </div>
                           </div>
@@ -119,9 +109,9 @@ const ChoosePage = () => {
                                 Important:
                               </span>
                               <span className="text-amber-600 dark:text-amber-400 ml-1">
-                                Large repositories (100+ files) may fail due to
-                                free API tier rate limits. For best results, use
-                                smaller repos. We are working on bypassing these limits.
+                                Large repositories (100+ files) may fail due to free API tier rate
+                                limits. For best results, use smaller repos. We are working on
+                                bypassing these limits.
                               </span>
                             </div>
                           </div>
@@ -138,9 +128,8 @@ const ChoosePage = () => {
                                 Important:
                               </span>
                               <span className="text-red-600 dark:text-red-400 ml-1">
-                                New messages not supported on older chats due to
-                                embedding model upgrade. Create a new chat to
-                                continue.
+                                New messages not supported on older chats due to embedding model
+                                upgrade. Create a new chat to continue.
                               </span>
                             </div>
                           </div>

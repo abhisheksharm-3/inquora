@@ -29,9 +29,7 @@ const slides: TypeSlide[] = [
  * Renders a decorative browser frame around its children.
  * @param {{ children: React.ReactNode }} props - The component props.
  */
-const BrowserFrame: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => (
+const BrowserFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="overflow-hidden rounded-xl border border-border/20 bg-card/30 shadow-2xl backdrop-blur-md">
     <div className="flex items-center gap-2 border-b border-border/10 bg-muted/20 p-3">
       <div className="flex gap-1.5">

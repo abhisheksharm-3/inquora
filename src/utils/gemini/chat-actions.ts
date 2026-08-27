@@ -61,9 +61,7 @@ export const createChat = async (fileId: string, userId?: string) => {
       .single();
 
     if (fileError || !file) {
-      throw new Error(
-        `File not found with ID: ${fileId}. ${fileError?.message || ""}`,
-      );
+      throw new Error(`File not found with ID: ${fileId}. ${fileError?.message || ""}`);
     }
 
     const chatType = mapFileTypeToChatType(file.type);

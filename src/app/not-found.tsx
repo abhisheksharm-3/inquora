@@ -17,11 +17,7 @@ const NotFound = () => {
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
       <div className="absolute inset-0 -z-10">
-        <Dither
-          waveColor={brandViolet}
-          waveAmplitude={0.1}
-          waveFrequency={2.5}
-        />
+        <Dither waveColor={brandViolet} waveAmplitude={0.1} waveFrequency={2.5} />
       </div>
 
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
@@ -34,8 +30,8 @@ const NotFound = () => {
             Page Not Found
           </h2>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            The page you&apos;re looking for doesn&apos;t exist or has been
-            moved. Let&apos;s get you back on track.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved. Let&apos;s get
+            you back on track.
           </p>
         </div>
 

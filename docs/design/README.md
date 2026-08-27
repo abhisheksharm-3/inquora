@@ -8,11 +8,11 @@ opening the corresponding file, and a screenshot goes stale the moment the marku
 
 ## Mockups
 
-| File | What it is |
-|---|---|
+| File                       | What it is                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `01-direction-probes.html` | Three competing directions for the chat surface: The Ledger, The Margin, The Workbench. Same conversation, same documents, same tool calls, so the comparison is design rather than content. |
-| `02-apparatus-hybrid.html` | The Ledger and The Margin folded into one direction, in both themes. This is the one that won. |
-| `03-all-surfaces.html` | The winning direction applied to ten surfaces, landing page through phone. |
+| `02-apparatus-hybrid.html` | The Ledger and The Margin folded into one direction, in both themes. This is the one that won.                                                                                               |
+| `03-all-surfaces.html`     | The winning direction applied to ten surfaces, landing page through phone.                                                                                                                   |
 
 ## The ten surfaces, in `03-all-surfaces.html`
 

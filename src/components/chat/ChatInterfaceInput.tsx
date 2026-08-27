@@ -22,12 +22,9 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
     }
   }, [inputValue]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setLocalValue(e.target.value);
-    },
-    [],
-  );
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setLocalValue(e.target.value);
+  }, []);
 
   const sendMessage = useCallback(() => {
     if (!localValue.trim() || isSending) return;
@@ -73,9 +70,7 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={
-            isLegacyChat
-              ? "This chat is view-only..."
-              : "Ask a question about the document..."
+            isLegacyChat ? "This chat is view-only..." : "Ask a question about the document..."
           }
           rows={1}
           className="w-full resize-none rounded-lg border border-border bg-card p-3 pr-12 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -88,29 +83,22 @@ const ChatInterfaceInputComponent: React.FC<TypeChatInputProps> = ({
           size="icon"
           className="absolute right-2 top-1/2 -translate-y-1/2 transition-all duration-200 hover:scale-105 disabled:opacity-40"
         >
-          {isLegacyChat ? (
-            <Lock className="h-4 w-4" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
+          {isLegacyChat ? <Lock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
     </div>
   );
 };
 
-export const ChatInterfaceInput = memo(
-  ChatInterfaceInputComponent,
-  (prevProps, nextProps) => {
-    return (
-      prevProps.inputValue === nextProps.inputValue &&
-      prevProps.isSending === nextProps.isSending &&
-      prevProps.onSendMessage === nextProps.onSendMessage &&
-      prevProps.setInputValue === nextProps.setInputValue &&
-      prevProps.isLegacyChat === nextProps.isLegacyChat &&
-      prevProps.legacyMessage === nextProps.legacyMessage
-    );
-  },
-);
+export const ChatInterfaceInput = memo(ChatInterfaceInputComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.inputValue === nextProps.inputValue &&
+    prevProps.isSending === nextProps.isSending &&
+    prevProps.onSendMessage === nextProps.onSendMessage &&
+    prevProps.setInputValue === nextProps.setInputValue &&
+    prevProps.isLegacyChat === nextProps.isLegacyChat &&
+    prevProps.legacyMessage === nextProps.legacyMessage
+  );
+});
 
 ChatInterfaceInput.displayName = "ChatInterfaceInput";

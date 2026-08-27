@@ -4,7 +4,17 @@ import { Document } from "@langchain/core/documents";
  * Content Source Types - Understanding what we're analyzing
  */
 export interface TypeContentSource {
-  type: 'pdf' | 'youtube' | 'website' | 'github' | 'doc' | 'sheet' | 'slides' | 'image' | 'code' | 'document';
+  type:
+    | "pdf"
+    | "youtube"
+    | "website"
+    | "github"
+    | "doc"
+    | "sheet"
+    | "slides"
+    | "image"
+    | "code"
+    | "document";
   format: string;
   extractionMethod: string;
   confidence: number;
@@ -22,7 +32,7 @@ export interface TypeContentSource {
     pageCount?: number;
     pages?: number;
     language?: string;
-    quality?: 'high' | 'medium' | 'low';
+    quality?: "high" | "medium" | "low";
     videoId?: string;
     channel?: string;
     fileSize?: string;
@@ -39,9 +49,9 @@ export interface TypeContentSource {
 export interface TypeRAGAgent {
   id: string;
   capabilities: TypeAgentCapability[];
-  specialization: 'generalist' | 'technical' | 'academic' | 'creative' | 'analytical';
+  specialization: "generalist" | "technical" | "academic" | "creative" | "analytical";
   confidenceThreshold: number;
-  reasoningFramework: 'chain_of_thought' | 'tree_of_thought' | 'react' | 'reflexion';
+  reasoningFramework: "chain_of_thought" | "tree_of_thought" | "react" | "reflexion";
 }
 
 export interface TypeAgentCapability {
@@ -52,7 +62,7 @@ export interface TypeAgentCapability {
 }
 
 export interface TypeAgentDecision {
-  action: 'retrieve' | 'analyze' | 'synthesize' | 'clarify' | 'delegate';
+  action: "retrieve" | "analyze" | "synthesize" | "clarify" | "delegate";
   reasoning: string;
   confidence: number;
   nextSteps: string[];
@@ -70,7 +80,7 @@ export interface TypeReasoningChain {
 
 export interface TypeReasoningStep {
   id: string;
-  type: 'observation' | 'inference' | 'deduction' | 'hypothesis' | 'validation';
+  type: "observation" | "inference" | "deduction" | "hypothesis" | "validation";
   content: string;
   evidence: string[];
   confidence: number;
@@ -88,7 +98,7 @@ export interface TypeMultiModalContext {
 }
 
 export interface TypeVisualElement {
-  type: 'chart' | 'diagram' | 'image' | 'table' | 'code_block';
+  type: "chart" | "diagram" | "image" | "table" | "code_block";
   description: string;
   location: string;
   relevanceScore: number;
@@ -118,21 +128,21 @@ export interface TypeContentHierarchy {
 export interface TypeTopicRelationship {
   from: string;
   to: string;
-  type: 'dependent' | 'related' | 'contrasts' | 'builds_upon';
+  type: "dependent" | "related" | "contrasts" | "builds_upon";
   strength: number;
 }
 
 export interface TypeCrossReference {
   source: string;
   target: string;
-  type: 'citation' | 'reference' | 'example' | 'definition';
+  type: "citation" | "reference" | "example" | "definition";
 }
 
 export interface TypeSemanticMetadata {
   concepts: TypeConcept[];
   entities: TypeEntity[];
   relationships: TypeConceptRelationship[];
-  abstractionLevel: 'concrete' | 'abstract' | 'theoretical';
+  abstractionLevel: "concrete" | "abstract" | "theoretical";
 }
 
 export interface TypeConcept {
@@ -145,7 +155,7 @@ export interface TypeConcept {
 
 export interface TypeEntity {
   name: string;
-  type: 'person' | 'organization' | 'location' | 'technology' | 'concept' | 'event';
+  type: "person" | "organization" | "location" | "technology" | "concept" | "event";
   description: string;
   mentions: number;
 }
@@ -153,7 +163,7 @@ export interface TypeEntity {
 export interface TypeConceptRelationship {
   concept1: string;
   concept2: string;
-  relationship: 'is_a' | 'part_of' | 'causes' | 'enables' | 'requires';
+  relationship: "is_a" | "part_of" | "causes" | "enables" | "requires";
   confidence: number;
 }
 
@@ -161,19 +171,28 @@ export interface TypeConceptRelationship {
  * Enhanced Query Analysis Types
  */
 export interface TypeQueryIntent {
-  type: 'factual' | 'analytical' | 'comparative' | 'inferential' | 'explanatory' | 'procedural' | 'creative' | 'exploratory' | 'synthesis';
+  type:
+    | "factual"
+    | "analytical"
+    | "comparative"
+    | "inferential"
+    | "explanatory"
+    | "procedural"
+    | "creative"
+    | "exploratory"
+    | "synthesis";
   description: string;
   confidence: number;
   subIntents?: TypeQueryIntent[];
 }
 
 export interface TypeQueryComplexity {
-  level: 'simple' | 'moderate' | 'complex' | 'multi-step' | 'research_level';
+  level: "simple" | "moderate" | "complex" | "multi-step" | "research_level";
   requiresMultipleChunks: boolean;
   requiresInference: boolean;
   requiresCrossDomainKnowledge: boolean;
   timeframe?: string;
-  scope?: 'narrow' | 'broad' | 'comprehensive';
+  scope?: "narrow" | "broad" | "comprehensive";
   cognitiveLoad: number; // 1-10 scale
 }
 
@@ -192,17 +211,17 @@ export interface TypeQueryAnalysis {
   processingTime: number;
   agentDecisions: TypeAgentDecision[];
   reasoningChain?: TypeReasoningChain;
-  suggestedSpecialization?: 'generalist' | 'technical' | 'academic' | 'creative' | 'analytical';
+  suggestedSpecialization?: "generalist" | "technical" | "academic" | "creative" | "analytical";
 }
 
 export interface TypeTemporalAspect {
-  type: 'point' | 'range' | 'sequence' | 'frequency';
+  type: "point" | "range" | "sequence" | "frequency";
   value: string;
   relevance: number;
 }
 
 export interface TypeSpatialAspect {
-  type: 'location' | 'direction' | 'distance' | 'region';
+  type: "location" | "direction" | "distance" | "region";
   value: string;
   relevance: number;
 }
@@ -265,9 +284,9 @@ export interface TypeSessionMetadata {
   platform?: string;
   language?: string;
   connection?: string;
-  expertise_level?: 'beginner' | 'intermediate' | 'expert';
+  expertise_level?: "beginner" | "intermediate" | "expert";
   preferences?: {
-    response_style?: 'concise' | 'detailed' | 'comprehensive';
+    response_style?: "concise" | "detailed" | "comprehensive";
     include_sources?: boolean;
     include_reasoning?: boolean;
   };
@@ -276,19 +295,19 @@ export interface TypeSessionMetadata {
 export interface TypeUserContext {
   name?: string;
   email?: string;
-  expertise_level?: 'beginner' | 'intermediate' | 'expert';
+  expertise_level?: "beginner" | "intermediate" | "expert";
   preferences?: {
-    response_style?: 'concise' | 'detailed' | 'comprehensive';
+    response_style?: "concise" | "detailed" | "comprehensive";
     include_sources?: boolean;
     include_reasoning?: boolean;
-    reasoning_depth?: 'shallow' | 'moderate' | 'deep';
-    creativity_level?: 'conservative' | 'balanced' | 'creative';
+    reasoning_depth?: "shallow" | "moderate" | "deep";
+    creativity_level?: "conservative" | "balanced" | "creative";
   };
   domain_knowledge?: string[];
   learning_goals?: string[];
   memories?: string[];
   sessionMetadata?: TypeSessionMetadata;
-  recentConversations?: { id: string, title: string, timestamp: string }[];
+  recentConversations?: { id: string; title: string; timestamp: string }[];
 }
 
 export interface TypeDocumentContext {
@@ -297,21 +316,21 @@ export interface TypeDocumentContext {
   contentSource: TypeContentSource;
   structuralInfo?: TypeStructuralInfo;
   semanticMetadata?: TypeSemanticMetadata;
-  processingQuality: 'high' | 'medium' | 'low';
+  processingQuality: "high" | "medium" | "low";
   metadata?: Record<string, unknown>;
 }
 
 export interface TypeContextualRetrievalOptions {
-  conversationHistory?: Array<{ role: string, content: string }>;
-  documentMetadata?: { type: string, domain?: string };
+  conversationHistory?: Array<{ role: string; content: string }>;
+  documentMetadata?: { type: string; domain?: string };
   userPreferences?: {
-    verbosity: 'concise' | 'detailed' | 'comprehensive';
-    technical_level: 'basic' | 'intermediate' | 'expert';
+    verbosity: "concise" | "detailed" | "comprehensive";
+    technical_level: "basic" | "intermediate" | "expert";
   };
   stepBackQuery?: string;
   contentSource?: TypeContentSource;
   enableAgenticReasoning?: boolean;
-  reasoningFramework?: 'chain_of_thought' | 'tree_of_thought' | 'react';
+  reasoningFramework?: "chain_of_thought" | "tree_of_thought" | "react";
 }
 
 /**
@@ -369,7 +388,7 @@ export interface TypeRAGRequest {
   documentContext?: TypeDocumentContext;
   agentConfig?: TypeRAGAgent;
   enableAgenticReasoning?: boolean;
-  reasoningFramework?: 'chain_of_thought' | 'tree_of_thought' | 'react' | 'reflexion';
+  reasoningFramework?: "chain_of_thought" | "tree_of_thought" | "react" | "reflexion";
 }
 
 export interface TypeRAGResponse {
@@ -426,8 +445,8 @@ export interface TypeRAGConfiguration {
   };
   agent: {
     enableAgenticReasoning: boolean;
-    defaultReasoningFramework: 'chain_of_thought' | 'tree_of_thought' | 'react' | 'reflexion';
-    agentSpecialization: 'generalist' | 'technical' | 'academic' | 'creative' | 'analytical';
+    defaultReasoningFramework: "chain_of_thought" | "tree_of_thought" | "react" | "reflexion";
+    agentSpecialization: "generalist" | "technical" | "academic" | "creative" | "analytical";
     confidenceThreshold: number;
     enableSelfReflection: boolean;
   };

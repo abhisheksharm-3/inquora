@@ -47,7 +47,9 @@ export const getPineconeIndex = async (indexName?: string): Promise<Index> => {
   const targetIndexName = indexName || env.PINECONE_INDEX_NAME;
 
   if (!targetIndexName) {
-    throw new Error("PINECONE_INDEX_NAME environment variable is not set and no index name provided.");
+    throw new Error(
+      "PINECONE_INDEX_NAME environment variable is not set and no index name provided.",
+    );
   }
 
   if (pineconeIndexCache.has(targetIndexName)) {
@@ -78,8 +80,8 @@ export const isPineconeConfigured = async (): Promise<boolean> => {
  * @returns {Promise<{indexName: string, index: Index} | null>} The index info if found, null otherwise
  */
 export const findIndexForNamespace = async (
-  namespace: string
-): Promise<{ indexName: string, index: Index } | null> => {
+  namespace: string,
+): Promise<{ indexName: string; index: Index } | null> => {
   const allIndexNames = await getAllIndexNames();
 
   if (allIndexNames.length === 0) {
@@ -105,7 +107,7 @@ export const findIndexForNamespace = async (
 
   // Wait for all checks and return the first valid result
   const results = await Promise.all(checks);
-  const found = results.find(result => result !== null);
+  const found = results.find((result) => result !== null);
 
   if (found) {
     return found;

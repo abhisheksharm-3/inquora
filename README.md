@@ -17,10 +17,10 @@ in `src/`, you are reading the system being replaced.
 
 Two slices, in order:
 
-| Slice | State | Documents |
-|---|---|---|
-| **Non-UI core** — data, retrieval, transport, ingestion | designed, planned, not started | [design](.polaris/specs/2026-08-25-non-ui-core-design.md) · [plan](.polaris/plans/2026-08-25-non-ui-core.md) |
-| **UI** — every surface, rebuilt from nothing | scoped, shaped, not started | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
+| Slice                                                   | State                          | Documents                                                                                                                       |
+| ------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Non-UI core** — data, retrieval, transport, ingestion | designed, planned, not started | [design](.polaris/specs/2026-08-25-non-ui-core-design.md) · [plan](.polaris/plans/2026-08-25-non-ui-core.md)                    |
+| **UI** — every surface, rebuilt from nothing            | scoped, shaped, not started    | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
 
 Decisions that are expensive to reverse live in [`docs/adr/`](docs/adr/).
 
@@ -93,18 +93,18 @@ come from cells instead of from a paragraph describing them.
 
 ## Stack
 
-| | |
-|---|---|
-| Framework | Next.js 16.3, React 19.2, TypeScript 5 |
-| Database | Supabase Postgres with pgvector |
-| Model layer | LangChain v1 |
-| Embeddings | 1024-dimension, self-hosted |
-| Cache and limits | Upstash Redis |
-| Chat interface | `@assistant-ui/react` primitives, styled from scratch |
-| Client state | TanStack Query |
-| Styling | Tailwind CSS 4, Radix primitives |
-| Observability | OpenTelemetry, Sentry, Langfuse |
-| Tests | Vitest, pgTAP |
+|                  |                                                       |
+| ---------------- | ----------------------------------------------------- |
+| Framework        | Next.js 16.3, React 19.2, TypeScript 5                |
+| Database         | Supabase Postgres with pgvector                       |
+| Model layer      | LangChain v1                                          |
+| Embeddings       | 1024-dimension, self-hosted                           |
+| Cache and limits | Upstash Redis                                         |
+| Chat interface   | `@assistant-ui/react` primitives, styled from scratch |
+| Client state     | TanStack Query                                        |
+| Styling          | Tailwind CSS 4, Radix primitives                      |
+| Observability    | OpenTelemetry, Sentry, Langfuse                       |
+| Tests            | Vitest, pgTAP                                         |
 
 Pinecone is on its way out. tRPC was evaluated and rejected: Server Actions, generated database
 types and a shared Zod schema already solve the contract problem it exists for.

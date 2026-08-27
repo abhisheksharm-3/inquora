@@ -5,7 +5,12 @@ import type { User } from "@supabase/supabase-js";
 
 function validateNextPath(next: string): string {
   const trimmed = next.trim();
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.includes("?") || trimmed.includes("#")) {
+  if (
+    !trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    trimmed.includes("?") ||
+    trimmed.includes("#")
+  ) {
     return "/choose";
   }
   try {
@@ -32,8 +37,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const supabase = await supabaseServerClient();
-    const { data: sessionData, error } =
-      await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error) {
       console.error("Auth code exchange error:", error.message);
@@ -60,11 +64,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  * @param path - The path to redirect to
  * @returns The complete redirect URL
  */
-function determineRedirectUrl(
-  request: NextRequest,
-  origin: string,
-  path: string,
-): string {
+function determineRedirectUrl(request: NextRequest, origin: string, path: string): string {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
   const isLocalEnv = process.env.NODE_ENV === "development";
@@ -139,9 +139,7 @@ async function createUserProfileIfNotExists(
       created_at: new Date().toISOString(),
     };
 
-    const { error: insertError } = await supabase
-      .from("users")
-      .insert(defaultUser);
+    const { error: insertError } = await supabase.from("users").insert(defaultUser);
 
     if (insertError) {
       if (insertError.code === "23505") {
@@ -157,7 +155,6 @@ async function createUserProfileIfNotExists(
       });
       return;
     }
-
   } catch (error) {
     console.error("Error in createUserProfileIfNotExists:", error);
     // Don't throw - we don't want to break the OAuth flow

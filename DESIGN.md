@@ -3,7 +3,7 @@
 Companion to `PRODUCT.md`, which owns who and why. This file owns how it looks.
 
 **Status: settled.** The shape run closed on 2026-08-25 against three rendered directions. The
-system is called **The Apparatus**, after the *apparatus criticus* a critical edition sets beside
+system is called **The Apparatus**, after the _apparatus criticus_ a critical edition sets beside
 its text. Brief at `.polaris/specs/2026-08-25-ui-shape-brief.md`; mockups at `docs/design/`.
 
 ## The layout law

@@ -13,11 +13,7 @@ import { JSX } from "react";
  * @param {string} props.href - The destination path for the link.
  * @returns {JSX.Element} The rendered link component.
  */
-export const AuthLink = ({
-  text,
-  linkText,
-  href,
-}: TypeAuthLinkProps): JSX.Element => (
+export const AuthLink = ({ text, linkText, href }: TypeAuthLinkProps): JSX.Element => (
   <div className="text-center text-sm animate-in fade-in duration-700 delay-300 fill-mode-backwards">
     <span className="text-muted-foreground">{text} </span>
     <Link

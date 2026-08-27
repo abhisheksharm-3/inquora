@@ -51,8 +51,7 @@ export const ErrorMessages = new Map<string, TypeAuthErrorInfo>([
     "email rate limit exceeded",
     {
       type: EnumAuthErrorType.RATE_LIMIT_ERROR,
-      userMessage:
-        "Too many attempts. Please wait a few minutes before trying again.",
+      userMessage: "Too many attempts. Please wait a few minutes before trying again.",
       retryable: true,
       retryAfter: 300, // 5 minutes
     },
@@ -63,8 +62,7 @@ export const ErrorMessages = new Map<string, TypeAuthErrorInfo>([
     "fetch",
     {
       type: EnumAuthErrorType.NETWORK_ERROR,
-      userMessage:
-        "Connection problem. Please check your internet and try again.",
+      userMessage: "Connection problem. Please check your internet and try again.",
       retryable: true,
     },
   ],
@@ -83,8 +81,7 @@ export const ErrorMessages = new Map<string, TypeAuthErrorInfo>([
 /** A shared object for generic server errors to avoid repetition. */
 const ServerErrorInfo: TypeAuthErrorInfo = {
   type: EnumAuthErrorType.SERVER_ERROR,
-  userMessage:
-    "Our servers are experiencing issues. Please try again in a few minutes.",
+  userMessage: "Our servers are experiencing issues. Please try again in a few minutes.",
   retryable: true,
 };
 

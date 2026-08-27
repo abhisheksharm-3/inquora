@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import {
-  getAllAcceptedFileTypes,
-  getFileTypeConfig,
-} from "@/constants/file-types";
+import { getAllAcceptedFileTypes, getFileTypeConfig } from "@/constants/file-types";
 import { isValidUrl } from "@/utils/upload-utils";
 import { TypeUploadError } from "@/types/upload";
 
@@ -42,16 +39,10 @@ export const useUploadValidation = ({
         );
       }
       if (!acceptedFileTypes.some((type) => file.type.includes(type))) {
-        return createUploadError(
-          "validation",
-          `File type "${file.type}" is not supported.`,
-        );
+        return createUploadError("validation", `File type "${file.type}" is not supported.`);
       }
       if (file.size === 0) {
-        return createUploadError(
-          "validation",
-          "The selected file appears to be empty.",
-        );
+        return createUploadError("validation", "The selected file appears to be empty.");
       }
       if (file.name.length > MAX_FILE_NAME_LENGTH) {
         return createUploadError("validation", "The file name is too long.");
@@ -77,13 +68,8 @@ export const useUploadValidation = ({
       }
       try {
         const parsedUrl = new URL(url);
-        if (
-          BLOCKED_DOMAINS.some((domain) => parsedUrl.hostname.includes(domain))
-        ) {
-          return createUploadError(
-            "validation",
-            "Local URLs are not supported.",
-          );
+        if (BLOCKED_DOMAINS.some((domain) => parsedUrl.hostname.includes(domain))) {
+          return createUploadError("validation", "Local URLs are not supported.");
         }
       } catch {
         return createUploadError("validation", "Invalid URL format.");

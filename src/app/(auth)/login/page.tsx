@@ -15,10 +15,7 @@ const LoginPage = (): JSX.Element => {
   return (
     <div className="w-full max-w-sm animate-in fade-in slide-in-from-top-4 duration-700">
       <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-card/50 p-8 backdrop-blur-lg">
-        <AuthHeader
-          title="Welcome Back"
-          subtitle="Sign in to continue to your dashboard"
-        />
+        <AuthHeader title="Welcome Back" subtitle="Sign in to continue to your dashboard" />
         <AuthSocialLogins />
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -29,11 +26,7 @@ const LoginPage = (): JSX.Element => {
           </div>
         </div>
         <AuthLoginForm />
-        <AuthLink
-          text="Don't have an account?"
-          linkText="Sign up"
-          href="/signup"
-        />
+        <AuthLink text="Don't have an account?" linkText="Sign up" href="/signup" />
       </div>
     </div>
   );

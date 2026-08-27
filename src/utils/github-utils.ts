@@ -10,9 +10,7 @@
  * @param {string} url - The GitHub URL.
  * @returns {{ owner: string; repo: string } | null} The owner and repository name or null if not found.
  */
-export const extractGitHubRepoInfo = (
-  url: string,
-): { owner: string; repo: string } | null => {
+export const extractGitHubRepoInfo = (url: string): { owner: string; repo: string } | null => {
   // Handle various GitHub URL formats
   const patterns = [
     /github\.com\/([^\/]+)\/([^\/\?#]+)/i, // Standard GitHub URLs
@@ -67,8 +65,7 @@ export const checkGitHubRepoUrlValidity = async (
     if (!repoInfo) {
       return {
         valid: false,
-        error:
-          "Invalid GitHub URL format. Expected format: https://github.com/owner/repo",
+        error: "Invalid GitHub URL format. Expected format: https://github.com/owner/repo",
       };
     }
 
@@ -194,23 +191,18 @@ export const formatGitHubRepoForDisplay = (url: string): string => {
  * @returns {boolean} Returns true if the URL is specifically a GitHub repository URL.
  */
 export const isGitHubRepositoryUrl = (url: string): boolean => {
-  if (!url || typeof url !== 'string') return false;
+  if (!url || typeof url !== "string") return false;
 
   try {
     const urlObj = new URL(url);
 
     // Must be github.com
-    if (
-      urlObj.hostname !== "github.com" &&
-      urlObj.hostname !== "www.github.com"
-    ) {
+    if (urlObj.hostname !== "github.com" && urlObj.hostname !== "www.github.com") {
       return false;
     }
 
     // Must have owner/repo pattern
-    const pathParts = urlObj.pathname
-      .split("/")
-      .filter((part) => part.length > 0);
+    const pathParts = urlObj.pathname.split("/").filter((part) => part.length > 0);
     return pathParts.length >= 2; // At least owner and repo
   } catch {
     return false;

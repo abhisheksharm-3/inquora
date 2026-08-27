@@ -73,12 +73,7 @@ export interface TypeUseUploadLogicProps {
   onClose: () => void;
 }
 
-export type TypeUploadStatus =
-  | "idle"
-  | "uploading"
-  | "processing"
-  | "uploaded"
-  | "error";
+export type TypeUploadStatus = "idle" | "uploading" | "processing" | "uploaded" | "error";
 
 export interface TypeUploadState {
   uploadStatus: TypeUploadStatus;
@@ -93,13 +88,7 @@ export interface TypeUploadState {
 // Enhanced error types for better error categorization
 export interface TypeUploadError {
   type:
-  | "validation"
-  | "network"
-  | "server"
-  | "auth"
-  | "file_processing"
-  | "chat_creation"
-  | "unknown";
+    "validation" | "network" | "server" | "auth" | "file_processing" | "chat_creation" | "unknown";
   message: string;
   originalError?: unknown;
   retryable?: boolean;

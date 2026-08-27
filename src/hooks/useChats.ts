@@ -20,10 +20,7 @@ export const useChats = (chatId?: string) => {
   const { userId } = useUser();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const chatRepository = useMemo(
-    () => createChatRepository(supabase),
-    [supabase]
-  );
+  const chatRepository = useMemo(() => createChatRepository(supabase), [supabase]);
 
   const chatsQuery = useQuery({
     queryKey: QUERY_KEYS.CHATS,
@@ -51,10 +48,10 @@ export const useChats = (chatId?: string) => {
       return createChatWithFile(fileId, userId);
     },
     onSuccess: (newChat) => {
-      queryClient.setQueryData<TypeChatWithFile[]>(
-        QUERY_KEYS.CHATS,
-        (old = []) => [newChat, ...old],
-      );
+      queryClient.setQueryData<TypeChatWithFile[]>(QUERY_KEYS.CHATS, (old = []) => [
+        newChat,
+        ...old,
+      ]);
     },
   });
 
@@ -64,15 +61,10 @@ export const useChats = (chatId?: string) => {
       return chatRepository.update(id, chatData);
     },
     onSuccess: (updatedChat) => {
-      queryClient.setQueryData<TypeChatWithFile[]>(
-        QUERY_KEYS.CHATS,
-        (old = []) =>
-          old.map((chat) => (chat.id === updatedChat.id ? updatedChat : chat)),
+      queryClient.setQueryData<TypeChatWithFile[]>(QUERY_KEYS.CHATS, (old = []) =>
+        old.map((chat) => (chat.id === updatedChat.id ? updatedChat : chat)),
       );
-      queryClient.setQueryData(
-        [...QUERY_KEYS.CHATS, updatedChat.id],
-        updatedChat,
-      );
+      queryClient.setQueryData([...QUERY_KEYS.CHATS, updatedChat.id], updatedChat);
     },
   });
 
@@ -83,9 +75,8 @@ export const useChats = (chatId?: string) => {
       return id;
     },
     onSuccess: (deletedChatId) => {
-      queryClient.setQueryData<TypeChatWithFile[]>(
-        QUERY_KEYS.CHATS,
-        (old = []) => old.filter((chat) => chat.id !== deletedChatId),
+      queryClient.setQueryData<TypeChatWithFile[]>(QUERY_KEYS.CHATS, (old = []) =>
+        old.filter((chat) => chat.id !== deletedChatId),
       );
       queryClient.removeQueries({
         queryKey: [...QUERY_KEYS.CHATS, deletedChatId],

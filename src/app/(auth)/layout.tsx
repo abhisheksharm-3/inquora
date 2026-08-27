@@ -12,11 +12,7 @@ export const metadata: Metadata = {
  * fixed-width column for the form, ensuring a consistent, app-like feel, while
  * the branding panel dynamically fills the remaining space.
  */
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const brandViolet: [number, number, number] = [0.408, 0.212, 0.796];
 
   return (

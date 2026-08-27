@@ -21,7 +21,7 @@ const signupSchema = z.object({
  */
 function extractFormData<T extends z.ZodObject<z.ZodRawShape>>(
   formData: FormData,
-  schema: T
+  schema: T,
 ): z.infer<T> {
   const data: Record<string, unknown> = {};
   for (const key of Object.keys(schema.shape)) {
@@ -66,7 +66,10 @@ export const signUp = async (formData: FormData) => {
   try {
     const data = extractFormData(formData, signupSchema);
 
-    const rateLimitResult = await checkRateLimit(`auth:signup:${data.email}`, RATE_LIMIT_CONFIGS.signup);
+    const rateLimitResult = await checkRateLimit(
+      `auth:signup:${data.email}`,
+      RATE_LIMIT_CONFIGS.signup,
+    );
     if (!rateLimitResult.allowed) {
       return "Too many signup attempts. Please wait before trying again.";
     }
@@ -121,4 +124,3 @@ export const signInWithGoogle = async (nextUrl?: string | null) => {
     return `${error}`;
   }
 };
-

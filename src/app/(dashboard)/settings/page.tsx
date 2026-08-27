@@ -2,13 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LogoutDialog from "@/components/dashboard/LogoutDialog";
@@ -149,9 +143,9 @@ const SettingsPage = () => {
                             Member since{" "}
                             {user?.created_at
                               ? new Date(user.created_at).toLocaleDateString("en-US", {
-                                month: "short",
-                                year: "numeric",
-                              })
+                                  month: "short",
+                                  year: "numeric",
+                                })
                               : "Recently"}
                           </Badge>
                         </div>
@@ -188,7 +182,9 @@ const SettingsPage = () => {
                         <div className="text-center py-8 text-muted-foreground">
                           <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
                           <p className="text-sm">No recent activity</p>
-                          <p className="text-xs">Start a chat or upload a file to see your activity here</p>
+                          <p className="text-xs">
+                            Start a chat or upload a file to see your activity here
+                          </p>
                         </div>
                       )}
                     </div>
@@ -239,7 +235,9 @@ const SettingsPage = () => {
                         <p className="text-sm font-bold text-primary">Free Plan</p>
                         <p className="text-xs text-muted-foreground">Full access during beta</p>
                       </div>
-                      <Badge className="font-medium bg-primary text-primary-foreground">Active</Badge>
+                      <Badge className="font-medium bg-primary text-primary-foreground">
+                        Active
+                      </Badge>
                     </div>
 
                     <div className="space-y-3 text-sm">
@@ -283,7 +281,11 @@ const SettingsPage = () => {
                         <Palette className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Theme</span>
                       </div>
-                      <Badge variant="outline" className="text-xs">{resolvedTheme ? resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1) : "System"}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {resolvedTheme
+                          ? resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)
+                          : "System"}
+                      </Badge>
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between py-2">
@@ -291,7 +293,9 @@ const SettingsPage = () => {
                         <Bell className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Notifications</span>
                       </div>
-                      <Badge variant="outline" className="text-xs">Enabled</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        Enabled
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -323,6 +327,6 @@ const SettingsPage = () => {
       </div>
     </div>
   );
-}
+};
 
 export default SettingsPage;

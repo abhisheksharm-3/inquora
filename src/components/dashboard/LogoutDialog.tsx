@@ -62,21 +62,17 @@ const LogoutDialog = ({ trigger }: TypeDialogProps) => {
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground/90 leading-relaxed text-base max-w-sm mx-auto">
-            You&apos;re about to sign out of your account. Your work is
-            automatically saved, but you&apos;ll need to sign in again to
-            continue.
+            You&apos;re about to sign out of your account. Your work is automatically saved, but
+            you&apos;ll need to sign in again to continue.
           </DialogDescription>
         </DialogHeader>
 
         <div className="relative flex items-start gap-3 p-4 mb-4 rounded-lg bg-muted/30 border border-border/50">
           <AlertCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-foreground mb-1">
-              Security tip
-            </p>
+            <p className="text-sm font-medium text-foreground mb-1">Security tip</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Always sign out when using shared or public devices to protect
-              your account.
+              Always sign out when using shared or public devices to protect your account.
             </p>
           </div>
         </div>

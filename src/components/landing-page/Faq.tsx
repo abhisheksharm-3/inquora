@@ -17,10 +17,7 @@ import React from "react";
  */
 const Faqs = () => {
   return (
-    <section
-      id="faq"
-      className="relative w-full bg-cover bg-center py-24 sm:py-32"
-    >
+    <section id="faq" className="relative w-full bg-cover bg-center py-24 sm:py-32">
       <div className="absolute inset-0 z-0" />
       <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
         <div className="mb-8 flex justify-center">
@@ -36,8 +33,8 @@ const Faqs = () => {
           Frequently Asked Questions
         </h2>
         <p className="mx-auto mb-16 max-w-3xl text-lg font-light text-muted-foreground md:text-xl">
-          Have questions? We&apos;ve got answers. If you can&apos;t find what
-          you&apos;re looking for, feel free to reach out to our support team.
+          Have questions? We&apos;ve got answers. If you can&apos;t find what you&apos;re looking
+          for, feel free to reach out to our support team.
         </p>
         <div className="rounded-2xl border border-border bg-card/50 text-left backdrop-blur-sm">
           <Accordion type="single" collapsible className="w-full">
@@ -45,11 +42,7 @@ const Faqs = () => {
               <AccordionItem
                 key={item.value}
                 value={item.value}
-                className={
-                  index === FaqData.length - 1
-                    ? "border-none"
-                    : "border-b border-border"
-                }
+                className={index === FaqData.length - 1 ? "border-none" : "border-b border-border"}
               >
                 <AccordionTrigger className="p-6 text-lg font-medium text-foreground transition-colors hover:bg-accent hover:no-underline">
                   <span className="text-left">{item.question}</span>

@@ -1,6 +1,6 @@
 /**
  * Version Configuration
- * 
+ *
  * Controls compatibility and access to features across different versions.
  * Update these values when making breaking changes (like embedding model updates).
  */
@@ -8,10 +8,10 @@
 export const VersionConfig = {
   /**
    * Chat Version Cutoff Date
-   * 
+   *
    * Chats created before this date are read-only due to embedding model incompatibility.
    * Format: ISO 8601 date string (YYYY-MM-DD)
-   * 
+   *
    * Current: January 14, 2026 - When embedding model changed to 1024d custom embeddings
    */
   CHAT_VERSION_CUTOFF_DATE: "2026-01-14T00:00:00.000Z",

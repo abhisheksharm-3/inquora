@@ -17,17 +17,10 @@ import {
   processGenericDocument,
   checkNamespaceExists,
 } from "@/utils/processors";
-import {
-  ProcessingProgress,
-  ProcessingResult,
-  ProcessingStatus,
-} from "@/types/document-processor";
+import { ProcessingProgress, ProcessingResult, ProcessingStatus } from "@/types/document-processor";
 export class DocumentProcessor {
   private supabase: SupabaseClient;
-  private progressCallbacks: Map<
-    string,
-    (progress: ProcessingProgress) => void
-  > = new Map();
+  private progressCallbacks: Map<string, (progress: ProcessingProgress) => void> = new Map();
 
   constructor(supabase?: SupabaseClient) {
     this.supabase = supabase || supabaseBrowserClient();
@@ -36,10 +29,7 @@ export class DocumentProcessor {
   /**
    * Register a callback to receive processing progress updates
    */
-  onProgress(
-    fileId: string,
-    callback: (progress: ProcessingProgress) => void,
-  ): void {
+  onProgress(fileId: string, callback: (progress: ProcessingProgress) => void): void {
     this.progressCallbacks.set(fileId, callback);
   }
 
@@ -109,10 +99,7 @@ export class DocumentProcessor {
       updateData.indexed_chunks = details.indexedChunks;
     }
 
-    const { error } = await this.supabase
-      .from("files")
-      .update(updateData)
-      .eq("id", fileId);
+    const { error } = await this.supabase.from("files").update(updateData).eq("id", fileId);
 
     if (error) {
       console.error("Failed to update file status:", error);
@@ -139,15 +126,10 @@ export class DocumentProcessor {
       return null;
     }
 
-    const { data, error } = await this.supabase.storage
-      .from(STORAGE_BUCKET)
-      .download(path);
+    const { data, error } = await this.supabase.storage.from(STORAGE_BUCKET).download(path);
 
     if (error) {
-      console.error(
-        `Failed to download blob from path: ${path}`,
-        error.message,
-      );
+      console.error(`Failed to download blob from path: ${path}`, error.message);
       return null;
     }
 
@@ -257,13 +239,8 @@ export class DocumentProcessor {
         case "slides":
           stopAnimation = this.startProgressAnimation(fileId, 10, 72, 25000);
           const docBlob = await this.getFileBlob(file);
-          if (!docBlob)
-            throw new Error(`Could not read ${type} file from storage`);
-          processingResult = await processGenericDocument(
-            docBlob,
-            fileId,
-            type,
-          );
+          if (!docBlob) throw new Error(`Could not read ${type} file from storage`);
+          processingResult = await processGenericDocument(docBlob, fileId, type);
           break;
 
         case "image": {
@@ -313,8 +290,7 @@ export class DocumentProcessor {
 
       return finalResult;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Update status to failed
       await this.updateFileStatus(fileId, "failed", { error: errorMessage });
@@ -338,18 +314,13 @@ export class DocumentProcessor {
   /**
    * Process multiple documents in parallel with concurrency control
    */
-  async processDocuments(
-    files: TypeFile[],
-    concurrency: number = 3,
-  ): Promise<ProcessingResult[]> {
+  async processDocuments(files: TypeFile[], concurrency: number = 3): Promise<ProcessingResult[]> {
     const results: ProcessingResult[] = [];
 
     // Process files in batches to control concurrency
     for (let i = 0; i < files.length; i += concurrency) {
       const batch = files.slice(i, i + concurrency);
-      const batchResults = await Promise.all(
-        batch.map((file) => this.processDocument(file)),
-      );
+      const batchResults = await Promise.all(batch.map((file) => this.processDocument(file)));
       results.push(...batchResults);
     }
 

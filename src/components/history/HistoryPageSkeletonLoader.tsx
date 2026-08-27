@@ -5,14 +5,8 @@ import { HistoryPageSkeletonConfigs } from "@/constants/history-page";
 /**
  * Reusable skeleton element component with improved theming
  */
-const SkeletonElement = ({
-  height,
-  width,
-  className = "",
-}: TypeSkeletonConfig) => (
-  <Skeleton
-    className={`${height} ${width} bg-muted/30 rounded-md animate-pulse ${className}`}
-  />
+const SkeletonElement = ({ height, width, className = "" }: TypeSkeletonConfig) => (
+  <Skeleton className={`${height} ${width} bg-muted/30 rounded-md animate-pulse ${className}`} />
 );
 
 /**

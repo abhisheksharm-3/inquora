@@ -25,7 +25,7 @@ loses to one that makes them easier, whatever it costs elsewhere.
 
 ## 3. Design direction
 
-**The Apparatus.** Named for the *apparatus criticus*, the scholarly matter a critical edition sets
+**The Apparatus.** Named for the _apparatus criticus_, the scholarly matter a critical edition sets
 beside its text.
 
 The rule, on every surface: **substance on the left, apparatus on the right.** Whatever the surface
@@ -101,18 +101,18 @@ is nowhere.
 
 Ten surfaces, each with its states. All rendered in `docs/design/03-all-surfaces.html`.
 
-| # | Surface | What the apparatus carries |
-|---|---|---|
-| 01 | Landing (brand, dark) | Numbered specimens backing each claim the page makes |
-| 02 | Sign in | What happens to your documents |
-| 03 | New conversation | Which tools the current selection switches on, and which stay off |
-| 04 | Adding a document | The live ingestion log with a true progress fraction |
-| 05 | Empty conversation | What is already known about the documents in scope |
-| 06 | In conversation | Operations and specimens, interleaved |
-| 07 | Following a citation | Unchanged, while the reading column becomes the document |
-| 08 | History | Search, filters, and the most-cited passage |
-| 09 | Settings | What this account has actually used, and what it cost |
-| 10 | Phone | Nothing. The apparatus becomes footnotes below the answer |
+| #   | Surface               | What the apparatus carries                                        |
+| --- | --------------------- | ----------------------------------------------------------------- |
+| 01  | Landing (brand, dark) | Numbered specimens backing each claim the page makes              |
+| 02  | Sign in               | What happens to your documents                                    |
+| 03  | New conversation      | Which tools the current selection switches on, and which stay off |
+| 04  | Adding a document     | The live ingestion log with a true progress fraction              |
+| 05  | Empty conversation    | What is already known about the documents in scope                |
+| 06  | In conversation       | Operations and specimens, interleaved                             |
+| 07  | Following a citation  | Unchanged, while the reading column becomes the document          |
+| 08  | History               | Search, filters, and the most-cited passage                       |
+| 09  | Settings              | What this account has actually used, and what it cost             |
+| 10  | Phone                 | Nothing. The apparatus becomes footnotes below the answer         |
 
 States every surface owes:
 

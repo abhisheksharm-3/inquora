@@ -48,9 +48,7 @@ const MobileNavigation = ({ onItemClick }: { onItemClick: () => void }) => {
               </div>
               <div>
                 <div className="font-medium text-foreground">{title}</div>
-                <div className="text-sm text-muted-foreground">
-                  {description}
-                </div>
+                <div className="text-sm text-muted-foreground">{description}</div>
               </div>
             </Link>
           );
@@ -94,18 +92,12 @@ const UserProfile = ({
           className="rounded-full"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-foreground">
-            {user?.name || "User"}
-          </p>
-          <p className="truncate text-sm text-muted-foreground">
-            {user?.email || "No email"}
-          </p>
+          <p className="truncate font-semibold text-foreground">{user?.name || "User"}</p>
+          <p className="truncate text-sm text-muted-foreground">{user?.email || "No email"}</p>
         </div>
         <Badge variant="secondary">FREE</Badge>
       </div>
-      <PricingDialog
-        trigger={<Button className="w-full">Upgrade to Pro</Button>}
-      />
+      <PricingDialog trigger={<Button className="w-full">Upgrade to Pro</Button>} />
     </div>
   );
 };

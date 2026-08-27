@@ -28,10 +28,7 @@ export function ModeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="border-border/50 bg-card/80 backdrop-blur-xl"
-      >
+      <DropdownMenuContent align="end" className="border-border/50 bg-card/80 backdrop-blur-xl">
         <DropdownMenuItem
           onClick={() => setTheme("light")}
           className="flex items-center gap-2 cursor-pointer"

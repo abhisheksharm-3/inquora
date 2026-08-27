@@ -11,9 +11,12 @@ import { SafeComponent } from "@/components/shared/ErrorBoundary";
 /**
  * Renders the message list with redesigned, themed chat bubbles.
  */
-const ChatInterfaceMessagesComponent: React.FC<
-  TypeChatInterfaceMessagesProps
-> = ({ messages, messagesLoading, messagesEndRef, isSending }) => {
+const ChatInterfaceMessagesComponent: React.FC<TypeChatInterfaceMessagesProps> = ({
+  messages,
+  messagesLoading,
+  messagesEndRef,
+  isSending,
+}) => {
   const { user } = useUser();
 
   if (messagesLoading && messages.length === 0) {
@@ -29,19 +32,9 @@ const ChatInterfaceMessagesComponent: React.FC<
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center">
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={48}
-            height={48}
-            className="mx-auto"
-          />
-          <p className="mt-4 font-medium text-foreground">
-            Chat with your document
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Ask a question to get started.
-          </p>
+          <Image src="/logo.png" alt="Logo" width={48} height={48} className="mx-auto" />
+          <p className="mt-4 font-medium text-foreground">Chat with your document</p>
+          <p className="text-sm text-muted-foreground">Ask a question to get started.</p>
         </div>
       </div>
     );
@@ -64,10 +57,11 @@ const ChatInterfaceMessagesComponent: React.FC<
 
             {/* Message Bubble */}
             <div
-              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${message.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border bg-card text-foreground"
-                }`}
+              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm ${
+                message.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-foreground"
+              }`}
             >
               {message.content === MessageConstants.AssistantThinkingContent ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -80,9 +74,7 @@ const ChatInterfaceMessagesComponent: React.FC<
                   className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
                 />
               ) : (
-                <div className="whitespace-pre-wrap break-words">
-                  {message.content}
-                </div>
+                <div className="whitespace-pre-wrap break-words">{message.content}</div>
               )}
             </div>
 

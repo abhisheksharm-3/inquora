@@ -36,11 +36,7 @@ const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="relative min-h-screen flex flex-col bg-background">
       {showDitherBackground && (
-        <div
-          className={`absolute inset-0 z-0 ${
-            finalDitherConfig.fullscreen ? "h-full" : "h-32"
-          }`}
-        >
+        <div className={`absolute inset-0 z-0 ${finalDitherConfig.fullscreen ? "h-full" : "h-32"}`}>
           <Dither {...finalDitherConfig} />
         </div>
       )}
@@ -54,9 +50,7 @@ const Layout: React.FC<LayoutProps> = ({
         </div>
       </header>
 
-      <main className={`flex-1 relative z-10 ${contentClassName}`}>
-        {children}
-      </main>
+      <main className={`flex-1 relative z-10 ${contentClassName}`}>{children}</main>
 
       {showFooter && (
         <footer className="relative z-10">

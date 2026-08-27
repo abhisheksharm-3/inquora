@@ -58,10 +58,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
 
   useEffect(() => {
     if (!isChatLoading && isChatError) {
-      const timer = setTimeout(
-        () => router.push("/not-found"),
-        REDIRECT_DELAY_MS,
-      );
+      const timer = setTimeout(() => router.push("/not-found"), REDIRECT_DELAY_MS);
       return () => clearTimeout(timer);
     }
   }, [isChatError, isChatLoading, router]);
@@ -72,10 +69,7 @@ export const useChatInterface = ({ chatId }: { chatId: string }) => {
   }, [subscribeToMessages]);
 
   // Extract complex expressions for dependency array
-  const lastMessage = useMemo(
-    () => messages[messages.length - 1],
-    [messages]
-  );
+  const lastMessage = useMemo(() => messages[messages.length - 1], [messages]);
   const lastMessageContent = lastMessage?.content;
   const lastMessageId = lastMessage?.id;
 

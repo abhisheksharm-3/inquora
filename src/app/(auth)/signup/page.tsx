@@ -26,17 +26,11 @@ const SignupPage = (): JSX.Element => {
             <span className="w-full border-t border-border/70" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="px-2 text-muted-foreground">
-              Or Sign Up With Email
-            </span>
+            <span className="px-2 text-muted-foreground">Or Sign Up With Email</span>
           </div>
         </div>
         <AuthSignupForm />
-        <AuthLink
-          text="Already have an account?"
-          linkText="Sign in"
-          href="/login"
-        />
+        <AuthLink text="Already have an account?" linkText="Sign in" href="/login" />
       </div>
     </div>
   );

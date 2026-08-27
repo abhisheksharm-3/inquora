@@ -12,9 +12,7 @@ import { selectDynamicReasoningFramework } from "./reasoning-utils";
 /**
  * Creates sophisticated system prompts with content source awareness
  */
-export async function createSystemPrompt(
-  context: TypePromptContext,
-): Promise<string> {
+export async function createSystemPrompt(context: TypePromptContext): Promise<string> {
   const analysis = context.analysis;
   const contentSource = detectContentSource(context);
   const reasoningFramework = selectDynamicReasoningFramework(analysis);
@@ -122,13 +120,11 @@ export async function createAgenticRagPrompt(
     recentConversations?: { id: string; title: string; timestamp: string }[];
   },
 ): Promise<string> {
-  const contentSource =
-    context?.contentSource || inferContentSourceFromContext(context);
+  const contentSource = context?.contentSource || inferContentSourceFromContext(context);
   const adaptiveStrategy = getAdaptiveStrategy(documentContent);
   const contextualPrompting = buildContextualPrompting(context);
   const userDeepContext = buildUserDeepContext(context);
-  const sourceAwareInstructions =
-    generateSourceAwareInstructions(contentSource);
+  const sourceAwareInstructions = generateSourceAwareInstructions(contentSource);
 
   return `# INQUORA DOCUMENT ANALYSIS
 
@@ -464,9 +460,7 @@ function getIntentSpecificGuidelines(intentType: string): string {
       "Synthesize innovative insights while maintaining source fidelity, evidence grounding, and analytical rigor",
   };
 
-  return (
-    guidelines[intentType as keyof typeof guidelines] || guidelines.factual
-  );
+  return guidelines[intentType as keyof typeof guidelines] || guidelines.factual;
 }
 
 function getComplexityStrategy(complexityLevel: string): string {
@@ -481,10 +475,7 @@ function getComplexityStrategy(complexityLevel: string): string {
       "Construct systematic progression protocols with phase-based analysis, checkpoint validation, and integrated synthesis",
   };
 
-  return (
-    strategies[complexityLevel as keyof typeof strategies] ||
-    strategies.moderate
-  );
+  return strategies[complexityLevel as keyof typeof strategies] || strategies.moderate;
 }
 
 function getSourceSpecificStrategy(sourceType: string): string {
@@ -499,9 +490,7 @@ function getSourceSpecificStrategy(sourceType: string): string {
       "Utilize comprehensive document intelligence with adaptive complexity and professional analytical standards",
   };
 
-  return (
-    strategies[sourceType as keyof typeof strategies] || strategies.document
-  );
+  return strategies[sourceType as keyof typeof strategies] || strategies.document;
 }
 
 function createDefaultContentSource(): TypeContentSource {
@@ -543,8 +532,7 @@ function getAdaptiveStrategy(content: string): string {
 
   let strategy = `- Content Length: ${length > 10000 ? "Large" : length > 3000 ? "Medium" : "Short"} document`;
 
-  if (hasCode)
-    strategy += "\n- Contains code elements requiring technical precision";
+  if (hasCode) strategy += "\n- Contains code elements requiring technical precision";
 
   return strategy;
 }
@@ -682,8 +670,7 @@ function assessCompleteness(content: string, sourceType: string): string {
     code: ["// TODO", "// FIXME", "...", "truncated"],
   };
 
-  const sourceIndicators =
-    indicators[sourceType as keyof typeof indicators] || [];
+  const sourceIndicators = indicators[sourceType as keyof typeof indicators] || [];
   const hasIncompleteMarkers = sourceIndicators.some((indicator) =>
     content.toLowerCase().includes(indicator.toLowerCase()),
   );

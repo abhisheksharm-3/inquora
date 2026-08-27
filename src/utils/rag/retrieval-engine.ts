@@ -93,19 +93,13 @@ export async function retrieveRelevantDocuments(
   results.forEach((resultGroup) => allResults.push(...resultGroup));
 
   const deduplicatedResults = removeDuplicateDocuments(allResults);
-  const filteredResults = filterByRelevanceScore(
-    deduplicatedResults,
-    config.minimumRelevanceScore,
-  );
+  const filteredResults = filterByRelevanceScore(deduplicatedResults, config.minimumRelevanceScore);
 
   const finalResults = config.rerankingEnabled
     ? await rerankResults(filteredResults, analysisResult, config)
     : filteredResults;
 
-  const diverseResults = applyMmrDiversity(
-    finalResults,
-    config.diversityThreshold,
-  );
+  const diverseResults = applyMmrDiversity(finalResults, config.diversityThreshold);
   return diverseResults.slice(0, config.maxResults);
 }
 
@@ -147,12 +141,7 @@ async function performKeywordSearch(
   pineconeIndex?: Index,
 ): Promise<TypeRetrievalResult[]> {
   const keywordQuery = buildKeywordQuery(keywords);
-  const results = await queryDocuments(
-    keywordQuery,
-    namespace,
-    topK,
-    pineconeIndex,
-  );
+  const results = await queryDocuments(keywordQuery, namespace, topK, pineconeIndex);
   return results.map(([doc, score]) => ({
     document: doc,
     score: normalizeScore(score),
@@ -170,15 +159,8 @@ async function performContextualSearch(
 ): Promise<TypeRetrievalResult[]> {
   const recentMessages = conversationHistory.slice(-3);
   const contextQuery =
-    recentMessages.map((msg) => msg.content).join(" ") +
-    " " +
-    analysis.expandedQuery;
-  const results = await queryDocuments(
-    contextQuery,
-    namespace,
-    topK,
-    pineconeIndex,
-  );
+    recentMessages.map((msg) => msg.content).join(" ") + " " + analysis.expandedQuery;
+  const results = await queryDocuments(contextQuery, namespace, topK, pineconeIndex);
   return results.map(([doc, score]) => ({
     document: doc,
     score: normalizeScore(score),
@@ -193,12 +175,7 @@ async function performStepBackSearch(
   topK: number,
   pineconeIndex?: Index,
 ): Promise<TypeRetrievalResult[]> {
-  const results = await queryDocuments(
-    stepBackQuery,
-    namespace,
-    topK,
-    pineconeIndex,
-  );
+  const results = await queryDocuments(stepBackQuery, namespace, topK, pineconeIndex);
   return results.map(([doc, score]) => ({
     document: doc,
     score: normalizeScore(score),
@@ -211,18 +188,13 @@ async function performStepBackSearch(
  * Removes duplicate documents based on content similarity.
  * Uses a robust normalized content signature to detect exact or near-exact duplicates.
  */
-function removeDuplicateDocuments(
-  results: TypeRetrievalResult[],
-): TypeRetrievalResult[] {
+function removeDuplicateDocuments(results: TypeRetrievalResult[]): TypeRetrievalResult[] {
   const seenSignatures = new Set<string>();
   const unique: TypeRetrievalResult[] = [];
 
   for (const result of results) {
     // Create a robust signature: normalize whitespace, lowercase, and grab a substantial prefix
-    const normalized = result.document.pageContent
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .trim();
+    const normalized = result.document.pageContent.toLowerCase().replace(/\s+/g, " ").trim();
 
     // Use first 200 chars of normalized content as signature
     const signature = normalized.substring(0, 200);
@@ -232,9 +204,7 @@ function removeDuplicateDocuments(
       unique.push(result);
     } else if (
       signature.length <= 50 &&
-      !unique.some(
-        (u) => u.document.pageContent === result.document.pageContent,
-      )
+      !unique.some((u) => u.document.pageContent === result.document.pageContent)
     ) {
       // Fallback for very short documents
       unique.push(result);
@@ -268,8 +238,7 @@ async function rerankResults(
 
   for (const strategy of config.strategies) {
     // Priority: hardcoded strategy weight > dynamic intent-based weight > default
-    strategyWeights[strategy.name] =
-      strategy.weight || dynamicWeights[strategy.name] || 0.5;
+    strategyWeights[strategy.name] = strategy.weight || dynamicWeights[strategy.name] || 0.5;
   }
 
   return results
@@ -279,24 +248,15 @@ async function rerankResults(
       let weightedScore = result.score * strategyWeight;
 
       // Intent-aware boosting (small adjustments on top of weighted score)
-      if (
-        analysis.complexity.level === "complex" &&
-        result.document.pageContent.length > 500
-      ) {
+      if (analysis.complexity.level === "complex" && result.document.pageContent.length > 500) {
         weightedScore *= 1.05;
       }
 
-      if (
-        analysis.intent.type === "analytical" &&
-        result.retrievalMethod === "semantic"
-      ) {
+      if (analysis.intent.type === "analytical" && result.retrievalMethod === "semantic") {
         weightedScore *= 1.1;
       }
 
-      if (
-        analysis.intent.type === "factual" &&
-        result.retrievalMethod === "keyword"
-      ) {
+      if (analysis.intent.type === "factual" && result.retrievalMethod === "keyword") {
         weightedScore *= 1.1;
       }
 
@@ -312,10 +272,7 @@ async function rerankResults(
  * Applies maximal marginal relevance (MMR): greedy selection that balances relevance and diversity.
  * @param lambda - Balance between score (1-lambda) and diversity (lambda). Use diversityThreshold as lambda.
  */
-function applyMmrDiversity(
-  results: TypeRetrievalResult[],
-  lambda: number,
-): TypeRetrievalResult[] {
+function applyMmrDiversity(results: TypeRetrievalResult[], lambda: number): TypeRetrievalResult[] {
   if (results.length <= 1) return results;
 
   const selected: TypeRetrievalResult[] = [results[0]];

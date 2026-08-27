@@ -40,10 +40,7 @@ export const HistoryPageDropdownActions: TypeDropdownAction[] = [
  * A placeholder array used for rendering skeleton loaders on the history page.
  * This provides a set number of items to loop over while data is loading.
  */
-export const HistoryPageSkeletonItems = Array.from(
-  { length: 3 },
-  (_, index) => ({ id: index }),
-);
+export const HistoryPageSkeletonItems = Array.from({ length: 3 }, (_, index) => ({ id: index }));
 
 /**
  * An object containing Tailwind CSS class configurations for various skeleton loader elements.

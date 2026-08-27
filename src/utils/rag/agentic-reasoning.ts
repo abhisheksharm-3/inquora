@@ -7,10 +7,7 @@ import {
   TypeReasoningChain,
   TypeReasoningStep,
 } from "@/types/rag";
-import {
-  selectDynamicReasoningFramework,
-  getAgentCapabilities,
-} from "./reasoning-utils";
+import { selectDynamicReasoningFramework, getAgentCapabilities } from "./reasoning-utils";
 
 /**
  * Advanced Agentic Reasoning System
@@ -18,16 +15,9 @@ import {
 
 export async function createRAGAgent(
   specialization:
-    | "generalist"
-    | "technical"
-    | "academic"
-    | "creative"
-    | "analytical" = "generalist",
+    "generalist" | "technical" | "academic" | "creative" | "analytical" = "generalist",
   reasoningFramework:
-    | "chain_of_thought"
-    | "tree_of_thought"
-    | "react"
-    | "reflexion" = "chain_of_thought",
+    "chain_of_thought" | "tree_of_thought" | "react" | "reflexion" = "chain_of_thought",
 ): Promise<TypeRAGAgent> {
   const capabilities = getAgentCapabilities(specialization);
 
@@ -44,18 +34,13 @@ export async function executeAgenticReasoning(
   query: string,
   context: string,
   agent: TypeRAGAgent,
-  framework:
-    | "chain_of_thought"
-    | "tree_of_thought"
-    | "react"
-    | "reflexion" = "chain_of_thought",
+  framework: "chain_of_thought" | "tree_of_thought" | "react" | "reflexion" = "chain_of_thought",
 ): Promise<{
   decisions: TypeAgentDecision[];
   reasoningChain: TypeReasoningChain;
   finalResponse: string;
 }> {
-  const frameworkToUse =
-    framework || agent.reasoningFramework || "chain_of_thought";
+  const frameworkToUse = framework || agent.reasoningFramework || "chain_of_thought";
 
   switch (frameworkToUse) {
     case "chain_of_thought":
@@ -334,11 +319,7 @@ function parseChainOfThoughtResponse(response: string): {
         steps.push({
           id: `step-${index + 1}`,
           type: typeMatch[1].toLowerCase() as
-            | "observation"
-            | "inference"
-            | "deduction"
-            | "hypothesis"
-            | "validation",
+            "observation" | "inference" | "deduction" | "hypothesis" | "validation",
           content: contentMatch[1],
           evidence: [],
           confidence: 0.85,
@@ -413,12 +394,8 @@ function parseChainOfThoughtResponse(response: string): {
   }
 
   // Extract confidence — try to parse from response, derive from parsing success otherwise
-  const confidenceMatch = response.match(
-    /(?:Overall )?[Cc]onfidence:?\s*([\d.]+)/,
-  );
-  const parsedConfidence = confidenceMatch
-    ? parseFloat(confidenceMatch[1])
-    : null;
+  const confidenceMatch = response.match(/(?:Overall )?[Cc]onfidence:?\s*([\d.]+)/);
+  const parsedConfidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : null;
   const derivedConfidence = parsedConfidence ?? (steps.length > 0 ? 0.8 : 0.65);
 
   // Extract alternative viewpoints
@@ -452,10 +429,7 @@ function parseTreeOfThoughtResponse(response: string): {
   finalResponse: string;
 } {
   // Extract final response
-  const finalResponsePatterns = [
-    /FINAL RESPONSE:\s*([\s\S]*?)$/i,
-    /SYNTHESIS:\s*([\s\S]*?)$/i,
-  ];
+  const finalResponsePatterns = [/FINAL RESPONSE:\s*([\s\S]*?)$/i, /SYNTHESIS:\s*([\s\S]*?)$/i];
   let finalResponse = response;
   for (const pattern of finalResponsePatterns) {
     const m = response.match(pattern);
@@ -469,16 +443,10 @@ function parseTreeOfThoughtResponse(response: string): {
   const bestPathMatch = response.match(
     /(?:Best path|BEST PATH)[:\s]+([\s\S]*?)(?=Why:|WHY:|\n\n|$)/i,
   );
-  const whyMatch = response.match(
-    /(?:Why|WHY)[:\s]+([\s\S]*?)(?=Synthesis:|SYNTHESIS:|\n\n|$)/i,
-  );
-  const synthesisMatch = response.match(
-    /(?:Synthesis|SYNTHESIS)[:\s]+([\s\S]*?)(?=FINAL|$)/i,
-  );
+  const whyMatch = response.match(/(?:Why|WHY)[:\s]+([\s\S]*?)(?=Synthesis:|SYNTHESIS:|\n\n|$)/i);
+  const synthesisMatch = response.match(/(?:Synthesis|SYNTHESIS)[:\s]+([\s\S]*?)(?=FINAL|$)/i);
 
-  const pathDescription = bestPathMatch
-    ? bestPathMatch[1].trim()
-    : "Multiple paths evaluated";
+  const pathDescription = bestPathMatch ? bestPathMatch[1].trim() : "Multiple paths evaluated";
   const whyDescription = whyMatch
     ? whyMatch[1].trim().substring(0, 300)
     : "Best path selected by reasoning quality";
@@ -487,9 +455,7 @@ function parseTreeOfThoughtResponse(response: string): {
     : "Insights synthesized across paths";
 
   // Extract per-path confidence values if present, derive overall
-  const pathConfidences = [
-    ...response.matchAll(/(?:Confidence|CONFIDENCE)[:\s]+([\d.]+)/gi),
-  ]
+  const pathConfidences = [...response.matchAll(/(?:Confidence|CONFIDENCE)[:\s]+([\d.]+)/gi)]
     .map((m) => parseFloat(m[1]))
     .filter((n) => !isNaN(n) && n >= 0 && n <= 1);
   const overallConfidence =
@@ -504,11 +470,7 @@ function parseTreeOfThoughtResponse(response: string): {
       id: "path-exploration",
       type: "hypothesis",
       content: `Explored 3 reasoning paths. Selected: ${pathDescription}`,
-      evidence: [
-        "analytical approach",
-        "creative approach",
-        "conservative approach",
-      ],
+      evidence: ["analytical approach", "creative approach", "conservative approach"],
       confidence: overallConfidence,
       dependencies: [],
     },
@@ -543,11 +505,7 @@ function parseTreeOfThoughtResponse(response: string): {
     steps,
     finalConclusion: finalResponse,
     confidenceScore: overallConfidence,
-    alternativeViewpoints: [
-      "analytical approach",
-      "creative approach",
-      "conservative approach",
-    ],
+    alternativeViewpoints: ["analytical approach", "creative approach", "conservative approach"],
   };
 
   return { decisions, reasoningChain, finalResponse };
@@ -563,10 +521,7 @@ function parseReActResponse(response: string): {
 } {
   // Extract final response — look for RESPONSE: or CONCLUSION: markers
   let finalResponse = response;
-  const finalPatterns = [
-    /RESPONSE:\s*([\s\S]*?)$/i,
-    /CONCLUSION:\s*([\s\S]*?)$/i,
-  ];
+  const finalPatterns = [/RESPONSE:\s*([\s\S]*?)$/i, /CONCLUSION:\s*([\s\S]*?)$/i];
   for (const pattern of finalPatterns) {
     const m = response.match(pattern);
     if (m && m[1].trim().length > 20) {
@@ -576,19 +531,14 @@ function parseReActResponse(response: string): {
   }
 
   // Extract thoughts — support both bracketed and unbracketed format
-  const thoughtMatches = [
-    ...response.matchAll(/THOUGHT \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
-  ];
-  const actionMatches = [
-    ...response.matchAll(/ACTION \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
-  ];
+  const thoughtMatches = [...response.matchAll(/THOUGHT \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g)];
+  const actionMatches = [...response.matchAll(/ACTION \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g)];
   const observationMatches = [
     ...response.matchAll(/OBSERVATION \d+:\s*(?:\[([^\]]+)\]|([^\n]+))/g),
   ];
 
   // Derive confidence from how much structured content was successfully extracted
-  const structuredCount =
-    thoughtMatches.length + actionMatches.length + observationMatches.length;
+  const structuredCount = thoughtMatches.length + actionMatches.length + observationMatches.length;
   const derivedConfidence =
     structuredCount >= 6
       ? 0.9
@@ -671,17 +621,11 @@ function parseReflexionResponse(response: string): {
   finalResponse: string;
 } {
   // Extract final response
-  const finalResponseMatch = response.match(
-    /FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE:|$)/i,
-  );
-  const finalResponse = finalResponseMatch
-    ? finalResponseMatch[1].trim()
-    : response;
+  const finalResponseMatch = response.match(/FINAL RESPONSE:\s*([\s\S]*?)(?=CONFIDENCE:|$)/i);
+  const finalResponse = finalResponseMatch ? finalResponseMatch[1].trim() : response;
 
   // Extract initial response
-  const initialMatch = response.match(
-    /INITIAL RESPONSE:\s*([\s\S]*?)(?=SELF-REFLECTION:|$)/i,
-  );
+  const initialMatch = response.match(/INITIAL RESPONSE:\s*([\s\S]*?)(?=SELF-REFLECTION:|$)/i);
   const initialContent = initialMatch
     ? initialMatch[1].trim().substring(0, 400)
     : "Generated initial response";
@@ -690,9 +634,7 @@ function parseReflexionResponse(response: string): {
   const reflectionMatch = response.match(
     /SELF-REFLECTION:\s*([\s\S]*?)(?=IDENTIFIED ISSUES:|IMPROVED|$)/i,
   );
-  const reflection = reflectionMatch
-    ? reflectionMatch[1].trim().substring(0, 500)
-    : "";
+  const reflection = reflectionMatch ? reflectionMatch[1].trim().substring(0, 500) : "";
 
   // Extract identified issues
   const issuesMatch = response.match(
@@ -701,28 +643,19 @@ function parseReflexionResponse(response: string): {
   const issues = issuesMatch ? issuesMatch[1].trim().substring(0, 400) : "";
 
   // Extract improved reasoning
-  const improvedMatch = response.match(
-    /IMPROVED REASONING:\s*([\s\S]*?)(?=FINAL RESPONSE:|$)/i,
-  );
+  const improvedMatch = response.match(/IMPROVED REASONING:\s*([\s\S]*?)(?=FINAL RESPONSE:|$)/i);
   const improved = improvedMatch
     ? improvedMatch[1].trim().substring(0, 400)
     : "Improved response based on self-reflection";
 
   // Extract confidence from LLM output
   const confidenceMatch = response.match(/CONFIDENCE[:\s]+([\d.]+)/i);
-  const parsedConfidence = confidenceMatch
-    ? parseFloat(confidenceMatch[1])
-    : null;
+  const parsedConfidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : null;
 
   // Derive confidence from parse success if not explicitly stated
-  const hasStructuredContent = !!(
-    initialMatch &&
-    reflectionMatch &&
-    finalResponseMatch
-  );
+  const hasStructuredContent = !!(initialMatch && reflectionMatch && finalResponseMatch);
   const derivedConfidence =
-    parsedConfidence ??
-    (hasStructuredContent ? 0.88 : finalResponse !== response ? 0.75 : 0.6);
+    parsedConfidence ?? (hasStructuredContent ? 0.88 : finalResponse !== response ? 0.75 : 0.6);
 
   const steps: TypeReasoningStep[] = [
     {
@@ -736,9 +669,7 @@ function parseReflexionResponse(response: string): {
     {
       id: "self-reflection",
       type: "validation",
-      content:
-        reflection ||
-        "Self-reflection applied to identify gaps and assumptions",
+      content: reflection || "Self-reflection applied to identify gaps and assumptions",
       evidence: issues ? [issues] : [],
       confidence: derivedConfidence - 0.05,
       dependencies: ["initial-response"],
@@ -768,10 +699,7 @@ function parseReflexionResponse(response: string): {
     steps,
     finalConclusion: finalResponse,
     confidenceScore: derivedConfidence,
-    alternativeViewpoints: [
-      "initial approach",
-      "reflected and improved approach",
-    ],
+    alternativeViewpoints: ["initial approach", "reflected and improved approach"],
   };
 
   return { decisions, reasoningChain, finalResponse };

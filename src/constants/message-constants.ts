@@ -11,6 +11,5 @@ export const MessageConstants = {
   // The default error message for a failed YouTube video processing job.
   YouTubeDefaultError: "The video transcript could not be processed.",
   // A generic error message for a failed request.
-  GenericRequestError:
-    "Sorry, there was an error processing your request. Please try again.",
+  GenericRequestError: "Sorry, there was an error processing your request. Please try again.",
 };

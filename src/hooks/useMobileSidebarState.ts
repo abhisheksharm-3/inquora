@@ -13,9 +13,7 @@ export const useSidebarState = () => {
     gcTime: Infinity, // Never garbage collect
   });
 
-  const updateState = (
-    updater: (prev: { isOpen: boolean }) => { isOpen: boolean },
-  ) => {
+  const updateState = (updater: (prev: { isOpen: boolean }) => { isOpen: boolean }) => {
     queryClient.setQueryData(SIDEBAR_QUERY_KEY, updater);
   };
 

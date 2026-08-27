@@ -19,16 +19,10 @@ const Footer = () => {
         <span>© {new Date().getFullYear()} inquora. All rights reserved.</span>
 
         <div className="flex items-center gap-6">
-          <Link
-            href="/terms"
-            className="transition-colors hover:text-foreground"
-          >
+          <Link href="/terms" className="transition-colors hover:text-foreground">
             Terms of Service
           </Link>
-          <Link
-            href="/privacy"
-            className="transition-colors hover:text-foreground"
-          >
+          <Link href="/privacy" className="transition-colors hover:text-foreground">
             Privacy Policy
           </Link>
         </div>

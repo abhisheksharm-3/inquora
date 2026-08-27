@@ -9,10 +9,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { documentProcessor } from "@/services/document-processor-service";
 import { TypeFile } from "@/types/database";
-import {
-  ProcessingProgress,
-  ProcessingResult,
-} from "@/types/document-processor";
+import { ProcessingProgress, ProcessingResult } from "@/types/document-processor";
 
 export interface UseDocumentProcessorState {
   isProcessing: boolean;
@@ -84,8 +81,7 @@ export const useDocumentProcessor = (): UseDocumentProcessorReturn => {
 
         return result;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
 
         setState((prev) => ({
           ...prev,

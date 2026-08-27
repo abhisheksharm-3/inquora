@@ -39,10 +39,7 @@ export const useMessages = (chatId: string) => {
   const { isAuthenticated, userId } = useUser();
   const [isPending, startTransition] = useTransition();
 
-  const messageRepository = useMemo(
-    () => createMessageRepository(supabase),
-    [supabase]
-  );
+  const messageRepository = useMemo(() => createMessageRepository(supabase), [supabase]);
 
   const isValidChatId = !!chatId?.trim();
 
@@ -59,34 +56,28 @@ export const useMessages = (chatId: string) => {
     gcTime: TIMING_CONSTANTS.CACHE_TIME_MS,
   });
 
-  const serverMessages = useMemo(
-    () => messagesQuery.data || [],
-    [messagesQuery.data]
-  );
+  const serverMessages = useMemo(() => messagesQuery.data || [], [messagesQuery.data]);
 
-  const optimisticReducer = useCallback(
-    (state: TypeMessage[], newMessage: TypeMessage) => {
-      if (newMessage.role === "user") {
-        return [...state, newMessage];
-      }
-
-      if (newMessage.role === "assistant") {
-        const existingTempAiIndex = state.findIndex(
-          (msg) => msg.role === "assistant" && msg.id.startsWith("temp-ai-"),
-        );
-
-        if (existingTempAiIndex !== -1) {
-          const newState = [...state];
-          newState[existingTempAiIndex] = newMessage;
-          return newState;
-        }
-        return [...state, newMessage];
-      }
-
+  const optimisticReducer = useCallback((state: TypeMessage[], newMessage: TypeMessage) => {
+    if (newMessage.role === "user") {
       return [...state, newMessage];
-    },
-    [],
-  );
+    }
+
+    if (newMessage.role === "assistant") {
+      const existingTempAiIndex = state.findIndex(
+        (msg) => msg.role === "assistant" && msg.id.startsWith("temp-ai-"),
+      );
+
+      if (existingTempAiIndex !== -1) {
+        const newState = [...state];
+        newState[existingTempAiIndex] = newMessage;
+        return newState;
+      }
+      return [...state, newMessage];
+    }
+
+    return [...state, newMessage];
+  }, []);
 
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
     serverMessages,
@@ -99,10 +90,7 @@ export const useMessages = (chatId: string) => {
       if (!userId) throw new Error("No authenticated user");
       if (!content.trim()) return;
 
-      const { tempUserMessage, tempAiMessage } = createOptimisticMessages(
-        chatId,
-        content,
-      );
+      const { tempUserMessage, tempAiMessage } = createOptimisticMessages(chatId, content);
 
       startTransition(() => {
         addOptimisticMessage(tempUserMessage);
@@ -114,11 +102,10 @@ export const useMessages = (chatId: string) => {
           (msg) => !msg.id.startsWith("temp-") && msg.content !== "...",
         );
 
-        const formattedMessages: TypeGeminiMessage[] =
-          currentMessages.map((msg) => ({
-            role: msg.role === "user" ? "user" : "model",
-            content: msg.content,
-          }));
+        const formattedMessages: TypeGeminiMessage[] = currentMessages.map((msg) => ({
+          role: msg.role === "user" ? "user" : "model",
+          content: msg.content,
+        }));
 
         const sessionMetadata = getSessionMetadata();
         await sendMessageToGemini(chatId, content, formattedMessages, sessionMetadata);
@@ -135,8 +122,7 @@ export const useMessages = (chatId: string) => {
             id: `error-${Date.now()}`,
             chat_id: chatId,
             role: "assistant",
-            content:
-              "Sorry, there was an error processing your request. Please try again.",
+            content: "Sorry, there was an error processing your request. Please try again.",
             created_at: new Date().toISOString(),
           };
 
@@ -164,10 +150,7 @@ export const useMessages = (chatId: string) => {
       return messageRepository.create(messageData);
     },
     onSuccess: (newMessage) => {
-      queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) => [
-        ...oldData,
-        newMessage,
-      ]);
+      queryClient.setQueryData<TypeMessage[]>(queryKey, (oldData = []) => [...oldData, newMessage]);
     },
   });
 
@@ -185,7 +168,7 @@ export const useMessages = (chatId: string) => {
   });
 
   const subscribeToMessages = useCallback(() => {
-    if (!isValidChatId || !isAuthenticated) return () => { };
+    if (!isValidChatId || !isAuthenticated) return () => {};
 
     const channel = supabase.channel(`messages:${chatId}`);
 
@@ -208,9 +191,7 @@ export const useMessages = (chatId: string) => {
             }
             if (payload.eventType === "UPDATE") {
               const updatedMessage = payload.new as TypeMessage;
-              return oldData.map((msg) =>
-                msg.id === updatedMessage.id ? updatedMessage : msg,
-              );
+              return oldData.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg));
             }
             if (payload.eventType === "DELETE") {
               const deletedMessageId = (payload.old as { id: string }).id;

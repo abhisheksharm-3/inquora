@@ -34,9 +34,7 @@ const RootLayout = ({
   children: React.ReactNode;
 }>) => (
   <html lang="en">
-    <body
-      className={`${literata.variable} ${jetbrainsMono.variable} font-serif antialiased`}
-    >
+    <body className={`${literata.variable} ${jetbrainsMono.variable} font-serif antialiased`}>
       <QueryProvider>
         <ThemeProvider
           attribute="class"
@@ -44,9 +42,7 @@ const RootLayout = ({
           enableSystem
           disableTransitionOnChange
         >
-          <SupabaseProvider>
-            {children}
-          </SupabaseProvider>
+          <SupabaseProvider>{children}</SupabaseProvider>
         </ThemeProvider>
       </QueryProvider>
     </body>

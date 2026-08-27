@@ -64,9 +64,7 @@ export const AuthSignupForm = (): JSX.Element => {
                 name="fullName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground">
-                      Full Name
-                    </FormLabel>
+                    <FormLabel className="text-muted-foreground">Full Name</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="John Doe"
@@ -84,9 +82,7 @@ export const AuthSignupForm = (): JSX.Element => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground">
-                      Email
-                    </FormLabel>
+                    <FormLabel className="text-muted-foreground">Email</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -105,9 +101,7 @@ export const AuthSignupForm = (): JSX.Element => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground">
-                      Password
-                    </FormLabel>
+                    <FormLabel className="text-muted-foreground">Password</FormLabel>
                     <FormControl>
                       <AuthPasswordInput
                         field={field}
@@ -124,9 +118,7 @@ export const AuthSignupForm = (): JSX.Element => {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-muted-foreground">
-                      Confirm
-                    </FormLabel>
+                    <FormLabel className="text-muted-foreground">Confirm</FormLabel>
                     <FormControl>
                       <AuthPasswordInput
                         field={field}
@@ -140,11 +132,7 @@ export const AuthSignupForm = (): JSX.Element => {
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full !mt-6 h-10"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full !mt-6 h-10" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait

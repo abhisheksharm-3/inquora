@@ -35,10 +35,7 @@ export interface TypeUseWebScrapingReturn {
   getPageInfo: (url: string) => Promise<TypeWebPageInfo>;
   processPage: {
     mutate: (variables: { url: string; fileId: string }) => void;
-    mutateAsync: (variables: {
-      url: string;
-      fileId: string;
-    }) => Promise<TypeWebScrapingResult>;
+    mutateAsync: (variables: { url: string; fileId: string }) => Promise<TypeWebScrapingResult>;
     isPending: boolean;
     error: Error | null;
     data: TypeWebScrapingResult | undefined;
@@ -72,8 +69,7 @@ export const DEFAULT_SCRAPING_CONFIG: TypeScrapingConfig = {
   timeout: 30000,
   retries: 3,
   headers: {
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
     "Accept-Encoding": "gzip, deflate, br",
     DNT: "1",

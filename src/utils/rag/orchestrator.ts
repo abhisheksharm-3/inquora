@@ -1,11 +1,6 @@
 "use server";
 
-import {
-  analyzeQuery,
-  expandQuery,
-  decomposeQuery,
-  generateStepBackQuery,
-} from "./query-analysis";
+import { analyzeQuery, expandQuery, decomposeQuery, generateStepBackQuery } from "./query-analysis";
 
 type TypeAgenticResult = {
   decisions: TypeAgentDecision[];
@@ -14,20 +9,61 @@ type TypeAgenticResult = {
 } | null;
 
 const STOP_WORDS = new Set([
-  "what", "how", "why", "when", "where", "who", "which",
-  "is", "are", "was", "were", "the", "a", "an", "and", "or", "but",
-  "in", "on", "at", "to", "for", "of", "with",
-  "do", "does", "did", "will", "would", "could", "should", "can",
-  "has", "have", "had", "this", "that", "it",
-  "me", "my", "you", "your",
-  "tell", "about", "explain", "please", "give", "show", "find", "some", "more",
+  "what",
+  "how",
+  "why",
+  "when",
+  "where",
+  "who",
+  "which",
+  "is",
+  "are",
+  "was",
+  "were",
+  "the",
+  "a",
+  "an",
+  "and",
+  "or",
+  "but",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "can",
+  "has",
+  "have",
+  "had",
+  "this",
+  "that",
+  "it",
+  "me",
+  "my",
+  "you",
+  "your",
+  "tell",
+  "about",
+  "explain",
+  "please",
+  "give",
+  "show",
+  "find",
+  "some",
+  "more",
 ]);
 import { retrieveRelevantDocuments } from "./retrieval-engine";
 import { createSystemPrompt } from "./prompt-engineering";
-import {
-  prepareConversationContext,
-  analyzeConversation,
-} from "./context-manager";
+import { prepareConversationContext, analyzeConversation } from "./context-manager";
 import {
   TypeRAGRequest,
   TypeRAGResponse,
@@ -40,10 +76,7 @@ import {
 import { DEFAULT_RETRIEVAL_CONFIG } from "@/config/constants";
 import { queryAnalysisCache, withCache, generateCacheKey } from "./cache";
 import { executeAgenticReasoning } from "./agentic-reasoning";
-import {
-  getAgentCapabilities,
-  selectDynamicReasoningFramework,
-} from "./reasoning-utils";
+import { getAgentCapabilities, selectDynamicReasoningFramework } from "./reasoning-utils";
 
 /**
  * Default RAG configuration
@@ -102,28 +135,20 @@ export async function processRAGRequest(
         ? request.enableAgenticReasoning
         : config.agent.enableAgenticReasoning;
 
-    const [
-      expandedQueryResult,
-      subQuestions,
-      stepBackQuery,
-      conversationContext,
-    ] = await Promise.all([
-      config.analysis.enableQueryExpansion &&
-      analysis.confidenceScore >= config.analysis.confidenceThreshold
-        ? expandQuery(request.query, analysis)
-        : Promise.resolve(undefined),
-      config.analysis.enableSubQuestionDecomposition
-        ? decomposeQuery(request.query, analysis)
-        : Promise.resolve([request.query]),
-      config.analysis.enableStepBackPrompting
-        ? generateStepBackQuery(request.query, analysis)
-        : Promise.resolve(null),
-      prepareConversationContext(
-        request.query,
-        request.conversationHistory || [],
-        analysis,
-      ),
-    ]);
+    const [expandedQueryResult, subQuestions, stepBackQuery, conversationContext] =
+      await Promise.all([
+        config.analysis.enableQueryExpansion &&
+        analysis.confidenceScore >= config.analysis.confidenceThreshold
+          ? expandQuery(request.query, analysis)
+          : Promise.resolve(undefined),
+        config.analysis.enableSubQuestionDecomposition
+          ? decomposeQuery(request.query, analysis)
+          : Promise.resolve([request.query]),
+        config.analysis.enableStepBackPrompting
+          ? generateStepBackQuery(request.query, analysis)
+          : Promise.resolve(null),
+        prepareConversationContext(request.query, request.conversationHistory || [], analysis),
+      ]);
 
     if (expandedQueryResult) {
       analysis.expandedQuery = expandedQueryResult;
@@ -145,8 +170,7 @@ export async function processRAGRequest(
         domain: request.documentContext?.domain,
       },
       userPreferences: {
-        verbosity:
-          request.userContext?.preferences?.response_style || "detailed",
+        verbosity: request.userContext?.preferences?.response_style || "detailed",
         technical_level: (request.userContext?.expertise_level === "beginner"
           ? "basic"
           : request.userContext?.expertise_level === "expert"
@@ -172,10 +196,7 @@ export async function processRAGRequest(
               { ...retrievalOptions, stepBackQuery: undefined },
               { ...config.retrieval, maxResults: 3 },
             ).catch((error) => {
-              console.warn(
-                `Sub-question retrieval failed for "${subQ}":`,
-                error,
-              );
+              console.warn(`Sub-question retrieval failed for "${subQ}":`, error);
               return [];
             }),
           )
@@ -210,9 +231,7 @@ export async function processRAGRequest(
       conversationContext: {
         relevantHistory: conversationContext.optimizedHistory,
         contextSummary: conversationContext.contextSummary,
-        continuityType: determineContinuityType(
-          conversationContext.optimizedHistory,
-        ),
+        continuityType: determineContinuityType(conversationContext.optimizedHistory),
       },
       userContext: request.userContext,
       documentContext: request.documentContext,
@@ -237,9 +256,7 @@ export async function processRAGRequest(
       agentConfig
         ? executeAgenticReasoning(
             request.query,
-            retrievedSources
-              .map((source) => source.document.pageContent)
-              .join("\n\n"),
+            retrievedSources.map((source) => source.document.pageContent).join("\n\n"),
             agentConfig,
             selectedFramework,
           )
@@ -264,9 +281,7 @@ export async function processRAGRequest(
       contextInfo: {
         relevantHistory: conversationContext.optimizedHistory,
         contextSummary: conversationContext.contextSummary,
-        continuityType: determineContinuityType(
-          conversationContext.optimizedHistory,
-        ),
+        continuityType: determineContinuityType(conversationContext.optimizedHistory),
       },
       confidence: calculateOverallConfidence(analysis, retrievedSources),
       processingMetadata: {
@@ -284,11 +299,7 @@ export async function processRAGRequest(
     console.error("RAG processing failed:", error);
 
     // Return fallback response
-    return createFallbackResponse(
-      request,
-      error as Error,
-      Date.now() - startTime,
-    );
+    return createFallbackResponse(request, error as Error, Date.now() - startTime);
   }
 }
 
@@ -305,19 +316,14 @@ export async function analyzeRAGConversation(request: TypeRAGRequest): Promise<{
   };
   recommendations: string[];
 }> {
-  const conversationInsights = await analyzeConversation(
-    request.conversationHistory || [],
-  );
+  const conversationInsights = await analyzeConversation(request.conversationHistory || []);
 
   const performanceMetrics = calculatePerformanceMetrics(
     request.conversationHistory || [],
     0, // We don't have a single processing time for analytics requests
   );
 
-  const recommendations = generateSystemRecommendations(
-    conversationInsights,
-    performanceMetrics,
-  );
+  const recommendations = generateSystemRecommendations(conversationInsights, performanceMetrics);
 
   return {
     conversationInsights,
@@ -384,8 +390,7 @@ function calculateOverallConfidence(
   const analysisConfidence = analysis.confidenceScore;
   const retrievalConfidence =
     retrievedSources.length > 0
-      ? retrievedSources.reduce((sum, source) => sum + source.score, 0) /
-        retrievedSources.length
+      ? retrievedSources.reduce((sum, source) => sum + source.score, 0) / retrievedSources.length
       : 0.5;
 
   return (analysisConfidence + retrievalConfidence) / 2;
@@ -394,12 +399,8 @@ function calculateOverallConfidence(
 /**
  * Gets the retrieval strategies that were used
  */
-function getUsedRetrievalStrategies(
-  retrievedSources: Array<{ retrievalMethod: string }>,
-): string {
-  const strategies = new Set(
-    retrievedSources.map((source) => source.retrievalMethod),
-  );
+function getUsedRetrievalStrategies(retrievedSources: Array<{ retrievalMethod: string }>): string {
+  const strategies = new Set(retrievedSources.map((source) => source.retrievalMethod));
   return Array.from(strategies).join(", ");
 }
 
@@ -466,26 +467,19 @@ function calculatePerformanceMetrics(
 
   // Calculate topic diversity from unique query themes
   const queries = history
-    .filter(
-      (turn): turn is typeof turn & { userQuery: string } => !!turn.userQuery,
-    )
+    .filter((turn): turn is typeof turn & { userQuery: string } => !!turn.userQuery)
     .map((turn) => turn.userQuery);
   const uniqueTopicCount = new Set(
     queries.map((q) => q.toLowerCase().split(/\s+/).slice(0, 3).join(" ")),
   ).size;
-  const topicDiversity =
-    queries.length > 0 ? Math.min(uniqueTopicCount / queries.length, 1) : 0;
+  const topicDiversity = queries.length > 0 ? Math.min(uniqueTopicCount / queries.length, 1) : 0;
 
   // User engagement from explicit satisfaction data when available
-  const turnsWithSatisfaction = history.filter(
-    (turn) => turn.satisfaction !== undefined,
-  );
+  const turnsWithSatisfaction = history.filter((turn) => turn.satisfaction !== undefined);
   const userEngagement =
     turnsWithSatisfaction.length > 0
-      ? turnsWithSatisfaction.reduce(
-          (sum, turn) => sum + (turn.satisfaction || 0),
-          0,
-        ) / turnsWithSatisfaction.length
+      ? turnsWithSatisfaction.reduce((sum, turn) => sum + (turn.satisfaction || 0), 0) /
+        turnsWithSatisfaction.length
       : averageConfidence; // Fall back to confidence as proxy
 
   return {
@@ -518,9 +512,7 @@ function generateSystemRecommendations(
   }
 
   if (insights.conversationType === "broad-exploration") {
-    recommendations.push(
-      "Help users focus on specific topics for better results",
-    );
+    recommendations.push("Help users focus on specific topics for better results");
   }
 
   return recommendations;

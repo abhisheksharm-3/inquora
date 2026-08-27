@@ -1,11 +1,7 @@
 "use server";
 
 import { sendMessageToGemini } from "@/utils/gemini/client";
-import {
-  TypeQueryAnalysis,
-  TypeQueryIntent,
-  TypeQueryComplexity
-} from "@/types/rag";
+import { TypeQueryAnalysis, TypeQueryIntent, TypeQueryComplexity } from "@/types/rag";
 
 /**
  * Analyzes user queries to understand intent, complexity, and extract relevant information
@@ -15,7 +11,7 @@ export async function analyzeQuery(
   config?: {
     entityExtractionEnabled?: boolean;
     conceptExtractionEnabled?: boolean;
-  }
+  },
 ): Promise<TypeQueryAnalysis> {
   const startTime = Date.now();
 
@@ -45,8 +41,8 @@ JSON object with:
   },
   "expandedQuery": "Expanded version with synonyms and related terms",
   "keywords": ["key", "terms", "extracted"],
-  ${config?.entityExtractionEnabled !== false ? '"entities": ["proper", "nouns", "concepts"],' : ''}
-  ${config?.conceptExtractionEnabled !== false ? '"concepts": ["high-level", "abstract", "topics"],' : ''}
+  ${config?.entityExtractionEnabled !== false ? '"entities": ["proper", "nouns", "concepts"],' : ""}
+  ${config?.conceptExtractionEnabled !== false ? '"concepts": ["high-level", "abstract", "topics"],' : ""}
   "confidenceScore": 0.0-1.0,
   "suggestedSpecialization": "technical|academic|creative|analytical|generalist"
 }
@@ -67,13 +63,16 @@ Return only the JSON object, no other text.`;
       [{ role: "user", content: analysisPrompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     // Parse the JSON response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.warn("No JSON found in response, possibly due to rate limiting or error message:", response);
+      console.warn(
+        "No JSON found in response, possibly due to rate limiting or error message:",
+        response,
+      );
       return createFallbackAnalysis(query, Date.now() - startTime);
     }
 
@@ -83,7 +82,7 @@ Return only the JSON object, no other text.`;
       intent: {
         type: analysisData.intent.type,
         description: analysisData.intent.description,
-        confidence: analysisData.intent.confidence
+        confidence: analysisData.intent.confidence,
       },
       complexity: {
         level: analysisData.complexity.level,
@@ -92,7 +91,7 @@ Return only the JSON object, no other text.`;
         requiresCrossDomainKnowledge: analysisData.complexity.requiresCrossDomainKnowledge || false,
         cognitiveLoad: analysisData.complexity.cognitiveLoad || 1,
         timeframe: analysisData.complexity.timeframe,
-        scope: analysisData.complexity.scope
+        scope: analysisData.complexity.scope,
       },
       expandedQuery: analysisData.expandedQuery,
       keywords: analysisData.keywords || [],
@@ -101,11 +100,10 @@ Return only the JSON object, no other text.`;
       confidenceScore: analysisData.confidenceScore,
       processingTime: Date.now() - startTime,
       agentDecisions: [],
-      suggestedSpecialization: analysisData.suggestedSpecialization || 'generalist'
+      suggestedSpecialization: analysisData.suggestedSpecialization || "generalist",
     };
 
     return analysis;
-
   } catch (error) {
     console.error("Query analysis failed:", error);
 
@@ -119,10 +117,9 @@ Return only the JSON object, no other text.`;
  */
 export async function expandQuery(
   originalQuery: string,
-  analysis: TypeQueryAnalysis
+  analysis: TypeQueryAnalysis,
 ): Promise<string> {
-
-  if (analysis.complexity.level === 'simple') {
+  if (analysis.complexity.level === "simple") {
     return originalQuery; // No expansion needed for simple queries
   }
 
@@ -146,11 +143,10 @@ Keep it focused and relevant. Return only the expanded query text.`;
       [{ role: "user", content: expansionPrompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     return expandedQuery.trim();
-
   } catch (error) {
     console.error("Query expansion failed:", error);
     return originalQuery;
@@ -163,13 +159,12 @@ Keep it focused and relevant. Return only the expanded query text.`;
  */
 export async function decomposeQuery(
   query: string,
-  analysis: TypeQueryAnalysis
+  analysis: TypeQueryAnalysis,
 ): Promise<string[]> {
-
   // Only decompose complex/multi-step/comparative queries
   const shouldDecompose =
-    ['complex', 'multi-step'].includes(analysis.complexity.level) ||
-    analysis.intent.type === 'comparative';
+    ["complex", "multi-step"].includes(analysis.complexity.level) ||
+    analysis.intent.type === "comparative";
 
   if (!shouldDecompose) {
     return [query]; // No decomposition needed
@@ -196,7 +191,7 @@ Example: ["What is X?", "What is Y?", "How do X and Y compare?"]`;
       [{ role: "user", content: decompositionPrompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     // Parse the JSON array response
@@ -214,9 +209,11 @@ Example: ["What is X?", "What is Y?", "How do X and Y compare?"]`;
 
     // Cap at 4 sub-questions to limit LLM/embedding calls
     const limitedQuestions = subQuestions.slice(0, 4);
-    console.log(`Query decomposed into ${limitedQuestions.length} sub-questions:`, limitedQuestions);
+    console.log(
+      `Query decomposed into ${limitedQuestions.length} sub-questions:`,
+      limitedQuestions,
+    );
     return limitedQuestions;
-
   } catch (error) {
     console.error("Query decomposition failed:", error);
     return [query]; // Graceful fallback
@@ -229,11 +226,10 @@ Example: ["What is X?", "What is Y?", "How do X and Y compare?"]`;
  */
 export async function generateStepBackQuery(
   query: string,
-  analysis: TypeQueryAnalysis
+  analysis: TypeQueryAnalysis,
 ): Promise<string | null> {
-
   // No step-back needed for simple queries — they're already broad enough
-  if (analysis.complexity.level === 'simple') {
+  if (analysis.complexity.level === "simple") {
     return null;
   }
 
@@ -261,20 +257,19 @@ Return ONLY the broader query text. No other text, no quotes.`;
       [{ role: "user", content: stepBackPrompt }],
       undefined,
       undefined,
-      { currentDateTime: new Date().toISOString() }
+      { currentDateTime: new Date().toISOString() },
     );
 
     const stepBackQuery = response.trim();
 
     // Sanity check: if the response is too long or looks like it contains explanations, skip it
-    if (stepBackQuery.length > 200 || stepBackQuery.includes('\n')) {
+    if (stepBackQuery.length > 200 || stepBackQuery.includes("\n")) {
       console.warn("Step-back query response was too long or multi-line, skipping");
       return null;
     }
 
     console.log(`Step-back query generated: "${stepBackQuery}" (from: "${query}")`);
     return stepBackQuery;
-
   } catch (error) {
     console.error("Step-back query generation failed:", error);
     return null; // Graceful fallback
@@ -282,40 +277,60 @@ Return ONLY the broader query text. No other text, no quotes.`;
 }
 
 const FALLBACK_STOP_WORDS = new Set([
-  'what', 'how', 'why', 'when', 'where', 'which', 'about', 'please', 'tell', 'show', 'give', 'the', 'and', 'for', 'with', 'this', 'that',
+  "what",
+  "how",
+  "why",
+  "when",
+  "where",
+  "which",
+  "about",
+  "please",
+  "tell",
+  "show",
+  "give",
+  "the",
+  "and",
+  "for",
+  "with",
+  "this",
+  "that",
 ]);
 
 /** Derives scope from query structure: more distinct meaningful terms → broader. */
-function inferScopeFromQuery(query: string): 'narrow' | 'broad' | 'comprehensive' {
+function inferScopeFromQuery(query: string): "narrow" | "broad" | "comprehensive" {
   const terms = query
     .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
+    .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w.length > 2 && !FALLBACK_STOP_WORDS.has(w));
   const unique = new Set(terms);
-  if (unique.size >= 10) return 'comprehensive';
-  if (unique.size >= 5) return 'broad';
-  return 'narrow';
+  if (unique.size >= 10) return "comprehensive";
+  if (unique.size >= 5) return "broad";
+  return "narrow";
 }
 
 function createFallbackAnalysis(query: string, processingTime: number): TypeQueryAnalysis {
   const queryLower = query.toLowerCase();
 
-  let intentType: TypeQueryIntent['type'] = 'factual';
-  let complexityLevel: TypeQueryComplexity['level'] = 'simple';
+  let intentType: TypeQueryIntent["type"] = "factual";
+  let complexityLevel: TypeQueryComplexity["level"] = "simple";
 
-  if (queryLower.includes('how') || queryLower.includes('explain')) {
-    intentType = 'explanatory';
-    complexityLevel = 'moderate';
-  } else if (queryLower.includes('compare') || queryLower.includes('versus') || queryLower.includes('vs')) {
-    intentType = 'comparative';
-    complexityLevel = 'moderate';
-  } else if (queryLower.includes('analyze') || queryLower.includes('breakdown')) {
-    intentType = 'analytical';
-    complexityLevel = 'complex';
-  } else if (queryLower.includes('why') || queryLower.includes('because')) {
-    intentType = 'inferential';
-    complexityLevel = 'moderate';
+  if (queryLower.includes("how") || queryLower.includes("explain")) {
+    intentType = "explanatory";
+    complexityLevel = "moderate";
+  } else if (
+    queryLower.includes("compare") ||
+    queryLower.includes("versus") ||
+    queryLower.includes("vs")
+  ) {
+    intentType = "comparative";
+    complexityLevel = "moderate";
+  } else if (queryLower.includes("analyze") || queryLower.includes("breakdown")) {
+    intentType = "analytical";
+    complexityLevel = "complex";
+  } else if (queryLower.includes("why") || queryLower.includes("because")) {
+    intentType = "inferential";
+    complexityLevel = "moderate";
   }
 
   const keywords = query
@@ -326,13 +341,25 @@ function createFallbackAnalysis(query: string, processingTime: number): TypeQuer
     .sort((a, b) => b.length - a.length)
     .slice(0, 10);
 
-  let suggestedSpecialization: TypeQueryAnalysis['suggestedSpecialization'] = 'generalist';
-  if (queryLower.includes('code') || queryLower.includes('function') || queryLower.includes('api')) {
-    suggestedSpecialization = 'technical';
-  } else if (queryLower.includes('research') || queryLower.includes('study') || queryLower.includes('paper')) {
-    suggestedSpecialization = 'academic';
-  } else if (queryLower.includes('analyze') || queryLower.includes('data') || queryLower.includes('trend')) {
-    suggestedSpecialization = 'analytical';
+  let suggestedSpecialization: TypeQueryAnalysis["suggestedSpecialization"] = "generalist";
+  if (
+    queryLower.includes("code") ||
+    queryLower.includes("function") ||
+    queryLower.includes("api")
+  ) {
+    suggestedSpecialization = "technical";
+  } else if (
+    queryLower.includes("research") ||
+    queryLower.includes("study") ||
+    queryLower.includes("paper")
+  ) {
+    suggestedSpecialization = "academic";
+  } else if (
+    queryLower.includes("analyze") ||
+    queryLower.includes("data") ||
+    queryLower.includes("trend")
+  ) {
+    suggestedSpecialization = "analytical";
   }
 
   return {
@@ -343,10 +370,10 @@ function createFallbackAnalysis(query: string, processingTime: number): TypeQuer
     },
     complexity: {
       level: complexityLevel,
-      requiresMultipleChunks: ['complex', 'multi-step'].includes(complexityLevel),
-      requiresInference: intentType === 'inferential' || intentType === 'analytical',
-      requiresCrossDomainKnowledge: complexityLevel === 'complex',
-      cognitiveLoad: complexityLevel === 'complex' ? 3 : complexityLevel === 'moderate' ? 2 : 1,
+      requiresMultipleChunks: ["complex", "multi-step"].includes(complexityLevel),
+      requiresInference: intentType === "inferential" || intentType === "analytical",
+      requiresCrossDomainKnowledge: complexityLevel === "complex",
+      cognitiveLoad: complexityLevel === "complex" ? 3 : complexityLevel === "moderate" ? 2 : 1,
       scope: inferScopeFromQuery(query),
     },
     expandedQuery: query,

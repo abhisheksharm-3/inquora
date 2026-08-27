@@ -15,8 +15,6 @@ import { updateFileStatus } from "../file-processing-utils";
 import { downloadYoutubeAudio } from "../youtube/audio-downloader";
 import { getYoutubeTranscript } from "../youtube/transcript";
 
-
-
 // --- Constants ---
 const CHUNK_SIZE = 1000;
 const CHUNK_OVERLAP = 200;
@@ -27,10 +25,7 @@ const RETRY_DELAY_MS = 1000;
  * Fetches and formats the transcript from a YouTube video with multiple fallback methods.
  * @private
  */
-const _fetchAndFormatTranscript = async (
-  videoId: string,
-  videoUrl: string
-): Promise<string> => {
+const _fetchAndFormatTranscript = async (videoId: string, videoUrl: string): Promise<string> => {
   console.log(`Fetching transcript for YouTube video: ${videoId}`);
 
   // Method 1: Download and Transcribe (Primary) - Using pure JS libraries
@@ -41,22 +36,22 @@ const _fetchAndFormatTranscript = async (
     const { buffer, mimeType } = await downloadYoutubeAudio(videoId, videoUrl);
 
     // Determine file extension from mime type
-    const extension = mimeType.includes("webm") ? "webm" :
-      mimeType.includes("mp4") ? "m4a" :
-        mimeType.includes("mp3") ? "mp3" : "audio";
+    const extension = mimeType.includes("webm")
+      ? "webm"
+      : mimeType.includes("mp4")
+        ? "m4a"
+        : mimeType.includes("mp3")
+          ? "mp3"
+          : "audio";
 
-    console.log(`Audio downloaded (${buffer.length} bytes, ${mimeType}). Sending to transcription service...`);
-
-    const transcriptText = await transcribeAudio(
-      buffer,
-      `${videoId}.${extension}`,
-      "en"
+    console.log(
+      `Audio downloaded (${buffer.length} bytes, ${mimeType}). Sending to transcription service...`,
     );
 
+    const transcriptText = await transcribeAudio(buffer, `${videoId}.${extension}`, "en");
+
     if (transcriptText && transcriptText.length > 0) {
-      console.log(
-        `Successfully transcribed video with ${transcriptText.length} characters.`
-      );
+      console.log(`Successfully transcribed video with ${transcriptText.length} characters.`);
       return transcriptText;
     }
   } catch (error) {
@@ -70,7 +65,7 @@ const _fetchAndFormatTranscript = async (
     const transcript = await getYoutubeTranscript(videoId);
     if (transcript && transcript.length > 0) {
       console.log(
-        `Successfully extracted transcript with ${transcript.length} characters using youtubei.js.`
+        `Successfully extracted transcript with ${transcript.length} characters using youtubei.js.`,
       );
       return transcript;
     }
@@ -86,7 +81,7 @@ const _fetchAndFormatTranscript = async (
     if (result.subtitles && result.subtitles.length > 0) {
       const transcriptText = result.subtitles.join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using custom API.`
+        `Successfully extracted transcript with ${transcriptText.length} characters using custom API.`,
       );
       return transcriptText;
     }
@@ -102,7 +97,7 @@ const _fetchAndFormatTranscript = async (
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using youtube-transcript-plus.`
+        `Successfully extracted transcript with ${transcriptText.length} characters using youtube-transcript-plus.`,
       );
       return transcriptText;
     }
@@ -113,13 +108,12 @@ const _fetchAndFormatTranscript = async (
   // Method 5: Try @danielxceron/youtube-transcript
   try {
     console.log("Attempting with @danielxceron/youtube-transcript...");
-    const transcriptParts =
-      await DanielYoutubeTranscript.fetchTranscript(videoId);
+    const transcriptParts = await DanielYoutubeTranscript.fetchTranscript(videoId);
 
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`
+        `Successfully extracted transcript with ${transcriptText.length} characters using danielxceron.`,
       );
       return transcriptText;
     }
@@ -135,7 +129,7 @@ const _fetchAndFormatTranscript = async (
     if (transcriptParts && transcriptParts.length > 0) {
       const transcriptText = transcriptParts.map((item) => item.text).join(" ");
       console.log(
-        `Successfully extracted transcript with ${transcriptText.length} characters using original.`
+        `Successfully extracted transcript with ${transcriptText.length} characters using original.`,
       );
       return transcriptText;
     }
@@ -151,7 +145,7 @@ const _fetchAndFormatTranscript = async (
 
     // Extract captions from video page - this is a basic approach
     const captionMatch = html.match(
-      /"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/
+      /"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":\[([^\]]+)\]/,
     );
     if (captionMatch) {
       const captionData = JSON.parse(`[${captionMatch[1]}]`) as Array<{
@@ -162,7 +156,7 @@ const _fetchAndFormatTranscript = async (
         (cap) =>
           cap.languageCode === "en" ||
           cap.languageCode === "en-US" ||
-          cap.languageCode.startsWith("en")
+          cap.languageCode.startsWith("en"),
       );
 
       if (englishCaption && englishCaption.baseUrl) {
@@ -179,7 +173,7 @@ const _fetchAndFormatTranscript = async (
 
           if (transcriptText.length > 0) {
             console.log(
-              `Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`
+              `Successfully extracted transcript with ${transcriptText.length} characters using alternative method.`,
             );
             return transcriptText;
           }
@@ -191,7 +185,7 @@ const _fetchAndFormatTranscript = async (
   }
 
   throw new Error(
-    "No transcript content found using any available method. The video may not have captions available."
+    "No transcript content found using any available method. The video may not have captions available.",
   );
 };
 
@@ -245,23 +239,17 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
   });
 
   if (validDocs.length === 0) {
-    throw new Error(
-      "No valid documents to store after filtering empty content",
-    );
+    throw new Error("No valid documents to store after filtering empty content");
   }
 
   if (validDocs.length < docs.length) {
-    console.log(
-      `Filtered ${docs.length - validDocs.length} documents with empty content`,
-    );
+    console.log(`Filtered ${docs.length - validDocs.length} documents with empty content`);
   }
 
   console.log("Creating embeddings...");
   const embeddings = await createEmbeddings();
   if (!embeddings) {
-    throw new Error(
-      "Failed to create embeddings. Gemini API may not be configured properly.",
-    );
+    throw new Error("Failed to create embeddings. Gemini API may not be configured properly.");
   }
 
   // Test embeddings with a simple string to ensure they work
@@ -271,9 +259,7 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
     if (!testEmbedding || testEmbedding.length === 0) {
       throw new Error("Embeddings test failed: returned empty vector");
     }
-    console.log(
-      `Embeddings test successful. Vector dimension: ${testEmbedding.length}`,
-    );
+    console.log(`Embeddings test successful. Vector dimension: ${testEmbedding.length}`);
   } catch (error) {
     console.error("Embeddings test failed:", error);
     throw new Error(
@@ -290,9 +276,7 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
     throw new Error("Pinecone index is not initialized.");
   }
 
-  console.log(
-    `Storing ${validDocs.length} chunks in Pinecone with namespace: ${namespace}...`,
-  );
+  console.log(`Storing ${validDocs.length} chunks in Pinecone with namespace: ${namespace}...`);
   let retries = 0;
   while (retries < MAX_RETRIES) {
     try {
@@ -307,9 +291,7 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
 
         // Log first document in batch for debugging
         if (i === 0 && batch.length > 0) {
-          console.log(
-            `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
-          );
+          console.log(`First document preview: ${batch[0].pageContent.substring(0, 100)}...`);
         }
 
         await PineconeStore.fromDocuments(batch, embeddings, {
@@ -328,18 +310,11 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
       return; // Success
     } catch (error) {
       retries++;
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      console.error(
-        `Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`,
-        error,
-      );
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Error storing in Pinecone (attempt ${retries}/${MAX_RETRIES}):`, error);
 
       // Check if this is a rate limit error
-      if (
-        errorMessage.includes("Vector dimension 0") ||
-        errorMessage.includes("rate limit")
-      ) {
+      if (errorMessage.includes("Vector dimension 0") || errorMessage.includes("rate limit")) {
         console.warn(
           "⚠️ Rate limit detected. This typically happens with large content on free API tiers.",
         );
@@ -358,9 +333,7 @@ const _storeDocsInPinecone = async (docs: Document[], namespace: string) => {
       }
 
       // Longer delay on retry to let rate limits reset
-      await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY_MS * retries * 5),
-      );
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * retries * 5));
     }
   }
 };
@@ -377,13 +350,9 @@ export const processYoutubeVideo = async (
   videoUrl: string,
   namespace: string,
 ): Promise<{ numDocs: number; success: boolean; error?: string }> => {
-  console.log(
-    `Starting YouTube transcript processing for namespace: ${namespace}`,
-  );
+  console.log(`Starting YouTube transcript processing for namespace: ${namespace}`);
   if (!(await isPineconeConfigured())) {
-    throw new Error(
-      "Pinecone is not configured. Please check environment variables.",
-    );
+    throw new Error("Pinecone is not configured. Please check environment variables.");
   }
 
   const supabase = supabaseBrowserClient();
@@ -407,10 +376,7 @@ export const processYoutubeVideo = async (
     return { numDocs: chunkedDocs.length, success: true };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(
-      `Processing failed for namespace ${namespace}:`,
-      errorMessage,
-    );
+    console.error(`Processing failed for namespace ${namespace}:`, errorMessage);
 
     await updateFileStatus(supabase, namespace, "failed", {
       error: errorMessage,

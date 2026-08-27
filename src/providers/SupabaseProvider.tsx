@@ -10,7 +10,7 @@ type SupabaseContextType = SupabaseClient<TypeDatabase>;
 const SupabaseContext = createContext<SupabaseContextType | null>(null);
 
 interface SupabaseProviderProps {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 /**
@@ -18,13 +18,9 @@ interface SupabaseProviderProps {
  * Prevents duplicate client creation across hooks and components.
  */
 export function SupabaseProvider({ children }: SupabaseProviderProps) {
-    const supabase = useMemo(() => supabaseBrowserClient(), []);
+  const supabase = useMemo(() => supabaseBrowserClient(), []);
 
-    return (
-        <SupabaseContext value={supabase}>
-            {children}
-        </SupabaseContext>
-    );
+  return <SupabaseContext value={supabase}>{children}</SupabaseContext>;
 }
 
 /**
@@ -32,11 +28,11 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
  * @throws If used outside of SupabaseProvider
  */
 export function useSupabase(): SupabaseClient<TypeDatabase> {
-    const context = useContext(SupabaseContext);
+  const context = useContext(SupabaseContext);
 
-    if (!context) {
-        throw new Error("useSupabase must be used within a SupabaseProvider");
-    }
+  if (!context) {
+    throw new Error("useSupabase must be used within a SupabaseProvider");
+  }
 
-    return context;
+  return context;
 }

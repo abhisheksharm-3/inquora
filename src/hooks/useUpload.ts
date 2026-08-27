@@ -9,11 +9,7 @@ import { useDocumentProcessor } from "@/hooks/useDocumentProcessor";
 import { TypeFile, TypeChat } from "@/types/database";
 import { getFileTypeConfig } from "@/constants/file-types";
 import { TypeUseUploadLogicProps } from "@/types/upload";
-import {
-  getUrlType,
-  initialUploadState,
-  uploadReducer,
-} from "@/utils/upload-utils";
+import { getUrlType, initialUploadState, uploadReducer } from "@/utils/upload-utils";
 import {
   _extractGitHubFilename,
   _extractWebPageTitle,
@@ -36,10 +32,7 @@ const UPLOAD_TIMEOUT_MS = 60000;
  * @param fileType The type of content being uploaded (e.g., 'pdf', 'youtube').
  * @param onClose A function to call when the upload is complete to close the modal.
  */
-export const useUploadLogic = ({
-  fileType,
-  onClose,
-}: TypeUseUploadLogicProps) => {
+export const useUploadLogic = ({ fileType, onClose }: TypeUseUploadLogicProps) => {
   const [state, dispatch] = useReducer(uploadReducer, initialUploadState);
   const { url, selectedFile, isRetrying } = state;
 
@@ -61,10 +54,7 @@ export const useUploadLogic = ({
         fileData: { name: file.name, type: fileType, size: file.size },
       });
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("File upload timeout")),
-          UPLOAD_TIMEOUT_MS,
-        ),
+        setTimeout(() => reject(new Error("File upload timeout")), UPLOAD_TIMEOUT_MS),
       );
       return Promise.race([uploadPromise, timeoutPromise]);
     },
@@ -142,16 +132,9 @@ export const useUploadLogic = ({
           return newChat;
         } catch (error) {
           if (i >= MAX_CHAT_CREATION_RETRIES) {
-            throw createUploadError(
-              "chat_creation",
-              "Failed to create chat.",
-              error,
-              true,
-            );
+            throw createUploadError("chat_creation", "Failed to create chat.", error, true);
           }
-          await new Promise((resolve) =>
-            setTimeout(resolve, RETRY_DELAY_MS * 2 ** i),
-          );
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * 2 ** i));
         }
       }
       throw createUploadError(
@@ -178,33 +161,23 @@ export const useUploadLogic = ({
     [validateFile, setUploadError],
   );
 
-  const handleUrlChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      dispatch({ type: EnumUploadActionType.SET_URL, payload: e.target.value });
-    },
-    [],
-  );
+  const handleUrlChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch({ type: EnumUploadActionType.SET_URL, payload: e.target.value });
+  }, []);
 
   const handleRemoveFile = useCallback(
     () => dispatch({ type: EnumUploadActionType.RESET_FILE }),
     [],
   );
 
-  const handleRetry = useCallback(
-    () => dispatch({ type: EnumUploadActionType.RETRY }),
-    [],
-  );
+  const handleRetry = useCallback(() => dispatch({ type: EnumUploadActionType.RETRY }), []);
 
   const handleSubmit = useCallback(async () => {
     if (!isAuthenticated || !userId) {
-      return setUploadError(
-        createUploadError("auth", "You must be logged in.", null, false),
-      );
+      return setUploadError(createUploadError("auth", "You must be logged in.", null, false));
     }
 
-    const fileValidationError = selectedFile
-      ? validateFile(selectedFile)
-      : null;
+    const fileValidationError = selectedFile ? validateFile(selectedFile) : null;
     if (fileValidationError) return setUploadError(fileValidationError);
 
     const urlValidationError = url ? validateUrl(url) : null;
@@ -219,12 +192,7 @@ export const useUploadLogic = ({
         uploadedFile = await _uploadUrl(url);
       } else {
         return setUploadError(
-          createUploadError(
-            "validation",
-            "Please select a file or enter a URL.",
-            null,
-            false,
-          ),
+          createUploadError("validation", "Please select a file or enter a URL.", null, false),
         );
       }
 

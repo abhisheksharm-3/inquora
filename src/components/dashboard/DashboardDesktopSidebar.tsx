@@ -5,12 +5,7 @@ import { LogOut } from "lucide-react";
 import LogoutDialog from "@/components/dashboard/LogoutDialog";
 import { NavigationItems } from "@/constants/nav-items";
 import { usePathname } from "next/navigation";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
  * Renders the primary navigation links for the desktop sidebar.

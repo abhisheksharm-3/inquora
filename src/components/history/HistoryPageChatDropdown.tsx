@@ -12,10 +12,7 @@ import { TypeHistoryPageChatDropdownProps } from "@/types/ui";
 /**
  * A responsive dropdown menu for chat item actions with improved mobile touch targets.
  */
-export const HistorypageChatDropdown = ({
-  chat,
-  file,
-}: TypeHistoryPageChatDropdownProps) => (
+export const HistorypageChatDropdown = ({ chat, file }: TypeHistoryPageChatDropdownProps) => (
   <div className="absolute top-4 right-4 md:top-1/2 md:right-4 md:-translate-y-1/2 opacity-100 sm:opacity-0 transition-opacity group-hover:opacity-100">
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

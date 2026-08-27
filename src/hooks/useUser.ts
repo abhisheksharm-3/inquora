@@ -61,9 +61,7 @@ export const useUser = () => {
     onSuccess: (updatedProfile) => {
       queryClient.setQueryData(
         QUERY_KEYS.USER,
-        (
-          oldData: { session: Session | null; profile: TypeUser | null } | null,
-        ) => ({
+        (oldData: { session: Session | null; profile: TypeUser | null } | null) => ({
           ...oldData,
           profile: updatedProfile,
         }),
@@ -87,12 +85,11 @@ export const useUser = () => {
 
   const userFallback: TypeUser | null = userData?.session?.user
     ? {
-      id: userData.session.user.id,
-      email: userData.session.user.email ?? "",
-      name: userData.session.user.user_metadata?.full_name ?? "",
-      created_at:
-        userData.session.user.created_at ?? new Date().toISOString(),
-    }
+        id: userData.session.user.id,
+        email: userData.session.user.email ?? "",
+        name: userData.session.user.user_metadata?.full_name ?? "",
+        created_at: userData.session.user.created_at ?? new Date().toISOString(),
+      }
     : null;
 
   const avatarUrl = userData?.session?.user?.user_metadata?.avatar_url as string | undefined;

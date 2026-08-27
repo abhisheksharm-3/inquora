@@ -35,9 +35,7 @@ const Hero = () => {
             className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/20 bg-background/5 px-4 py-2 text-muted-foreground shadow-sm transition-colors hover:bg-background/10"
           >
             <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-sm font-medium tracking-wide">
-              New: Video & Image Analysis
-            </span>
+            <span className="text-sm font-medium tracking-wide">New: Video & Image Analysis</span>
             <ArrowRight className="h-4 w-4 text-muted-foreground/70 transition-transform group-hover:translate-x-1" />
           </Badge>
         </div>
@@ -68,8 +66,8 @@ const Hero = () => {
           style={{ transitionDelay: "600ms" }}
         >
           <p className="mx-auto max-w-3xl text-lg font-light leading-relaxed text-muted-foreground md:text-xl">
-            Instantly turn your documents, code, images, and videos into
-            intelligent, interactive conversations with our secure AI platform.
+            Instantly turn your documents, code, images, and videos into intelligent, interactive
+            conversations with our secure AI platform.
           </p>
         </div>
 

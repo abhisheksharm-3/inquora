@@ -29,9 +29,7 @@ const errorTypeMap = new Map<RegExp, TypeUploadError["type"]>([
  * @param {React.Dispatch<TypeUploadAction>} dispatch - The dispatch function from a `useReducer` hook that manages the upload state.
  * @returns {UseUploadErrorHandlerReturn} An object containing the error handling utility functions.
  */
-export const useUploadErrorHandler = (
-  dispatch: React.Dispatch<TypeUploadAction>,
-) => {
+export const useUploadErrorHandler = (dispatch: React.Dispatch<TypeUploadAction>) => {
   /**
    * Creates a structured error object and logs it to the console.
    * This function is memoized for performance.
@@ -78,11 +76,7 @@ export const useUploadErrorHandler = (
         const errorObj = err as TypeUploadError;
 
         // If it already has type, message, and retryable properties, use it directly
-        if (
-          errorObj.type &&
-          errorObj.message &&
-          typeof errorObj.retryable === "boolean"
-        ) {
+        if (errorObj.type && errorObj.message && typeof errorObj.retryable === "boolean") {
           return {
             type: errorObj.type,
             message: errorObj.message,

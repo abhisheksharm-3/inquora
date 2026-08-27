@@ -37,8 +37,8 @@ const features = [
     title: "Multi-Format Support",
     description: (
       <>
-        Chat with PDFs, Office Docs, URLs, YouTube videos, and more. Support for
-        Images & GitHub Repos <SoonBadge />
+        Chat with PDFs, Office Docs, URLs, YouTube videos, and more. Support for Images & GitHub
+        Repos <SoonBadge />
       </>
     ),
   },
@@ -65,8 +65,8 @@ const features = [
     title: "Real-Time Collaboration",
     description: (
       <>
-        Live message synchronization for a seamless conversation experience,
-        making teamwork easy and efficient. <SoonBadge />
+        Live message synchronization for a seamless conversation experience, making teamwork easy
+        and efficient. <SoonBadge />
       </>
     ),
   },
@@ -93,9 +93,7 @@ const Features = () => {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/20 bg-background/5 text-muted-foreground hover:bg-background/10 transition-colors"
           >
             <div className="w-2 h-2 bg-primary/80 rounded-full animate-pulse" />
-            <span className="text-sm font-medium tracking-wide">
-              Core Features
-            </span>
+            <span className="text-sm font-medium tracking-wide">Core Features</span>
           </Badge>
         </div>
 
@@ -103,8 +101,8 @@ const Features = () => {
           Everything You Need to Know
         </h2>
         <p className="text-lg md:text-xl text-muted-foreground font-light mb-16 max-w-3xl mx-auto">
-          Inquora combines powerful AI with an intuitive interface, giving you
-          instant understanding of your data.
+          Inquora combines powerful AI with an intuitive interface, giving you instant understanding
+          of your data.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -115,13 +113,10 @@ const Features = () => {
             >
               <div className="flex justify-center mb-4">
                 {React.cloneElement(feature.icon, {
-                  className:
-                    "h-9 w-9 text-primary group-hover:scale-110 transition-transform",
+                  className: "h-9 w-9 text-primary group-hover:scale-110 transition-transform",
                 })}
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-foreground">
-                {feature.title}
-              </h3>
+              <h3 className="text-xl font-semibold mb-2 text-foreground">{feature.title}</h3>
               <div className="text-muted-foreground text-base font-normal leading-relaxed">
                 {feature.description}
               </div>

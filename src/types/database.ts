@@ -1,10 +1,4 @@
-export type TypeJson =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: TypeJson }
-  | TypeJson[];
+export type TypeJson = string | number | boolean | null | { [key: string]: TypeJson } | TypeJson[];
 
 export interface TypeDatabase {
   public: {
@@ -35,12 +29,7 @@ export interface TypeDatabase {
           size: number | null;
           url: string | null;
           uploaded_at: string;
-          processing_status?:
-          | "idle"
-          | "processing"
-          | "completed"
-          | "failed"
-          | null;
+          processing_status?: "idle" | "processing" | "completed" | "failed" | null;
           processing_error?: string | null;
           indexed_chunks?: number | null;
           full_text?: string | null;
@@ -53,12 +42,7 @@ export interface TypeDatabase {
           size?: number | null;
           url?: string | null;
           uploaded_at?: string;
-          processing_status?:
-          | "idle"
-          | "processing"
-          | "completed"
-          | "failed"
-          | null;
+          processing_status?: "idle" | "processing" | "completed" | "failed" | null;
           processing_error?: string | null;
           indexed_chunks?: number | null;
           full_text?: string | null;
@@ -74,16 +58,7 @@ export interface TypeDatabase {
           file_id: string | null;
           title: string | null;
           created_at: string;
-          type:
-          | "pdf"
-          | "image"
-          | "doc"
-          | "video"
-          | "sheet"
-          | "slides"
-          | "github"
-          | "web"
-          | null;
+          type: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | "github" | "web" | null;
         };
         Insert: {
           id?: string;
@@ -91,16 +66,7 @@ export interface TypeDatabase {
           file_id?: string | null;
           title?: string | null;
           created_at?: string;
-          type?:
-          | "pdf"
-          | "image"
-          | "doc"
-          | "video"
-          | "sheet"
-          | "slides"
-          | "github"
-          | "web"
-          | null;
+          type?: "pdf" | "image" | "doc" | "video" | "sheet" | "slides" | "github" | "web" | null;
         };
         Update: Partial<TypeDatabase["public"]["Tables"]["chats"]["Insert"]>;
         Relationships: [
@@ -161,10 +127,9 @@ export interface TypeDatabase {
 export type TypeUser = TypeDatabase["public"]["Tables"]["users"]["Row"];
 export type TypeChat = TypeDatabase["public"]["Tables"]["chats"]["Row"];
 export type TypeFile = TypeDatabase["public"]["Tables"]["files"]["Row"];
-export type TypeMessage =
-  TypeDatabase["public"]["Tables"]["messages"]["Row"] & {
-    isError?: boolean;
-  };
+export type TypeMessage = TypeDatabase["public"]["Tables"]["messages"]["Row"] & {
+  isError?: boolean;
+};
 export type TypeUserMemory = TypeDatabase["public"]["Tables"]["user_memories"]["Row"];
 
 // Extended type for chats with included file data

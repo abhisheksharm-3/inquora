@@ -85,8 +85,9 @@ const Home = () => (
 
       <p className={styles.sub}>
         The version that stood here has been taken offline. It is being rebuilt from the database
-        up, so nothing is being patched around: <b>the schema, retrieval, streaming and the
-        interface are all being replaced</b>, in that order.
+        up, so nothing is being patched around:{" "}
+        <b>the schema, retrieval, streaming and the interface are all being replaced</b>, in that
+        order.
       </p>
 
       <p className={styles.note}>

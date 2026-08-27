@@ -32,12 +32,9 @@ const HistoryPage = () => {
   }, [chats, debouncedSearchQuery]);
 
   // Debounced search handler to reduce filtering frequency
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(e.target.value);
-    },
-    [],
-  );
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
 
   const renderContent = () => {
     if (isError) {
@@ -53,9 +50,7 @@ const HistoryPage = () => {
                 Failed to load chats
               </AlertTitle>
               <AlertDescription className="text-xs md:text-sm mt-2 leading-relaxed">
-                {error instanceof Error
-                  ? error.message
-                  : "An unexpected error occurred."}
+                {error instanceof Error ? error.message : "An unexpected error occurred."}
               </AlertDescription>
             </Alert>
             <Button

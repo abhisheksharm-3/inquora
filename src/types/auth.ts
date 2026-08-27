@@ -63,12 +63,12 @@ export interface TypeAuthError {
 export type TypeUnknownError =
   | Error
   | {
-    message?: string;
-    error_description?: string;
-    error?: string;
-    code?: string;
-    status?: number;
-  }
+      message?: string;
+      error_description?: string;
+      error?: string;
+      code?: string;
+      status?: number;
+    }
   | string
   | unknown;
 

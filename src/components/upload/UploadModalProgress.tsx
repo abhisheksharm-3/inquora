@@ -10,9 +10,7 @@ interface UploadModalProgressProps {
 const SIMULATED_DURATION_MS = 8000;
 const STEPS = 30;
 
-const UploadModalProgress: React.FC<UploadModalProgressProps> = ({
-  fileName,
-}) => {
+const UploadModalProgress: React.FC<UploadModalProgressProps> = ({ fileName }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -38,10 +36,7 @@ const UploadModalProgress: React.FC<UploadModalProgressProps> = ({
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
           <Upload className="h-8 w-8 text-primary" />
         </div>
-        <svg
-          className="absolute inset-0 w-20 h-20 -rotate-90"
-          viewBox="0 0 64 64"
-        >
+        <svg className="absolute inset-0 w-20 h-20 -rotate-90" viewBox="0 0 64 64">
           <circle
             cx="32"
             cy="32"
@@ -67,14 +62,8 @@ const UploadModalProgress: React.FC<UploadModalProgressProps> = ({
       </div>
 
       <div className="text-center space-y-1 w-full">
-        <p className="text-sm font-medium text-foreground">
-          Uploading your file...
-        </p>
-        {fileName && (
-          <p className="text-xs text-muted-foreground truncate px-8">
-            {fileName}
-          </p>
-        )}
+        <p className="text-sm font-medium text-foreground">Uploading your file...</p>
+        {fileName && <p className="text-xs text-muted-foreground truncate px-8">{fileName}</p>}
       </div>
 
       <div className="w-full space-y-2">

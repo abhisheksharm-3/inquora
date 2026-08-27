@@ -2,10 +2,24 @@
 
 import { useState, useEffect, useRef, memo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, FileText, ZoomIn, ZoomOut, MoreVertical, Download, ExternalLink, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  FileText,
+  ZoomIn,
+  ZoomOut,
+  MoreVertical,
+  Download,
+  ExternalLink,
+  AlertTriangle,
+} from "lucide-react";
 import { getSignedFileUrl } from "@/app/(dashboard)/files/actions";
 import { FILE_CONSTANTS } from "@/config/constants";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { TypeChatInterfaceDocumentViewerProps, TypeControlsProps } from "@/types/chat";
 import {
@@ -25,8 +39,9 @@ const Controls = memo<TypeControlsProps>(
 
     return (
       <div
-        className={`absolute top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-card p-1.5 shadow-lg transition-opacity duration-300 ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+        className={`absolute top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border bg-card p-1.5 shadow-lg transition-opacity duration-300 ${
+          showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
       >
         <Button variant="ghost" size="icon" onClick={onZoomOut} title="Zoom out">
           <ZoomOut className="h-4 w-4" />
@@ -57,7 +72,7 @@ const Controls = memo<TypeControlsProps>(
         </DropdownMenu>
       </div>
     );
-  }
+  },
 );
 
 interface StateDisplayProps {
@@ -68,20 +83,32 @@ interface StateDisplayProps {
   animate?: boolean;
 }
 
-const StateDisplay = memo<StateDisplayProps>(({ icon: Icon, title, message, variant = "default", animate = false }) => {
-  const bgClass = variant === "destructive" ? "bg-destructive/10" : variant === "primary" ? "bg-primary/10" : "bg-accent";
-  const iconColor = variant === "destructive" ? "text-destructive" : variant === "primary" ? "text-primary" : "text-muted-foreground";
+const StateDisplay = memo<StateDisplayProps>(
+  ({ icon: Icon, title, message, variant = "default", animate = false }) => {
+    const bgClass =
+      variant === "destructive"
+        ? "bg-destructive/10"
+        : variant === "primary"
+          ? "bg-primary/10"
+          : "bg-accent";
+    const iconColor =
+      variant === "destructive"
+        ? "text-destructive"
+        : variant === "primary"
+          ? "text-primary"
+          : "text-muted-foreground";
 
-  return (
-    <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-      <div className={`flex h-16 w-16 items-center justify-center rounded-full ${bgClass}`}>
-        <Icon className={`h-8 w-8 ${iconColor} ${animate ? "animate-spin" : ""}`} />
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+        <div className={`flex h-16 w-16 items-center justify-center rounded-full ${bgClass}`}>
+          <Icon className={`h-8 w-8 ${iconColor} ${animate ? "animate-spin" : ""}`} />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
-});
+    );
+  },
+);
 
 const ChatInterfaceDocumentViewerComponent: React.FC<TypeChatInterfaceDocumentViewerProps> = ({
   file,
@@ -104,8 +131,14 @@ const ChatInterfaceDocumentViewerComponent: React.FC<TypeChatInterfaceDocumentVi
 
   const handleZoomIn = useCallback(() => setZoomLevel((prev) => Math.min(prev + 10, 200)), []);
   const handleZoomOut = useCallback(() => setZoomLevel((prev) => Math.max(prev - 10, 50)), []);
-  const handleDownload = useCallback(() => displayUrl && window.open(displayUrl, "_blank"), [displayUrl]);
-  const handleOpenInNewTab = useCallback(() => displayUrl && window.open(displayUrl, "_blank"), [displayUrl]);
+  const handleDownload = useCallback(
+    () => displayUrl && window.open(displayUrl, "_blank"),
+    [displayUrl],
+  );
+  const handleOpenInNewTab = useCallback(
+    () => displayUrl && window.open(displayUrl, "_blank"),
+    [displayUrl],
+  );
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -125,13 +158,34 @@ const ChatInterfaceDocumentViewerComponent: React.FC<TypeChatInterfaceDocumentVi
 
   // State displays
   if (isLoading) {
-    return <StateDisplay icon={Loader2} title="Loading Document" message="Please wait..." variant="primary" animate />;
+    return (
+      <StateDisplay
+        icon={Loader2}
+        title="Loading Document"
+        message="Please wait..."
+        variant="primary"
+        animate
+      />
+    );
   }
   if (isError) {
-    return <StateDisplay icon={AlertTriangle} title="Error Loading Document" message="Please try again." variant="destructive" />;
+    return (
+      <StateDisplay
+        icon={AlertTriangle}
+        title="Error Loading Document"
+        message="Please try again."
+        variant="destructive"
+      />
+    );
   }
   if (!file) {
-    return <StateDisplay icon={FileText} title={title} message="No document is associated with this chat." />;
+    return (
+      <StateDisplay
+        icon={FileText}
+        title={title}
+        message="No document is associated with this chat."
+      />
+    );
   }
   if (file.processing_status === "failed") {
     return (
@@ -144,7 +198,15 @@ const ChatInterfaceDocumentViewerComponent: React.FC<TypeChatInterfaceDocumentVi
     );
   }
   if (file.processing_status === "processing") {
-    return <StateDisplay icon={Loader2} title="Processing Document" message="This may take a moment." variant="primary" animate />;
+    return (
+      <StateDisplay
+        icon={Loader2}
+        title="Processing Document"
+        message="This may take a moment."
+        variant="primary"
+        animate
+      />
+    );
   }
 
   const contentFile = fileWithResolvedUrl ?? file;
@@ -221,7 +283,7 @@ export const ChatInterfaceDocumentViewer = memo(
       prevProps.title === nextProps.title &&
       filesEqual
     );
-  }
+  },
 );
 
 ChatInterfaceDocumentViewer.displayName = "ChatInterfaceDocumentViewer";

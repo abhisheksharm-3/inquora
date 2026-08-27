@@ -3,8 +3,7 @@ import { VariantProps } from "class-variance-authority";
 import { TypeChat } from "./database";
 import { MotionProps } from "motion/react";
 
-export interface TypeButtonCta
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface TypeButtonCta extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;
   link?: string;
   variant?: VariantProps<typeof buttonVariants>["variant"];
@@ -40,11 +39,7 @@ export interface TypeSectionHeaderProps {
 export interface TypeDropdownAction {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  handler: (
-    e: React.MouseEvent,
-    chat: TypeChat,
-    file?: { name?: string },
-  ) => void;
+  handler: (e: React.MouseEvent, chat: TypeChat, file?: { name?: string }) => void;
 }
 
 export interface TypeSkeletonConfig {

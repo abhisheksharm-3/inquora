@@ -39,11 +39,7 @@ export const AuthLoginForm = (): JSX.Element => {
     mode: "onChange",
   });
 
-  const {
-    handleLogin: onSubmit,
-    isLoginLoading: isLoading,
-    loginErrorMessage: error,
-  } = useAuth();
+  const { handleLogin: onSubmit, isLoginLoading: isLoading, loginErrorMessage: error } = useAuth();
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-700 delay-150">
@@ -76,9 +72,7 @@ export const AuthLoginForm = (): JSX.Element => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-muted-foreground">
-                  Password
-                </FormLabel>
+                <FormLabel className="text-muted-foreground">Password</FormLabel>
                 <FormControl>
                   <AuthPasswordInput
                     field={field}

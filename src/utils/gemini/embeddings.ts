@@ -1,5 +1,3 @@
-
-
 import { Embeddings } from "@langchain/core/embeddings";
 import { generateEmbeddings } from "../multiutility-api";
 

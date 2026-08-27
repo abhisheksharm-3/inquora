@@ -21,9 +21,7 @@ import { extractYoutubeVideoId } from "./youtube-utils";
  * @returns A promise that resolves to the file content, a placeholder string
  * (e.g., 'PDF_CONTENT'), an error message, or null.
  */
-export const getFileContent = async (
-  fileId: string,
-): Promise<string | null> => {
+export const getFileContent = async (fileId: string): Promise<string | null> => {
   const supabase = supabaseBrowserClient();
 
   const { data: file, error: fileError } = await supabase
@@ -77,33 +75,23 @@ export const getFileContent = async (
  * and triggers processing if necessary, updating the status in Supabase along the way.
  * @private
  */
-async function _handleProcessableFile(
-  file: TypeFile,
-  placeholder: string,
-): Promise<string> {
+async function _handleProcessableFile(file: TypeFile, placeholder: string): Promise<string> {
   const { id: fileId, processing_status, processing_error } = file;
 
   // 1. Check for a previously failed status.
   if (processing_status === "failed") {
-    console.error(
-      `Processing previously failed for file ${fileId}:`,
-      processing_error,
-    );
+    console.error(`Processing previously failed for file ${fileId}:`, processing_error);
     return `ERROR: ${processing_error || `Failed to process ${file.type}`}`;
   }
 
   // 2. Check if already marked as completed or if namespace exists in Pinecone.
-  const namespaceExists =
-    processing_status === "completed" || (await checkNamespaceExists(fileId));
+  const namespaceExists = processing_status === "completed" || (await checkNamespaceExists(fileId));
 
   if (namespaceExists) {
     // If the namespace exists but status isn't 'completed', update it now.
     if (processing_status !== "completed") {
       const supabase = supabaseBrowserClient();
-      await supabase
-        .from("files")
-        .update({ processing_status: "completed" })
-        .eq("id", fileId);
+      await supabase.from("files").update({ processing_status: "completed" }).eq("id", fileId);
     }
     return placeholder;
   }
@@ -118,10 +106,7 @@ async function _handleProcessableFile(
   try {
     console.log(`Processing ${file.type} file now: ${fileId}`);
     const supabase = supabaseBrowserClient();
-    await supabase
-      .from("files")
-      .update({ processing_status: "processing" })
-      .eq("id", fileId);
+    await supabase.from("files").update({ processing_status: "processing" }).eq("id", fileId);
 
     let result: { success: boolean; error?: string; numDocs?: number };
 
@@ -159,8 +144,7 @@ async function _handleProcessableFile(
       case "sheets":
       case "slides":
         const docBlob = await getFileBlob(supabase, file);
-        if (!docBlob)
-          throw new Error(`Could not read ${file.type} file from storage`);
+        if (!docBlob) throw new Error(`Could not read ${file.type} file from storage`);
         result = await processGenericDocument(docBlob, fileId, file.type);
         break;
 
@@ -210,10 +194,7 @@ async function _handleProcessableFile(
  * @param file The file metadata object, which must contain the `url`.
  * @returns A promise that resolves with the file Blob, or null if it fails.
  */
-const getFileBlob = async (
-  supabase: SupabaseClient,
-  file: TypeFile,
-): Promise<Blob | null> => {
+const getFileBlob = async (supabase: SupabaseClient, file: TypeFile): Promise<Blob | null> => {
   // A file URL is required to download the blob from storage.
   if (!file.url) {
     console.error("Cannot get file blob without a file URL.", file);
@@ -235,9 +216,7 @@ const getFileBlob = async (
   }
 
   console.log(`Attempting to download from storage path: ${path}`);
-  const { data, error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .download(path);
+  const { data, error } = await supabase.storage.from(STORAGE_BUCKET).download(path);
 
   if (error) {
     console.error(`Failed to download blob from path: ${path}`, error.message);

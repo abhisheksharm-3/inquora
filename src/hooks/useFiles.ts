@@ -4,10 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSupabase } from "@/providers/SupabaseProvider";
 import { TypeFile } from "@/types/database";
 import { useUser } from "./useUser";
-import {
-  TypeUpdateFileParams,
-  TypeUploadFileParams,
-} from "@/types/content";
+import { TypeUpdateFileParams, TypeUploadFileParams } from "@/types/content";
 import { useMemo } from "react";
 import { createFileRepository } from "@/data/repositories";
 import { QUERY_KEYS, TIMING_CONSTANTS, FILE_CONSTANTS } from "@/config/constants";
@@ -33,10 +30,7 @@ export const useFiles = () => {
   const supabase = useSupabase();
   const { userId } = useUser();
 
-  const fileRepository = useMemo(
-    () => createFileRepository(supabase),
-    [supabase]
-  );
+  const fileRepository = useMemo(() => createFileRepository(supabase), [supabase]);
 
   const filesQuery = useQuery({
     queryKey: QUERY_KEYS.FILES,
@@ -49,10 +43,7 @@ export const useFiles = () => {
     gcTime: TIMING_CONSTANTS.CACHE_TIME_MS * 2,
   });
 
-  const handleUpload = async ({
-    file,
-    fileData,
-  }: TypeUploadFileParams): Promise<TypeFile> => {
+  const handleUpload = async ({ file, fileData }: TypeUploadFileParams): Promise<TypeFile> => {
     if (!userId) throw new Error("User not authenticated.");
 
     let fileUrl: string | null = null;
@@ -80,8 +71,7 @@ export const useFiles = () => {
       .select()
       .single();
 
-    if (insertError || !newFile)
-      throw insertError || new Error("Failed to create file record.");
+    if (insertError || !newFile) throw insertError || new Error("Failed to create file record.");
 
     return newFile;
   };
@@ -94,9 +84,7 @@ export const useFiles = () => {
 
     if (file.url) {
       try {
-        const filePath = new URL(file.url).pathname.split(
-          `/${FILE_CONSTANTS.STORAGE_BUCKET}/`,
-        )[1];
+        const filePath = new URL(file.url).pathname.split(`/${FILE_CONSTANTS.STORAGE_BUCKET}/`)[1];
         if (filePath) {
           await supabase.storage.from(FILE_CONSTANTS.STORAGE_BUCKET).remove([filePath]);
         }
@@ -112,10 +100,7 @@ export const useFiles = () => {
   const uploadFileMutation = useMutation({
     mutationFn: handleUpload,
     onSuccess: (newFile) => {
-      queryClient.setQueryData<TypeFile[]>(QUERY_KEYS.FILES, (old = []) => [
-        newFile,
-        ...old,
-      ]);
+      queryClient.setQueryData<TypeFile[]>(QUERY_KEYS.FILES, (old = []) => [newFile, ...old]);
     },
   });
 
@@ -177,10 +162,7 @@ export function useFileById(fileId: string) {
   const supabase = useSupabase();
   const { userId, isAuthenticated } = useUser();
 
-  const fileRepository = useMemo(
-    () => createFileRepository(supabase),
-    [supabase]
-  );
+  const fileRepository = useMemo(() => createFileRepository(supabase), [supabase]);
 
   const isValidFileId = !!fileId?.trim();
 

@@ -104,12 +104,8 @@ export const useGitHub = (options: UseGitHubOptions = {}) => {
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: (failureCount, error) => {
       // Don't retry on certain errors
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes("not found") ||
-        errorMessage.includes("private")
-      ) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("not found") || errorMessage.includes("private")) {
         return false;
       }
       return failureCount < 2;
@@ -125,20 +121,14 @@ export const useGitHub = (options: UseGitHubOptions = {}) => {
       return processGitHubRepository(params.url, params.namespace);
     },
     onSuccess: (result, variables) => {
-      console.log(
-        `GitHub repository processing completed for ${variables.url}:`,
-        result,
-      );
+      console.log(`GitHub repository processing completed for ${variables.url}:`, result);
       // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: [...GITHUB_QUERY_KEY, "preview", variables.url],
       });
     },
     onError: (error, variables) => {
-      console.error(
-        `GitHub repository processing failed for ${variables.url}:`,
-        error,
-      );
+      console.error(`GitHub repository processing failed for ${variables.url}:`, error);
     },
   });
 
@@ -161,21 +151,15 @@ export const useGitHub = (options: UseGitHubOptions = {}) => {
         setValidationError(null);
         return null;
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         let userFriendlyMessage = "Unable to access this repository";
 
         if (errorMessage.includes("not found")) {
           userFriendlyMessage = "Repository not found or is private";
         } else if (errorMessage.includes("rate limit")) {
-          userFriendlyMessage =
-            "GitHub API rate limit exceeded. Please try again later.";
-        } else if (
-          errorMessage.includes("network") ||
-          errorMessage.includes("fetch")
-        ) {
-          userFriendlyMessage =
-            "Network error. Please check your connection and try again.";
+          userFriendlyMessage = "GitHub API rate limit exceeded. Please try again later.";
+        } else if (errorMessage.includes("network") || errorMessage.includes("fetch")) {
+          userFriendlyMessage = "Network error. Please check your connection and try again.";
         }
 
         setValidationError(userFriendlyMessage);
@@ -207,21 +191,11 @@ export const useGitHub = (options: UseGitHubOptions = {}) => {
   // Upload repository as file
   const uploadRepository = useCallback(async () => {
     if (!isAuthenticated || !userId) {
-      throw createUploadError(
-        "auth",
-        "Authentication required to upload repository",
-        null,
-        false,
-      );
+      throw createUploadError("auth", "Authentication required to upload repository", null, false);
     }
 
     if (!repositoryUrl.trim()) {
-      throw createUploadError(
-        "validation",
-        "Repository URL is required",
-        null,
-        false,
-      );
+      throw createUploadError("validation", "Repository URL is required", null, false);
     }
 
     const validationError = await validateUrl(repositoryUrl);
@@ -231,12 +205,7 @@ export const useGitHub = (options: UseGitHubOptions = {}) => {
 
     const repoId = repositoryId;
     if (!repoId) {
-      throw createUploadError(
-        "validation",
-        "Invalid repository URL format",
-        null,
-        false,
-      );
+      throw createUploadError("validation", "Invalid repository URL format", null, false);
     }
 
     // Create a synthetic file object for GitHub repositories

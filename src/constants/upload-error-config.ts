@@ -1,7 +1,4 @@
-import {
-  TypeDetailUploadErrorField,
-  TypeUploadError,
-} from "@/types/upload";
+import { TypeDetailUploadErrorField, TypeUploadError } from "@/types/upload";
 
 /**
  * Configuration for providing user-friendly help messages and styles for different error types.
@@ -12,8 +9,7 @@ import {
 export const UploadErrorHelpConfig = {
   auth: {
     icon: "🔒",
-    message:
-      "Your session may have expired. Please refresh the page and log in again.",
+    message: "Your session may have expired. Please refresh the page and log in again.",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
     textColor: "text-blue-700",
@@ -28,8 +24,7 @@ export const UploadErrorHelpConfig = {
   },
   validation: {
     icon: "📋",
-    message:
-      "Please check the file requirements and ensure your file meets all criteria.",
+    message: "Please check the file requirements and ensure your file meets all criteria.",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
     textColor: "text-amber-700",
@@ -54,8 +49,7 @@ export const UploadErrorDetailFields: TypeDetailUploadErrorField[] = [
     key: "retryCount",
     label: "Retry Attempts",
     getValue: (error: TypeUploadError, retryCount?: number) => retryCount,
-    condition: (error: TypeUploadError, retryCount?: number) =>
-      (retryCount ?? 0) > 0,
+    condition: (error: TypeUploadError, retryCount?: number) => (retryCount ?? 0) > 0,
   },
   {
     key: "originalError",

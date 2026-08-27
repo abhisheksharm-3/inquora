@@ -2,10 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { validateWebUrl } from "@/utils/web-scraper-utils";
-import {
-  getWebPageInfo,
-  processWebPage,
-} from "@/utils/processors/web-scraper-server";
+import { getWebPageInfo, processWebPage } from "@/utils/processors/web-scraper-server";
 import type { TypeUseWebScrapingReturn } from "@/types/web-scraper";
 
 /**

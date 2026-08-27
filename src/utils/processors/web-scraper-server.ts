@@ -16,11 +16,7 @@ import type {
   TypeScrapingConfig,
 } from "@/types/web-scraper";
 import { DEFAULT_SCRAPING_CONFIG } from "@/types/web-scraper";
-import {
-  getDomainFromUrl,
-  generatePageId,
-  normalizeUrl,
-} from "../web-scraper-utils";
+import { getDomainFromUrl, generatePageId, normalizeUrl } from "../web-scraper-utils";
 
 // --- Constants ---
 const CHUNK_SIZE = 1500; // Increased chunk size for better context
@@ -53,16 +49,12 @@ const _scrapeWebPage = async (
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch page: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`Failed to fetch page: ${response.status} ${response.statusText}`);
     }
 
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("text/html")) {
-      throw new Error(
-        `Invalid content type: ${contentType}. Only HTML pages are supported.`,
-      );
+      throw new Error(`Invalid content type: ${contentType}. Only HTML pages are supported.`);
     }
 
     const html = await response.text();
@@ -74,9 +66,7 @@ const _scrapeWebPage = async (
     ).remove();
 
     // Also remove common ad/tracking elements
-    $(
-      '[class*="ad-"], [class*="ads-"], [id*="ad-"], [id*="ads-"], .google-ads, .adsense',
-    ).remove();
+    $('[class*="ad-"], [class*="ads-"], [id*="ad-"], [id*="ads-"], .google-ads, .adsense').remove();
 
     // Extract title with fallbacks
     let title = $("title").text().trim();
@@ -159,9 +149,7 @@ const _scrapeWebPage = async (
           const text = $(element).text().trim();
           if (
             text.length > 20 &&
-            !extractedTexts.some(
-              (existing) => existing.includes(text) || text.includes(existing),
-            )
+            !extractedTexts.some((existing) => existing.includes(text) || text.includes(existing))
           ) {
             extractedTexts.push(text);
           }
@@ -185,10 +173,7 @@ const _scrapeWebPage = async (
     content = content
       .replace(/\s+/g, " ") // Normalize whitespace
       .replace(/\n\s*\n\s*\n/g, "\n\n") // Remove excessive line breaks
-      .replace(
-        /\b(cookie|privacy|terms|subscribe|newsletter|advertisement)\b.*$/gim,
-        "",
-      ) // Remove common noise
+      .replace(/\b(cookie|privacy|terms|subscribe|newsletter|advertisement)\b.*$/gim, "") // Remove common noise
       .trim();
 
     // Add context information to make content more comprehensive
@@ -205,17 +190,17 @@ const _scrapeWebPage = async (
 
     // Extract key headings for structure
     const headings: string[] = [];
-    $("h1, h2, h3").toArray().forEach((element) => {
-      const heading = $(element).text().trim();
-      if (heading && heading.length > 3 && heading.length < 100) {
-        headings.push(heading);
-      }
-    });
+    $("h1, h2, h3")
+      .toArray()
+      .forEach((element) => {
+        const heading = $(element).text().trim();
+        if (heading && heading.length > 3 && heading.length < 100) {
+          headings.push(heading);
+        }
+      });
 
     if (headings.length > 0) {
-      contextualContent.push(
-        `Key Topics: ${headings.slice(0, 10).join(" | ")}`,
-      );
+      contextualContent.push(`Key Topics: ${headings.slice(0, 10).join(" | ")}`);
     }
 
     // Combine contextual information with main content
@@ -243,9 +228,7 @@ const _scrapeWebPage = async (
     const lowerContent = content.toLowerCase();
     for (const indicator of noContentIndicators) {
       if (lowerContent.includes(indicator)) {
-        throw new Error(
-          `Page appears to have access restrictions or errors: ${indicator}`,
-        );
+        throw new Error(`Page appears to have access restrictions or errors: ${indicator}`);
       }
     }
 
@@ -383,9 +366,7 @@ export const processWebPage = async (
       .single<{ user_id: string }>();
 
     if (fileError || !file) {
-      throw new Error(
-        `Failed to get file record: ${fileError?.message || "File not found"}`,
-      );
+      throw new Error(`Failed to get file record: ${fileError?.message || "File not found"}`);
     }
 
     const userId = file.user_id;
@@ -432,9 +413,7 @@ export const processWebPage = async (
           pageContent.metadata.description
             ? `Description: ${pageContent.metadata.description}`
             : null,
-          pageContent.metadata.domain
-            ? `Domain: ${pageContent.metadata.domain}`
-            : null,
+          pageContent.metadata.domain ? `Domain: ${pageContent.metadata.domain}` : null,
         ]
           .filter(Boolean)
           .join("\n");
@@ -471,9 +450,7 @@ export const processWebPage = async (
     const embeddings = await createEmbeddings();
 
     if (!embeddings) {
-      throw new Error(
-        "Failed to create embeddings. API may not be configured properly.",
-      );
+      throw new Error("Failed to create embeddings. API may not be configured properly.");
     }
 
     // Test embeddings with a simple string to ensure they work
@@ -483,9 +460,7 @@ export const processWebPage = async (
       if (!testEmbedding || testEmbedding.length === 0) {
         throw new Error("Embeddings test failed: returned empty vector");
       }
-      console.log(
-        `Embeddings test successful. Vector dimension: ${testEmbedding.length}`,
-      );
+      console.log(`Embeddings test successful. Vector dimension: ${testEmbedding.length}`);
     } catch (error) {
       console.error("Embeddings test failed:", error);
       throw new Error(
@@ -522,9 +497,7 @@ export const processWebPage = async (
 
       // Log first document in batch for debugging
       if (i === 0 && batch.length > 0) {
-        console.log(
-          `First document preview: ${batch[0].pageContent.substring(0, 100)}...`,
-        );
+        console.log(`First document preview: ${batch[0].pageContent.substring(0, 100)}...`);
       }
 
       await PineconeStore.fromDocuments(batch, embeddings, {

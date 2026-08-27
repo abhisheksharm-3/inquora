@@ -61,23 +61,17 @@ const PricingDialog = ({ trigger }: TypeDialogProps) => {
                   <p className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter">
                     Free
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    During our Beta phase
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">During our Beta phase</p>
                 </div>
 
                 {/* Right Column: Features */}
                 <div className="flex-1 border-t border-border pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                  <p className="text-sm font-semibold mb-4">
-                    Includes full access to:
-                  </p>
+                  <p className="text-sm font-semibold mb-4">Includes full access to:</p>
                   <ul className="space-y-2">
                     {featuresIncluded.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <Check className="h-4 w-4 flex-shrink-0 text-primary mt-0.5" />
-                        <span className="text-sm text-muted-foreground">
-                          {feature}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -91,9 +85,7 @@ const PricingDialog = ({ trigger }: TypeDialogProps) => {
           <Button size="lg" className="w-full max-w-xs font-semibold">
             Continue with Free Plan
           </Button>
-          <p className="text-center text-xs text-muted-foreground/70">
-            No credit card required.
-          </p>
+          <p className="text-center text-xs text-muted-foreground/70">No credit card required.</p>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -22,7 +22,7 @@ interface ProcessingResultType {
  */
 async function extractTextFromGenericDocument(
   fileBlob: Blob,
-  documentType: string
+  documentType: string,
 ): Promise<string> {
   const buffer = Buffer.from(await fileBlob.arrayBuffer());
 
@@ -55,7 +55,7 @@ async function extractTextFromGenericDocument(
  */
 export async function processPdfDocument(
   fileBlob: Blob,
-  namespace: string
+  namespace: string,
 ): Promise<ProcessingResultType> {
   if (!(await isPineconeConfigured())) {
     return { success: false, numDocs: 0, error: "Pinecone is not configured." };
@@ -81,7 +81,7 @@ export async function processPdfDocument(
 export async function processGenericDocument(
   fileBlob: Blob,
   namespace: string,
-  documentType: string
+  documentType: string,
 ): Promise<ProcessingResultType> {
   if (!(await isPineconeConfigured())) {
     return { success: false, numDocs: 0, error: "Pinecone is not configured." };

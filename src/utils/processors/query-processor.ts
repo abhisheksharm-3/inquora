@@ -22,14 +22,12 @@ export const queryDocuments = async (
   query: string,
   namespace: string,
   topK: number = 5,
-  pineconeIndex?: Index
+  pineconeIndex?: Index,
 ): Promise<[Document, number][]> => {
   console.log(`Querying top ${topK} documents in namespace "${namespace}"...`);
 
   if (!(await isPineconeConfigured())) {
-    throw new Error(
-      "Pinecone is not configured. Please check environment variables.",
-    );
+    throw new Error("Pinecone is not configured. Please check environment variables.");
   }
 
   try {
@@ -51,7 +49,9 @@ export const queryDocuments = async (
         targetIndex = indexInfo.index;
       } else {
         // Namespace not found in any index, use current index (for new writes)
-        console.log(`Namespace "${namespace}" not found in any index, using current index for new data`);
+        console.log(
+          `Namespace "${namespace}" not found in any index, using current index for new data`,
+        );
         targetIndex = await getPineconeIndex();
       }
     } else {
@@ -67,7 +67,9 @@ export const queryDocuments = async (
       namespace,
     });
 
-    const results = await pineconeRateLimiter.execute(() => vectorStore.similaritySearchWithScore(query, topK));
+    const results = await pineconeRateLimiter.execute(() =>
+      vectorStore.similaritySearchWithScore(query, topK),
+    );
     console.log(`Found ${results.length} documents in namespace "${namespace}".`);
     return results;
   } catch (error) {
@@ -84,9 +86,7 @@ export const queryDocuments = async (
  * @param namespace The namespace to check.
  * @returns A promise that resolves to `true` if the namespace exists and has > 0 vectors, otherwise `false`.
  */
-export const checkNamespaceExists = async (
-  namespace: string,
-): Promise<boolean> => {
+export const checkNamespaceExists = async (namespace: string): Promise<boolean> => {
   if (!(await isPineconeConfigured())) {
     console.warn("Pinecone not configured, assuming namespace does not exist.");
     return false;

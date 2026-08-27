@@ -36,9 +36,7 @@ export const validateWebUrl = (url: string): boolean => {
     const urlString = url.toLowerCase();
     for (const pattern of excludedPatterns) {
       if (pattern.test(urlString)) {
-        console.log(
-          `URL validation failed - matches excluded pattern: ${pattern}`,
-        );
+        console.log(`URL validation failed - matches excluded pattern: ${pattern}`);
         return false;
       }
     }

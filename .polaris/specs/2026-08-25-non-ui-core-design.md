@@ -18,14 +18,14 @@ The target for the default query path:
 
 Revised on 2026-08-25 by `docs/adr/0005`: retrieval became a tool rather than a fixed step.
 
-| | Today | Target |
-|---|---|---|
-| LLM turns per message | 5–8 pre-answer, then 1 | 1, or 2 when the model searches |
-| Embedding calls | 4–8 | 1, Redis-cached |
-| Vector store roundtrips | 4–8 | 1 (`search_chunks`) |
-| Supabase roundtrips before generation | 6, sequential | 2 (`get_chat_context`, `search_chunks`) |
-| Supabase roundtrips after generation | 2 | 1 (`append_message`) |
-| First token | after full generation | streamed |
+|                                       | Today                  | Target                                  |
+| ------------------------------------- | ---------------------- | --------------------------------------- |
+| LLM turns per message                 | 5–8 pre-answer, then 1 | 1, or 2 when the model searches         |
+| Embedding calls                       | 4–8                    | 1, Redis-cached                         |
+| Vector store roundtrips               | 4–8                    | 1 (`search_chunks`)                     |
+| Supabase roundtrips before generation | 6, sequential          | 2 (`get_chat_context`, `search_chunks`) |
+| Supabase roundtrips after generation  | 2                      | 1 (`append_message`)                    |
+| First token                           | after full generation  | streamed                                |
 
 ## Current state, measured
 
@@ -162,14 +162,14 @@ create type message_part_kind as enum ('text','reasoning','tool_call','tool_resu
 
 ### Triggers
 
-| Trigger | Replaces |
-|---|---|
-| `auth.users` insert → create `profiles` row | profile creation in the auth callback |
-| `moddatetime` on every table | hand-set timestamps across repositories |
-| `document_chunks` change → maintain `documents.chunk_count` | the `indexed_chunks` field nothing writes |
-| `chunk_count > 0` → `documents.status = 'ready'` | the write-back broken on 88% of rows |
-| `messages` insert → bump `chats.updated_at` | history ordered by chat creation, which sinks actively-used chats |
-| `documents` insert → enqueue `ingestion_jobs` | client-driven processing that dies with the request |
+| Trigger                                                     | Replaces                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------------- |
+| `auth.users` insert → create `profiles` row                 | profile creation in the auth callback                             |
+| `moddatetime` on every table                                | hand-set timestamps across repositories                           |
+| `document_chunks` change → maintain `documents.chunk_count` | the `indexed_chunks` field nothing writes                         |
+| `chunk_count > 0` → `documents.status = 'ready'`            | the write-back broken on 88% of rows                              |
+| `messages` insert → bump `chats.updated_at`                 | history ordered by chat creation, which sinks actively-used chats |
+| `documents` insert → enqueue `ingestion_jobs`               | client-driven processing that dies with the request               |
 
 ### Functions
 
@@ -242,26 +242,25 @@ embeddings cached in Upstash Redis with a 30-day TTL, plus a keep-alive ping. **
 first query after an idle period pays a Space cold start. This is the largest remaining latency
 spike in the design.**
 
-
 ## Tools
 
 All tiers ship together, decided 2026-08-25. Retrieval is exposed to the model rather than run
 ahead of it, so the model can search again with a refined query, read around a hit when an answer
 straddles a chunk boundary, or skip retrieval entirely for a question about the conversation.
 
-| Tool | What it does | What it needs |
-|---|---|---|
-| `search_documents(query, document_ids?, limit?)` | Hybrid RRF search. Pre-warmed speculatively. | `search_chunks` |
-| `read_chunks(document_id, from, to)` | Passages either side of a hit. | nothing |
-| `list_documents()` | What is attached, its kind and status. | nothing |
-| `get_outline(document_id)` | Headings, sheet names, file tree, chapter timestamps. | `documents.outline jsonb` |
-| `grep_document(document_id, pattern)` | Literal and regex over raw text. Beats embeddings for error codes and identifiers. | retained extracted text |
-| `read_file(document_id, path, from_line, to_line)` | A file from a repository. | file paths in chunk metadata |
-| `get_transcript(document_id, start_s, end_s)` | A video segment, timestamped for deep links. | timestamps in chunk metadata |
-| `query_table(document_id, sql)` | Read-only SQL over a spreadsheet. | `document_tables`, `document_rows` |
-| `remember(content)` / `forget(query)` | Long-term facts about the user. | `user_memories` |
-| `calculate(expression)` | Sandboxed arithmetic. | nothing |
-| `web_search(query)` | Off by default, per-chat toggle, citations marked differently. | nothing |
+| Tool                                               | What it does                                                                       | What it needs                      |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------- |
+| `search_documents(query, document_ids?, limit?)`   | Hybrid RRF search. Pre-warmed speculatively.                                       | `search_chunks`                    |
+| `read_chunks(document_id, from, to)`               | Passages either side of a hit.                                                     | nothing                            |
+| `list_documents()`                                 | What is attached, its kind and status.                                             | nothing                            |
+| `get_outline(document_id)`                         | Headings, sheet names, file tree, chapter timestamps.                              | `documents.outline jsonb`          |
+| `grep_document(document_id, pattern)`              | Literal and regex over raw text. Beats embeddings for error codes and identifiers. | retained extracted text            |
+| `read_file(document_id, path, from_line, to_line)` | A file from a repository.                                                          | file paths in chunk metadata       |
+| `get_transcript(document_id, start_s, end_s)`      | A video segment, timestamped for deep links.                                       | timestamps in chunk metadata       |
+| `query_table(document_id, sql)`                    | Read-only SQL over a spreadsheet.                                                  | `document_tables`, `document_rows` |
+| `remember(content)` / `forget(query)`              | Long-term facts about the user.                                                    | `user_memories`                    |
+| `calculate(expression)`                            | Sandboxed arithmetic.                                                              | nothing                            |
+| `web_search(query)`                                | Off by default, per-chat toggle, citations marked differently.                     | nothing                            |
 
 `query_table` is the expensive one and the differentiating one. `excel-extractor.ts` currently
 flattens a workbook into `=== Sheet: name ===` text and embeds it, destroying columns, types and
@@ -346,12 +345,12 @@ on 429, honoring `Retry-After`.
 
 Chunking is per content kind:
 
-| Kind | Strategy | Metadata |
-|---|---|---|
-| pdf, doc, web | recursive character, 1000/200 | page, heading path |
-| github | `fromLanguage()`, split on function and class boundaries | file path, line range |
-| video | time-windowed | start and end timestamp |
-| sheet | row groups with the header row repeated in every chunk | sheet name, row range |
+| Kind          | Strategy                                                 | Metadata                |
+| ------------- | -------------------------------------------------------- | ----------------------- |
+| pdf, doc, web | recursive character, 1000/200                            | page, heading path      |
+| github        | `fromLanguage()`, split on function and class boundaries | file path, line range   |
+| video         | time-windowed                                            | start and end timestamp |
+| sheet         | row groups with the header row repeated in every chunk   | sheet name, row range   |
 
 The spreadsheet rule is a correctness fix: without repeated headers, every chunk after the first
 loses its column names.
@@ -402,14 +401,14 @@ packages, and `package-lock.json`. Added: `@sentry/nextjs`, `langfuse`, `prettie
 
 Strangler order. Every phase ships working and deletes what it replaces in the same commit.
 
-| Phase | Work | Deletes |
-|---|---|---|
-| 0. Guardrails | CI, vitest, boundary lint, prettier, one lockfile, dead deps | `react-window`, phantom `@types/*`, `package-lock.json` |
-| 1. Database | rebuild: schema, enums, triggers, functions, RLS, pgTAP, generated types | hand-maintained `types/database.ts`, `data/repositories/*` |
-| 2. Retrieval | `search_chunks` wired, MMR on vectors, eval harness green | `rag/*`, `pinecone.ts` — roughly 2,900 lines |
-| 3. Transport | streaming route, problem+json, signed uploads, one limiter | `gemini/message-actions.ts`, `rag/rate-limiter.ts`, `rag/cache.ts` |
-| 4. Ingestion | job queue, per-kind chunking, YouTube via the Space | `utils/youtube/*`, six packages, the batching in `embeddings-store.ts` |
-| 5. Sweep | move survivors into `server/modules`, drop `Type` prefixes, enforce boundaries | `src/utils/`, `src/services/`, `src/data/` |
+| Phase         | Work                                                                           | Deletes                                                                |
+| ------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| 0. Guardrails | CI, vitest, boundary lint, prettier, one lockfile, dead deps                   | `react-window`, phantom `@types/*`, `package-lock.json`                |
+| 1. Database   | rebuild: schema, enums, triggers, functions, RLS, pgTAP, generated types       | hand-maintained `types/database.ts`, `data/repositories/*`             |
+| 2. Retrieval  | `search_chunks` wired, MMR on vectors, eval harness green                      | `rag/*`, `pinecone.ts` — roughly 2,900 lines                           |
+| 3. Transport  | streaming route, problem+json, signed uploads, one limiter                     | `gemini/message-actions.ts`, `rag/rate-limiter.ts`, `rag/cache.ts`     |
+| 4. Ingestion  | job queue, per-kind chunking, YouTube via the Space                            | `utils/youtube/*`, six packages, the batching in `embeddings-store.ts` |
+| 5. Sweep      | move survivors into `server/modules`, drop `Type` prefixes, enforce boundaries | `src/utils/`, `src/services/`, `src/data/`                             |
 
 Phase 1 is the only irreversible step. `pg_dump` to a file outside the repository first.
 

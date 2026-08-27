@@ -61,11 +61,7 @@ export const getErrorFromSupabaseError = (
   const mappedError = error.code ? errorMap.get(error.code) : undefined;
 
   if (mappedError) {
-    return createChatError(
-      mappedError.message,
-      error.code,
-      mappedError.statusCode,
-    );
+    return createChatError(mappedError.message, error.code, mappedError.statusCode);
   }
 
   // Default fallback for unmapped Supabase errors
@@ -98,10 +94,7 @@ export const validateChatId = (chatId: unknown): chatId is string => {
  */
 export const createRetryConfig = () => ({
   retry: (failureCount: number, error: unknown) => {
-    if (
-      isChatError(error) &&
-      NonRetryableStatusCodes.has(error.statusCode || 0)
-    ) {
+    if (isChatError(error) && NonRetryableStatusCodes.has(error.statusCode || 0)) {
       return false; // Do not retry for 4xx errors.
     }
     return failureCount < MaxRetryAttempts;
@@ -118,9 +111,7 @@ export const createRetryConfig = () => ({
  * @param chatId The unique identifier for the chat.
  * @returns A promise that resolves to a Next.js Metadata object.
  */
-export const generateChatMetadata = async (
-  chatId: string,
-): Promise<Metadata> => {
+export const generateChatMetadata = async (chatId: string): Promise<Metadata> => {
   if (!validateChatId(chatId)) {
     return generateFallbackMetadata({ isInvalid: true });
   }
@@ -180,14 +171,8 @@ const generateFallbackMetadata = ({
   isNotFound?: boolean;
   isInvalid?: boolean;
 }): Metadata => {
-  const title = isNotFound
-    ? "Chat Not Found"
-    : isInvalid
-      ? "Invalid Chat ID"
-      : "Chat";
-  const description = isNotFound
-    ? "The requested chat could not be found."
-    : "A conversation.";
+  const title = isNotFound ? "Chat Not Found" : isInvalid ? "Invalid Chat ID" : "Chat";
+  const description = isNotFound ? "The requested chat could not be found." : "A conversation.";
 
   return {
     title,
@@ -203,11 +188,7 @@ const generateFallbackMetadata = ({
  * Builds the final Metadata object from chat and file data.
  * @private
  */
-const buildMetadata = (
-  chat: TypeChat,
-  file: TypeFile | null,
-  chatId: string,
-): Metadata => {
+const buildMetadata = (chat: TypeChat, file: TypeFile | null, chatId: string): Metadata => {
   const chatTitle = chat.title || "Untitled Chat";
   const pageTitle = `${chatTitle} - Conversation`;
   const description = file

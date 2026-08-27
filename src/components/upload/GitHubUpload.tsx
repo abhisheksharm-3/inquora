@@ -3,13 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Github,
@@ -33,12 +27,7 @@ interface GitHubUploadProps {
   autoFocus?: boolean;
 }
 
-const GitHubUpload = ({
-  onSuccess,
-  onError,
-  className,
-  autoFocus = false,
-}: GitHubUploadProps) => {
+const GitHubUpload = ({ onSuccess, onError, className, autoFocus = false }: GitHubUploadProps) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -90,8 +79,7 @@ const GitHubUpload = ({
       }, 500);
     } catch (error) {
       setUploadProgress(0);
-      const errorMessage =
-        error instanceof Error ? error.message : "Upload failed";
+      const errorMessage = error instanceof Error ? error.message : "Upload failed";
       onError?.(errorMessage);
     }
   }, [uploadRepository, onSuccess, onError, clearState, simulateProgress]);
@@ -125,9 +113,7 @@ const GitHubUpload = ({
 
     switch (status) {
       case "loading":
-        return (
-          <Loader2 className={cn(iconClass, "animate-spin text-primary")} />
-        );
+        return <Loader2 className={cn(iconClass, "animate-spin text-primary")} />;
       case "error":
         return <AlertCircle className={cn(iconClass, "text-destructive")} />;
       case "success":
@@ -157,9 +143,7 @@ const GitHubUpload = ({
       {/* URL Input */}
       <div className="space-y-2">
         <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-            {getInputIcon()}
-          </div>
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">{getInputIcon()}</div>
           <Input
             ref={inputRef}
             type="url"
@@ -169,8 +153,7 @@ const GitHubUpload = ({
             onKeyDown={handleKeyDown}
             className={cn(
               "pl-10 pr-4",
-              validationError &&
-                "border-destructive focus-visible:ring-destructive",
+              validationError && "border-destructive focus-visible:ring-destructive",
               isValidUrl && "border-green-500 focus-visible:ring-green-500",
             )}
             disabled={isUploading}
@@ -201,9 +184,7 @@ const GitHubUpload = ({
         {uploadError && (
           <p className="text-sm text-destructive flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            {uploadError instanceof Error
-              ? uploadError.message
-              : "Upload failed"}
+            {uploadError instanceof Error ? uploadError.message : "Upload failed"}
           </p>
         )}
       </div>
@@ -212,12 +193,8 @@ const GitHubUpload = ({
       {isUploading && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              Processing repository...
-            </span>
-            <span className="text-muted-foreground">
-              {Math.round(uploadProgress)}%
-            </span>
+            <span className="text-muted-foreground">Processing repository...</span>
+            <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
@@ -311,8 +288,7 @@ const GitHubUpload = ({
       {/* Helper Text */}
       {!repositoryUrl && !isUploading && (
         <div className="text-center text-sm text-muted-foreground">
-          Enter a GitHub repository URL to analyze its codebase and
-          documentation
+          Enter a GitHub repository URL to analyze its codebase and documentation
         </div>
       )}
     </div>

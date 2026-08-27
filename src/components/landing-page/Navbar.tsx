@@ -31,9 +31,7 @@ const Navbar = () => {
 
     return (
       <div className="space-y-4 pt-4 border-t border-border/20">
-        <p className="text-center text-sm font-medium text-muted-foreground">
-          Theme
-        </p>
+        <p className="text-center text-sm font-medium text-muted-foreground">Theme</p>
         <div className="flex justify-center gap-4">
           <Button
             variant={theme === "light" ? "default" : "outline"}
@@ -88,11 +86,7 @@ const Navbar = () => {
     onItemClick?: () => void;
   }) => (
     <ul
-      className={cn(
-        isMobile
-          ? "space-y-6 text-center"
-          : "flex items-center gap-8 justify-center",
-      )}
+      className={cn(isMobile ? "space-y-6 text-center" : "flex items-center gap-8 justify-center")}
     >
       {PublicNavbarRoutes.map((item, index) => (
         <li key={index}>
@@ -121,13 +115,7 @@ const Navbar = () => {
    * @param {{ isMobile?: boolean }} props - Component props.
    */
   const CTAButtons = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div
-      className={cn(
-        isMobile
-          ? "flex flex-col gap-4 w-full pt-8"
-          : "flex items-center gap-3",
-      )}
-    >
+    <div className={cn(isMobile ? "flex flex-col gap-4 w-full pt-8" : "flex items-center gap-3")}>
       {CtaButtons.map(({ label, link, variant }) => (
         <ButtonCta
           key={label}
@@ -187,17 +175,10 @@ const Navbar = () => {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="fixed inset-0 bg-background/90 backdrop-blur-sm"
-            onClick={closeMenu}
-          >
+          <div className="fixed inset-0 bg-background/90 backdrop-blur-sm" onClick={closeMenu}>
             <div className="flex h-full flex-col p-6 pt-4">
               <div className="flex items-center justify-between">
-                <Link
-                  href="/"
-                  className="text-2xl font-bold text-foreground"
-                  onClick={closeMenu}
-                >
+                <Link href="/" className="text-2xl font-bold text-foreground" onClick={closeMenu}>
                   inquora
                 </Link>
                 <Button variant="ghost" size="icon" onClick={closeMenu}>

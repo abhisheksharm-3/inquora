@@ -4,7 +4,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/config/env";
 
 export const supabaseBrowserClient = (): SupabaseClient<TypeDatabase> =>
-    createBrowserClient<TypeDatabase>(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    );
+  createBrowserClient<TypeDatabase>(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );

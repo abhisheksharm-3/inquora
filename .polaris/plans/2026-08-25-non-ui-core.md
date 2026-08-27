@@ -41,33 +41,33 @@ Vitest, pgTAP, ESLint 9 flat config, Prettier, GitHub Actions.
 
 Phase 0 creates:
 
-| Path | Responsibility |
-|---|---|
-| `.prettierrc.json` | formatting rules, referenced by `jsrepo.json` |
-| `vitest.config.ts` | test runner config, `src/` alias |
-| `src/core/result.ts` | `Result<T, E>` — the error-carrying return type used by every layer |
-| `src/core/result.test.ts` | its tests |
-| `src/core/errors.ts` | `AppError` carrying an HTTP status and an RFC 9457 problem shape |
-| `src/core/errors.test.ts` | its tests |
-| `.github/workflows/ci.yml` | typecheck, lint, format check, test, build |
-| `eslint.config.mjs` (modify) | layer boundary rules |
+| Path                         | Responsibility                                                      |
+| ---------------------------- | ------------------------------------------------------------------- |
+| `.prettierrc.json`           | formatting rules, referenced by `jsrepo.json`                       |
+| `vitest.config.ts`           | test runner config, `src/` alias                                    |
+| `src/core/result.ts`         | `Result<T, E>` — the error-carrying return type used by every layer |
+| `src/core/result.test.ts`    | its tests                                                           |
+| `src/core/errors.ts`         | `AppError` carrying an HTTP status and an RFC 9457 problem shape    |
+| `src/core/errors.test.ts`    | its tests                                                           |
+| `.github/workflows/ci.yml`   | typecheck, lint, format check, test, build                          |
+| `eslint.config.mjs` (modify) | layer boundary rules                                                |
 
 Phase 1 creates:
 
-| Path | Responsibility |
-|---|---|
-| `supabase/config.toml` | CLI project config |
-| `supabase/migrations/0001_extensions_and_enums.sql` | extensions, enum types |
-| `supabase/migrations/0002_profiles.sql` | profiles + `auth.users` trigger |
+| Path                                                | Responsibility                                    |
+| --------------------------------------------------- | ------------------------------------------------- |
+| `supabase/config.toml`                              | CLI project config                                |
+| `supabase/migrations/0001_extensions_and_enums.sql` | extensions, enum types                            |
+| `supabase/migrations/0002_profiles.sql`             | profiles + `auth.users` trigger                   |
 | `supabase/migrations/0003_documents_and_chunks.sql` | documents, chunks, indexes, count/status triggers |
-| `supabase/migrations/0004_chats_and_messages.sql` | chats, chat_documents, messages, parts |
-| `supabase/migrations/0005_rls.sql` | row-level security on every table |
-| `supabase/migrations/0006_search_chunks.sql` | hybrid retrieval function |
-| `supabase/migrations/0007_rpc.sql` | context, append, create, bulk-insert functions |
-| `supabase/migrations/0008_ingestion_queue.sql` | job table, enqueue trigger, claim function |
-| `supabase/tests/*.test.sql` | pgTAP coverage per migration |
-| `src/core/database.types.ts` | generated, never hand-edited |
-| `src/server/platform/db/client.ts` | server Supabase client |
+| `supabase/migrations/0004_chats_and_messages.sql`   | chats, chat_documents, messages, parts            |
+| `supabase/migrations/0005_rls.sql`                  | row-level security on every table                 |
+| `supabase/migrations/0006_search_chunks.sql`        | hybrid retrieval function                         |
+| `supabase/migrations/0007_rpc.sql`                  | context, append, create, bulk-insert functions    |
+| `supabase/migrations/0008_ingestion_queue.sql`      | job table, enqueue trigger, claim function        |
+| `supabase/tests/*.test.sql`                         | pgTAP coverage per migration                      |
+| `src/core/database.types.ts`                        | generated, never hand-edited                      |
+| `src/server/platform/db/client.ts`                  | server Supabase client                            |
 
 ---
 
@@ -80,10 +80,12 @@ No behaviour changes. Every task here must leave `bun run build` passing.
 ### Task 0.1: One lockfile, and remove dependencies nothing imports
 
 **Files:**
+
 - Delete: `package-lock.json`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: a dependency list where every runtime entry is imported somewhere in `src/`
 
@@ -155,10 +157,12 @@ package-lock.json leaves bun.lock as the single source of install truth."
 ### Task 0.2: Prettier, which `jsrepo.json` already assumes exists
 
 **Files:**
+
 - Create: `.prettierrc.json`, `.prettierignore`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: `bun run format` and `bun run format:check` scripts, used by CI in Task 0.5
 
@@ -232,11 +236,13 @@ ignored so regeneration does not produce formatting diffs."
 ### Task 0.3: Vitest, and the first two `core/` modules under test
 
 **Files:**
+
 - Create: `vitest.config.ts`, `src/core/result.ts`, `src/core/result.test.ts`,
   `src/core/errors.ts`, `src/core/errors.test.ts`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces:
   - `type Result<T, E = AppError> = { ok: true; value: T } | { ok: false; error: E }`
@@ -425,12 +431,7 @@ export class AppError extends Error {
   readonly detail?: string;
   readonly retryAfterSeconds?: number;
 
-  private constructor(
-    status: number,
-    type: string,
-    detail?: string,
-    retryAfterSeconds?: number,
-  ) {
+  private constructor(status: number, type: string, detail?: string, retryAfterSeconds?: number) {
     super(detail ?? TITLES[status] ?? "Error");
     this.name = "AppError";
     this.status = status;
@@ -477,10 +478,12 @@ translating a private error vocabulary into one."
 ### Task 0.4: Layer boundaries enforced by lint
 
 **Files:**
+
 - Modify: `eslint.config.mjs`
 - Create: `src/server/.gitkeep`, `src/server/modules/.gitkeep`, `src/server/platform/.gitkeep`
 
 **Interfaces:**
+
 - Consumes: `src/core/` from Task 0.3
 - Produces: a lint error on any import that runs against
   `app → server/modules → server/platform → core`
@@ -584,9 +587,11 @@ which is how src/utils grew into sixteen loose files and four subsystems."
 ### Task 0.5: CI that blocks a broken merge
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Consumes: the `typecheck`, `format:check`, `test` scripts from Tasks 0.2 and 0.3
 - Produces: a required status check on pull requests
 
@@ -690,9 +695,11 @@ chats, 851 messages, 2 memories) on 2026-08-25. Task 1.1 takes a dump anyway.
 ### Task 1.1: Supabase CLI, project link, and a backup taken before anything is dropped
 
 **Files:**
+
 - Create: `supabase/config.toml` (by the CLI), `.gitignore` (modify)
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: a linked local Supabase project and a dump at
   `~/backups/inquora-pre-rebuild-2026-08-25.sql`, outside the repository
@@ -770,10 +777,12 @@ current data and schema is taken outside the repository before the rebuild."
 ### Task 1.2: Extensions and enum types
 
 **Files:**
+
 - Create: `supabase/migrations/0001_extensions_and_enums.sql`,
   `supabase/tests/0001_enums.test.sql`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: enum types `document_kind`, `processing_status`, `message_role`; extensions `vector`,
   `pg_trgm`, `unaccent`, `moddatetime`, `pgtap`
@@ -880,9 +889,11 @@ up in the same column."
 ### Task 1.3: Profiles, created by a trigger on `auth.users`
 
 **Files:**
+
 - Create: `supabase/migrations/0002_profiles.sql`, `supabase/tests/0002_profiles.test.sql`
 
 **Interfaces:**
+
 - Consumes: extensions from Task 1.2
 - Produces: table `public.profiles (id uuid pk → auth.users, display_name text, created_at, updated_at)`;
   trigger `on_auth_user_created`
@@ -1015,17 +1026,19 @@ be skipped."
 ### Task 1.4: Documents and chunks, with counts and status maintained by triggers
 
 **Files:**
+
 - Create: `supabase/migrations/0003_documents_and_chunks.sql`,
   `supabase/tests/0003_documents.test.sql`
 
 **Interfaces:**
+
 - Consumes: enums from Task 1.2, `profiles` from Task 1.3
 - Produces:
   - `public.documents (id, user_id, kind document_kind, title, byte_size, storage_path, source_url,
-    status processing_status, error, chunk_count int, content_hash text, created_at, updated_at,
-    indexed_at)`
+status processing_status, error, chunk_count int, content_hash text, created_at, updated_at,
+indexed_at)`
   - `public.document_chunks (id, document_id, chunk_index, content, embedding vector(1024),
-    token_count, tsv tsvector generated, metadata jsonb, created_at)`
+token_count, tsv tsvector generated, metadata jsonb, created_at)`
   - unique `(user_id, content_hash)` on documents; unique `(document_id, chunk_index)` on chunks
 
 - [ ] **Step 1: Write the failing pgTAP test**
@@ -1223,18 +1236,20 @@ trigger now recounts once per insert rather than once per row."
 ### Task 1.5: Chats, the document join, messages and citations
 
 **Files:**
+
 - Create: `supabase/migrations/0004_chats_and_messages.sql`,
   `supabase/tests/0004_chats.test.sql`
 
 **Interfaces:**
+
 - Consumes: `profiles`, `documents`, `document_chunks`, `message_role`
 - Produces:
   - `public.chats (id, user_id, title, created_at, updated_at)` — no `type`, no `file_id`
   - `public.chat_documents (chat_id, document_id, added_at)` — composite primary key
   - `public.messages (id, chat_id, parent_id, role, tokens_in, tokens_out, latency_ms,
-    retrieval_ms, model, created_at)` — content lives in `message_parts`
+retrieval_ms, model, created_at)` — content lives in `message_parts`
   - `public.message_parts (id, message_id, position, kind, text, tool_call_id, tool_name,
-    tool_args, tool_result, chunk_id)` — unique on `(message_id, position)`
+tool_args, tool_result, chunk_id)` — unique on `(message_id, position)`
 
 - [ ] **Step 1: Write the failing pgTAP test**
 
@@ -1440,9 +1455,11 @@ below one abandoned a year ago."
 ### Task 1.6: Row-level security on every table
 
 **Files:**
+
 - Create: `supabase/migrations/0005_rls.sql`, `supabase/tests/0005_rls.test.sql`
 
 **Interfaces:**
+
 - Consumes: every table from Tasks 1.3–1.5
 - Produces: RLS enabled with owner-scoped policies; chunks and citations scoped through their
   parent
@@ -1611,12 +1628,15 @@ it is evaluated once per query rather than once per row."
 ### Task 1.7: `search_chunks`, hybrid retrieval in one call
 
 **Files:**
+
 - Create: `supabase/migrations/0006_search_chunks.sql`,
   `supabase/tests/0006_search_chunks.test.sql`
 
 **Interfaces:**
+
 - Consumes: `document_chunks` from Task 1.4
 - Produces:
+
   ```
   public.search_chunks(
     p_document_ids uuid[],
@@ -1627,6 +1647,7 @@ it is evaluated once per query rather than once per row."
   ) returns table (chunk_id uuid, document_id uuid, chunk_index integer,
                    content text, metadata jsonb, score real)
   ```
+
   Phase 2's `retrieval.repository.ts` calls this and nothing else.
 
 - [ ] **Step 1: Write the failing pgTAP test**
@@ -1810,17 +1831,19 @@ fusion, which does not require the two scoring scales to be comparable."
 ### Task 1.8: The remaining RPCs
 
 **Files:**
+
 - Create: `supabase/migrations/0007_rpc.sql`, `supabase/tests/0007_rpc.test.sql`
 
 **Interfaces:**
+
 - Consumes: every table and `search_chunks`
 - Produces:
   - `public.get_chat_context(p_chat_id uuid, p_history_limit integer default 12) returns jsonb`
   - `public.append_message(p_chat_id uuid, p_role public.message_role, p_content text,
-    p_parent_id uuid default null,
-    p_citation_chunk_ids uuid[] default '{}', p_tokens_in integer default null,
-    p_tokens_out integer default null, p_latency_ms integer default null,
-    p_retrieval_ms integer default null, p_model text default null) returns uuid`
+p_parent_id uuid default null,
+p_citation_chunk_ids uuid[] default '{}', p_tokens_in integer default null,
+p_tokens_out integer default null, p_latency_ms integer default null,
+p_retrieval_ms integer default null, p_model text default null) returns uuid`
   - `public.create_chat_with_documents(p_title text, p_document_ids uuid[]) returns uuid`
   - `public.insert_document_chunks(p_document_id uuid, p_chunks jsonb) returns integer`
 
@@ -2080,10 +2103,12 @@ passages it stood on."
 ### Task 1.9: The ingestion queue
 
 **Files:**
+
 - Create: `supabase/migrations/0008_ingestion_queue.sql`,
   `supabase/tests/0008_ingestion.test.sql`
 
 **Interfaces:**
+
 - Consumes: `documents` from Task 1.4
 - Produces:
   - `public.ingestion_jobs (id bigserial, document_id uuid unique, attempts, run_after, last_error, created_at)`
@@ -2288,11 +2313,13 @@ LOCKED gives a crash-safe queue without adding a vendor."
 ### Task 1.10: Push to remote, generate types, and wire the server client
 
 **Files:**
+
 - Create: `src/core/database.types.ts` (generated), `src/server/platform/db/client.ts`,
   `src/server/platform/db/client.test.ts`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: every migration
 - Produces:
   - `Database` type from generated `database.types.ts`
@@ -2467,9 +2494,9 @@ Before Phase 2 begins, all of these must hold:
 
 Written as separate plans once the generated types are real:
 
-| Phase | Depends on |
-|---|---|
-| 2. Retrieval | `search_chunks`, `Database["public"]["Functions"]["search_chunks"]` |
-| 3. Transport | `get_chat_context`, `append_message`, `AppError`, `Result` |
-| 4. Ingestion | `ingestion_jobs`, `claim_ingestion_job`, `insert_document_chunks` |
-| 5. Sweep | the boundary rules from Task 0.4 extended to `src/utils`, `src/data`, `src/services` |
+| Phase        | Depends on                                                                           |
+| ------------ | ------------------------------------------------------------------------------------ |
+| 2. Retrieval | `search_chunks`, `Database["public"]["Functions"]["search_chunks"]`                  |
+| 3. Transport | `get_chat_context`, `append_message`, `AppError`, `Result`                           |
+| 4. Ingestion | `ingestion_jobs`, `claim_ingestion_job`, `insert_document_chunks`                    |
+| 5. Sweep     | the boundary rules from Task 0.4 extended to `src/utils`, `src/data`, `src/services` |

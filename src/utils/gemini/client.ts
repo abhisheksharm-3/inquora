@@ -43,9 +43,11 @@ const getGeminiModel = async (): Promise<GenerativeModel> => {
   }
   return genAI.getGenerativeModel({
     model: GEMINI_MODEL_NAME,
-    tools: [{
-      functionDeclarations: [memoryToolDefinition] as FunctionDeclaration[]
-    }]
+    tools: [
+      {
+        functionDeclarations: [memoryToolDefinition] as FunctionDeclaration[],
+      },
+    ],
   });
 };
 
@@ -148,43 +150,53 @@ export const sendMessageToGemini = async (
         break;
       }
 
-      const functionResponses = await Promise.all(functionCalls.map(async (call) => {
-        if (call.name === "manage_memory") {
-          if (!context?.userId || !supabaseClient) {
-            return {
-              functionResponse: {
-                name: call.name,
-                response: { result: "Error: User ID or Database Client not available for memory management." }
-              }
-            };
-          }
+      const functionResponses = await Promise.all(
+        functionCalls.map(async (call) => {
+          if (call.name === "manage_memory") {
+            if (!context?.userId || !supabaseClient) {
+              return {
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    result:
+                      "Error: User ID or Database Client not available for memory management.",
+                  },
+                },
+              };
+            }
 
-          const args = call.args as { action: TypeMemoryAction; content: string };
-          if (!args || typeof args !== "object") {
+            const args = call.args as { action: TypeMemoryAction; content: string };
+            if (!args || typeof args !== "object") {
+              return {
+                functionResponse: {
+                  name: call.name,
+                  response: { result: "Error: Invalid arguments." },
+                },
+              };
+            }
+            const toolResult = await manageMemory(
+              context.userId,
+              args.action,
+              args.content,
+              supabaseClient,
+            );
+
             return {
               functionResponse: {
                 name: call.name,
-                response: { result: "Error: Invalid arguments." }
-              }
+                response: { result: toolResult },
+              },
             };
           }
-          const toolResult = await manageMemory(context.userId, args.action, args.content, supabaseClient);
 
           return {
             functionResponse: {
               name: call.name,
-              response: { result: toolResult }
-            }
+              response: { result: "Error: Unknown tool." },
+            },
           };
-        }
-
-        return {
-          functionResponse: {
-            name: call.name,
-            response: { result: "Error: Unknown tool." }
-          }
-        };
-      }));
+        }),
+      );
 
       result = await geminiRateLimiter.execute(() => chat.sendMessage(functionResponses));
       response = result.response;

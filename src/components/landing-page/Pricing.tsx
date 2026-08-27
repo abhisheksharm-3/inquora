@@ -42,22 +42,18 @@ const Pricing = () => {
           Free While We&apos;re in Beta
         </h2>
         <p className="mx-auto mb-16 max-w-3xl text-lg font-light text-muted-foreground md:text-xl">
-          Join our journey and enjoy full access to Inquora. No limits, no
-          costs—just your feedback to help us build the best product possible.
+          Join our journey and enjoy full access to Inquora. No limits, no costs—just your feedback
+          to help us build the best product possible.
         </p>
         <div className="relative mx-auto max-w-2xl rounded-2xl border border-border bg-card/50 p-8 text-left backdrop-blur-sm">
           <div className="flex flex-col gap-8 md:flex-row md:items-center">
             <div className="flex-1 text-center md:text-left">
               <p className="text-sm font-medium text-primary">PLAN</p>
-              <p className="mt-2 text-7xl font-bold tracking-tighter text-foreground">
-                Free
-              </p>
+              <p className="mt-2 text-7xl font-bold tracking-tighter text-foreground">Free</p>
               <p className="text-muted-foreground">During our Beta phase</p>
             </div>
             <div className="flex-1 border-t border-border pt-8 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-              <p className="mb-4 font-semibold text-foreground">
-                Includes full access to:
-              </p>
+              <p className="mb-4 font-semibold text-foreground">Includes full access to:</p>
               <ul className="space-y-3">
                 {featuresIncluded.map((feature, index) => (
                   <li key={index} className="flex items-center gap-3">

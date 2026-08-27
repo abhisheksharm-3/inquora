@@ -37,19 +37,14 @@ const Error = ({ error, reset }: TypeErrorProps) => {
             Something went wrong
           </h1>
           <p className="text-lg leading-relaxed text-muted-foreground">
-            We encountered an unexpected error. Our team has been notified and
-            is working to fix it.
+            We encountered an unexpected error. Our team has been notified and is working to fix it.
           </p>
         </div>
 
         {process.env.NODE_ENV === "development" && (
           <div className="mt-6 w-full rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-left">
-            <h3 className="mb-2 text-sm font-medium text-destructive-foreground">
-              Error Details:
-            </h3>
-            <p className="font-mono text-xs text-muted-foreground break-all">
-              {error.message}
-            </p>
+            <h3 className="mb-2 text-sm font-medium text-destructive-foreground">Error Details:</h3>
+            <p className="font-mono text-xs text-muted-foreground break-all">{error.message}</p>
           </div>
         )}
 
