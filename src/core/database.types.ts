@@ -473,6 +473,7 @@ export type Database = {
           chunk_index: number
           content: string
           document_id: string
+          embedding: unknown
           metadata: Json
           score: number
         }[]

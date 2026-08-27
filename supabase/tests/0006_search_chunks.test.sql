@@ -1,5 +1,5 @@
 begin;
-select plan(3);
+select plan(4);
 
 select has_function('public', 'search_chunks', 'search_chunks exists');
 
@@ -44,6 +44,16 @@ select is(
    limit 1),
   'the onboarding checklist for new engineers',
   'the lexical arm ranks an exact term match first'
+);
+
+-- MMR needs the vectors, so the function has to hand them back.
+select isnt_empty(
+  $$select embedding from public.search_chunks(
+      array['77777777-7777-7777-7777-777777777777']::uuid[],
+      array_fill(0.9::real, array[1024])::extensions.vector,
+      'quarterly revenue')
+    where embedding is not null$$,
+  'search_chunks returns the chunk embedding, which is what MMR ranks over'
 );
 
 select * from finish();
