@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # So the migrate job can be re-run after a secret changes, without a commit.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -45,7 +47,7 @@ jobs:
   # touch the database.
   migrate:
     needs: check
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       # A step-level `if` cannot read the secrets context, only env, so the
