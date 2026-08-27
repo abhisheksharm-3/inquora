@@ -1,18 +1,36 @@
-import { initChatModel } from "langchain";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { AppError } from "@/core/errors";
 import { err, ok, type Result } from "@/core/result";
 
 /**
- * The model layer, per ADR 0002: `initChatModel` with a provider string, so
- * swapping provider is a configuration change rather than a rewrite of the call
- * sites. Nothing outside this module constructs a model.
+ * The model layer, per ADR 0002: a provider string names the model, and nothing
+ * outside this module constructs one, so changing provider is a change here and
+ * nowhere else.
+ *
+ * It does not use `initChatModel`, which is what the ADR named. initChatModel
+ * resolves the provider package with a fully dynamic import, and a bundler cannot
+ * trace that: the deployed route failed with "Cannot find module as expression is
+ * too dynamic" while every local test passed, because locally the import resolves
+ * against node_modules. Marking the packages external did not help — the
+ * transformation happens at build time. So the providers are a static map, which
+ * keeps the provider-string contract and removes the whole class of failure.
  */
 
+/** Providers this deployment can reach. Adding one is an import and a line. */
+const PROVIDERS = {
+  "google-genai": (model: string, apiKey: string, temperature: number) =>
+    new ChatGoogleGenerativeAI({
+      model,
+      apiKey,
+      temperature,
+      maxRetries: 1,
+    }) as unknown as BaseChatModel,
+} as const;
+
 /**
- * Default answering model. Named here rather than hardcoded at a call site so
- * there is one place to change it, and overridable by environment so a model
- * change does not need a deploy of new code.
+ * Default answering model, overridable by environment so a model change does not
+ * need a deploy of new code.
  */
 const DEFAULT_MODEL = "google-genai:gemini-flash-latest";
 
@@ -22,11 +40,6 @@ export interface ModelConfig {
   temperature?: number;
 }
 
-/**
- * initChatModel resolves the provider package at runtime, so it is async. The
- * whole point of the provider string is that this file is the only place that
- * knows which package backs it.
- */
 export const createChatModel = async ({
   apiKey,
   model = DEFAULT_MODEL,
@@ -36,16 +49,28 @@ export const createChatModel = async ({
     return err(AppError.misconfigured("GEMINI_API_KEY is not set, so no answer can be generated"));
   }
 
-  try {
-    return ok(
-      (await initChatModel(model, {
-        temperature,
-        apiKey,
-        // The provider is reached once per request; a hung provider must not
-        // hold the connection open indefinitely.
-        maxRetries: 1,
-      })) as unknown as BaseChatModel,
+  const separator = model.indexOf(":");
+
+  if (separator === -1) {
+    return err(
+      AppError.misconfigured(`"${model}" is not a provider:model string, so no provider is named`),
     );
+  }
+
+  const provider = model.slice(0, separator);
+  const name = model.slice(separator + 1);
+  const build = PROVIDERS[provider as keyof typeof PROVIDERS];
+
+  if (!build) {
+    return err(
+      AppError.misconfigured(
+        `${provider} is not a configured provider; add it to PROVIDERS in this file`,
+      ),
+    );
+  }
+
+  try {
+    return ok(build(name, apiKey, temperature));
   } catch (cause) {
     return err(
       AppError.misconfigured(

@@ -93,7 +93,11 @@ const [{ status, chunk_count }] =
 console.log(`2. document is ${status} with ${chunk_count} chunks`);
 
 // 3. A chat over it.
-const chat = await admin.from("chats").insert({ user_id: userId, title: "Live check" }).select("id").single();
+const chat = await admin
+  .from("chats")
+  .insert({ user_id: userId, title: "Live check" })
+  .select("id")
+  .single();
 if (chat.error) throw chat.error;
 
 await admin.from("chat_documents").insert({ chat_id: chat.data.id, document_id: document.data.id });
@@ -117,8 +121,9 @@ const CHUNK = 3180;
 const cookies: string[] =
   cookieValue.length <= CHUNK
     ? [`sb-${ref}-auth-token=${cookieValue}`]
-    : Array.from({ length: Math.ceil(cookieValue.length / CHUNK) }, (_, i) =>
-        `sb-${ref}-auth-token.${i}=${cookieValue.slice(i * CHUNK, (i + 1) * CHUNK)}`,
+    : Array.from(
+        { length: Math.ceil(cookieValue.length / CHUNK) },
+        (_, i) => `sb-${ref}-auth-token.${i}=${cookieValue.slice(i * CHUNK, (i + 1) * CHUNK)}`,
       );
 
 console.log(`4. signed in, session carried in ${cookies.length} cookie chunk(s)`);
@@ -154,7 +159,9 @@ if (!response.ok) {
   }
 
   const events = raw.split("\n\n").filter((block) => block.trim().length > 0);
-  console.log(`   ${events.length} SSE events, first in ${firstEventMs}ms, total ${Date.now() - started}ms`);
+  console.log(
+    `   ${events.length} SSE events, first in ${firstEventMs}ms, total ${Date.now() - started}ms`,
+  );
 
   const last = events.filter((e) => e.includes("messages/complete")).at(-1);
   if (last) {
@@ -176,7 +183,9 @@ const persisted = await sql`
 
 console.log(`\n6. persisted ${persisted.length} message(s):`);
 for (const row of persisted) {
-  console.log(`   ${row.role}${row.latency_ms ? ` in ${row.latency_ms}ms` : ""}${row.sources ? `, ${row.sources} source part(s)` : ""}`);
+  console.log(
+    `   ${row.role}${row.latency_ms ? ` in ${row.latency_ms}ms` : ""}${row.sources ? `, ${row.sources} source part(s)` : ""}`,
+  );
 }
 
 await admin.auth.admin.deleteUser(userId);
