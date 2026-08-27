@@ -1,5 +1,8 @@
 # Inquora non-UI core: implementation plan, phases 2 to 5
 
+**Status: executed on 2026-08-27.** What was built differs from this plan in the places noted under
+"What actually happened", at the end.
+
 **Goal:** Build retrieval, transport and ingestion on the Phase 1 schema, then delete the trees
 they replace.
 
@@ -198,3 +201,52 @@ not here.
       citation resolving to the right chunk. Needs `MULTIUTILITY_API_KEY` and `GEMINI_API_KEY`.
 - [ ] The eval harness runs and prints recall@k and MRR
 - [ ] `src/utils`, `src/services`, `src/data` are gone
+
+---
+
+## What actually happened
+
+Executed on 2026-08-27. The differences from the plan above, and why.
+
+**`search_chunks` gained a return column.** MMR has to rank over the vectors, and the function did
+not return them. Migration `0009` adds the chunk embedding as a halfvec. The alternative was
+computing something vector-shaped in TypeScript, which is the mistake the old engine made: word
+overlap measures shared vocabulary and calls it meaning.
+
+**Two defects in the phase 0–1 plan surfaced while executing it.** The chunk recount trigger
+referenced `NEW` in a statement-level trigger, which does not exist there, so it reads transition
+tables instead. And the dense arm of `search_chunks` ordered by the full-precision vector while the
+HNSW index is built on the halfvec cast, so the index would never have been used.
+
+**The pgTAP suite runs without Docker.** `supabase test db` pulls a pg_prove container, and the
+development machine could not provide one. `scripts/run-pgtap.ts` runs the same files through bun's
+Postgres client, which also lets CI run the SQL suite without pulling an image.
+
+**Deletions consolidated into one commit** rather than one per phase, because the surfaces and the
+trees they consumed had to go together to leave the repository buildable.
+
+**Tool coverage is the five that need nothing new:** `search_documents`, `read_chunks`,
+`list_documents`, `remember` and `calculate`. `get_outline`, `grep_document`, `read_file`,
+`get_transcript`, `query_table` and `web_search` need columns and tables that are not in the schema
+yet — `documents.outline`, `document_tables`, `document_rows`, retained extracted text.
+
+**Two security findings came from review and were fixed.** A document's source URL was fetched
+unchecked, which is server-side request forgery from a worker holding a service-role client. Then
+the first fix left the DNS-rebinding window open, so the connection is now pinned to the address
+that was validated.
+
+**Binary extraction landed for PDF, xlsx and docx.** Video goes through the Space's subtitle
+endpoint, but the endpoint returns lines without timings, so a video citation currently points at a
+passage rather than a second.
+
+## What is not done
+
+- **Generation is unverified against the real provider.** POST to generativelanguage.googleapis.com
+  stalls from the development network — GET returns in 0.36s, POST hangs on IPv4 and IPv6, inside
+  and outside the sandbox. `bun run live` exists and will produce a real answer with resolved
+  citations from any network that allows it.
+- **Observability.** ADR 0004's OpenTelemetry, Sentry and Langfuse wiring is not built. The metric
+  columns on `messages` are populated for latency; tokens and model are not yet written.
+- **The remaining six tools**, which need schema that phase 4 did not land.
+- **`src/components`, `src/hooks`, `src/providers`, `src/types` and `src/constants`** still sit
+  outside `src/ui`. That move belongs to the UI slice, which rebuilds those files anyway.

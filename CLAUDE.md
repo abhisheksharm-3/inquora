@@ -5,16 +5,25 @@ points at.
 
 ## What is happening right now
 
-Inquora is being rebuilt in two slices. **Nothing below the UI has been implemented yet.** The
-code in `src/` is the old system, and most of it is scheduled for deletion.
+Inquora is being rebuilt in two slices.
 
-- **Slice one, the non-UI core.** Designed and planned, not started.
+- **Slice one, the non-UI core: landed on 2026-08-27.** Eleven migrations, 55 pgTAP assertions,
+  retrieval, the streaming answer route, ingestion, and the sweep that deleted `src/utils`,
+  `src/data` and `src/services`.
   Design: `.polaris/specs/2026-08-25-non-ui-core-design.md`
-  Plan: `.polaris/plans/2026-08-25-non-ui-core.md` (phases 0 and 1, executable, test-first)
-- **Slice two, the UI.** Scoped and shaped, not started.
+  Plans: `.polaris/plans/2026-08-25-non-ui-core.md` (phases 0 and 1),
+  `.polaris/plans/2026-08-27-non-ui-core-phases-2-5.md` (phases 2 to 5)
+- **Slice two, the UI. Not started.** What survives of the old interface is the landing page,
+  sign-in and sign-up. Everything else was deleted rather than reworked.
   Scope: `.polaris/specs/2026-08-25-ui-scope.md`
   Brief: `.polaris/specs/2026-08-25-ui-shape-brief.md`
   Mockups: `docs/design/`
+
+**Measured on 2026-08-27, live rather than mocked:** retrieval scores recall@4 87.5% and MRR 0.933
+over the fixture corpus (`bun run eval`); a real PDF ingests end to end in about three seconds
+(`bun run scripts/live-ingest.ts <file>`). The one thing unverified against a real provider is
+generation: POST to generativelanguage.googleapis.com is blocked from the development network, so
+`bun run live` has to be run from somewhere else.
 
 Decisions that are expensive to reverse are ADRs in `docs/adr/`. Read them before proposing
 something they already settled.
@@ -48,7 +57,7 @@ Stop at the first rung that solves it.
 
 Adding a dependency, an abstraction, or a file is the last resort and carries the burden of proof.
 
-## Architecture, once slice one lands
+## Architecture
 
 ```
 src/
@@ -90,7 +99,8 @@ The layout law, on every surface: **substance left, apparatus right.**
 ## Before calling anything done
 
 - `bun run typecheck && bunx eslint src && bun run test && bun run build`
-- `bunx supabase test db` for anything touching SQL
+- `bun run db:test` for anything touching SQL. It needs `SUPABASE_DB_URL` and runs pgTAP through
+  bun's Postgres client, so it needs no Docker — `supabase test db` pulls a pg_prove container.
 - A green suite is not evidence for an AI pipeline. One live end-to-end run against the real
   provider, or it is not working.
 - State what you actually ran and what it printed. If a step was skipped, say so.
