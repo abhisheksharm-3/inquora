@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { HistoryChatlistSkeletonItem } from "@/components/history/HistoryPageSkeletonLoader";
 import { HistoryPageChatItem } from "@/components/history/HistoryPageChatItem";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { VirtualizedChatList } from "@/components/history/VirtualizedChatList";
+import { PaginatedChatList } from "@/components/history/PaginatedChatList";
 
 /**
  * Renders the user's chat history page with improved responsive design and cohesive UI.
@@ -108,7 +108,7 @@ const HistoryPage = () => {
       <div className="space-y-4">
         {/* Use virtualization for large lists (>20 items) */}
         {filteredChats.length > 20 ? (
-          <VirtualizedChatList chats={filteredChats} />
+          <PaginatedChatList chats={filteredChats} />
         ) : (
           filteredChats.map((chat) =>
             chat?.id ? <HistoryPageChatItem key={chat.id} chat={chat} /> : null,

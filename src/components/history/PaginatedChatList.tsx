@@ -4,7 +4,7 @@ import { memo, useState, useEffect, useRef, useCallback } from "react";
 import { TypeChatWithFile } from "@/types/database";
 import { HistoryPageChatItem } from "./HistoryPageChatItem";
 
-interface VirtualizedChatListProps {
+interface PaginatedChatListProps {
   chats: TypeChatWithFile[];
 }
 
@@ -14,8 +14,8 @@ const ITEMS_PER_PAGE = 20;
  * Optimized list component that renders chat items incrementally as user scrolls.
  * Uses intersection observer for infinite scrolling with performance optimization.
  */
-export const VirtualizedChatList = memo(
-  ({ chats }: VirtualizedChatListProps) => {
+export const PaginatedChatList = memo(
+  ({ chats }: PaginatedChatListProps) => {
     const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
     const [isLoading, setIsLoading] = useState(false);
     const loaderRef = useRef<HTMLDivElement>(null);
@@ -99,4 +99,4 @@ export const VirtualizedChatList = memo(
   },
 );
 
-VirtualizedChatList.displayName = "VirtualizedChatList";
+PaginatedChatList.displayName = "PaginatedChatList";
