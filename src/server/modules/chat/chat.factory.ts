@@ -45,6 +45,10 @@ export const chatServiceForRequest = async (): Promise<ChatService> => {
     }),
     chunks: createChunksRepository(db),
     memories: createMemoryRepository(db),
-    model: () => createChatModel({ apiKey: configuration.GEMINI_API_KEY }),
+    model: () =>
+      createChatModel({
+        apiKey: configuration.GEMINI_API_KEY,
+        model: configuration.ANSWER_MODEL,
+      }),
   });
 };

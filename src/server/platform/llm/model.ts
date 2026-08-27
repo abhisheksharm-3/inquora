@@ -24,15 +24,22 @@ const PROVIDERS = {
       model,
       apiKey,
       temperature,
-      maxRetries: 1,
+      // Three attempts, because the shared Gemini capacity answers 503 "this
+      // model is currently experiencing high demand" often enough that one
+      // attempt loses a whole answer to it.
+      maxRetries: 3,
     }) as unknown as BaseChatModel,
 } as const;
 
 /**
- * Default answering model, overridable by environment so a model change does not
- * need a deploy of new code.
+ * Default answering model. A pinned version rather than the -latest alias: the
+ * alias points at whatever is newest, which is also what everyone else is
+ * pointing at, and it answered 503 on the first deployed run.
+ *
+ * Overridable through ANSWER_MODEL, so changing model is a variable rather than a
+ * deploy.
  */
-const DEFAULT_MODEL = "google-genai:gemini-flash-latest";
+const DEFAULT_MODEL = "google-genai:gemini-2.5-flash";
 
 export interface ModelConfig {
   apiKey?: string;

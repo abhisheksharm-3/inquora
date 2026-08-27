@@ -28,6 +28,8 @@ const schema = z
     MULTIUTILITY_API_KEY: z.string().min(1).optional(),
 
     GEMINI_API_KEY: z.string().min(1).optional(),
+    /** provider:model. Changing the answering model is a variable, not a deploy. */
+    ANSWER_MODEL: z.string().min(3).optional(),
 
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
@@ -91,6 +93,7 @@ export const env = (): Env => {
     EMBEDDINGS_BASE_URL: process.env.EMBEDDINGS_BASE_URL,
     MULTIUTILITY_API_KEY: process.env.MULTIUTILITY_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    ANSWER_MODEL: process.env.ANSWER_MODEL,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     SITE_URL: process.env.SITE_URL,
