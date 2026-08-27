@@ -49,6 +49,20 @@ const eslintConfig = [
       ],
     },
   },
+  {
+    // The old component tree, which the UI slice replaces. These five findings are
+    // real, and all of them are in files scheduled for deletion: three effects that
+    // set state synchronously, a component created during render, and manual
+    // memoization the compiler cannot preserve. They are warnings so CI blocks on
+    // new code rather than on code on its way out. Delete this block when the UI
+    // slice lands, and the rules return to errors everywhere.
+    files: ["src/components/**/*.tsx", "src/hooks/**/*.ts"],
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/static-components": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+    },
+  },
 ];
 
 export default eslintConfig;

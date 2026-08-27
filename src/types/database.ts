@@ -117,10 +117,12 @@ export interface TypeDatabase {
       };
     };
 
-    Views: {};
-    Functions: {};
-    Enums: {};
-    CompositeTypes: {};
+    // The shape the Supabase CLI emits for an empty section. Record<string, never>
+    // is not equivalent: it makes the client's relation inference collapse.
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
   };
 }
 
