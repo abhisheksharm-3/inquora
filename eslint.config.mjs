@@ -14,6 +14,10 @@ const eslintConfig = [
         { type: "app", pattern: "src/app/**" },
         { type: "ui", pattern: "src/ui/**" },
         { type: "modules", pattern: "src/server/modules/**" },
+        // HTTP framing — problem+json and SSE — is the transport edge's own
+        // vocabulary, so a route handler may use it directly. Everything else in
+        // platform stays behind a module.
+        { type: "http", pattern: "src/server/platform/http/**" },
         { type: "platform", pattern: "src/server/platform/**" },
         { type: "core", pattern: "src/core/**" },
       ],
@@ -26,7 +30,7 @@ const eslintConfig = [
           rules: [
             {
               from: [{ element: { type: "app" } }],
-              allow: [{ to: { element: { type: ["ui", "modules", "core"] } } }],
+              allow: [{ to: { element: { type: ["ui", "modules", "http", "core"] } } }],
             },
             {
               from: [{ element: { type: "ui" } }],
@@ -34,11 +38,15 @@ const eslintConfig = [
             },
             {
               from: [{ element: { type: "modules" } }],
-              allow: [{ to: { element: { type: ["modules", "platform", "core"] } } }],
+              allow: [{ to: { element: { type: ["modules", "platform", "http", "core"] } } }],
             },
             {
               from: [{ element: { type: "platform" } }],
-              allow: [{ to: { element: { type: ["platform", "core"] } } }],
+              allow: [{ to: { element: { type: ["platform", "http", "core"] } } }],
+            },
+            {
+              from: [{ element: { type: "http" } }],
+              allow: [{ to: { element: { type: ["core"] } } }],
             },
             {
               from: [{ element: { type: "core" } }],

@@ -1,19 +1,8 @@
-import { Redis } from "@upstash/redis";
 import { AppError } from "@/core/errors";
-import { createChatRepository } from "@/server/modules/chat/chat.repository";
+import { chatServiceForRequest } from "@/server/modules/chat/chat.factory";
 import { sendMessageRequest } from "@/server/modules/chat/chat.schema";
-import { createChatService } from "@/server/modules/chat/chat.service";
-import { createMemoryRepository } from "@/server/modules/memory/memory.repository";
-import { createChunksRepository } from "@/server/modules/retrieval/chunks.repository";
-import { createRetrievalRepository } from "@/server/modules/retrieval/retrieval.repository";
-import { createRetrievalService } from "@/server/modules/retrieval/retrieval.service";
-import { createCache } from "@/server/platform/cache/cache";
-import { createServerDbClient } from "@/server/platform/db/client";
-import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
-import { env } from "@/server/platform/env";
 import { problemResponse } from "@/server/platform/http/problem";
 import { sseHeaders } from "@/server/platform/http/sse";
-import { createChatModel } from "@/server/platform/llm/model";
 
 /**
  * The one endpoint that answers a question.
@@ -22,6 +11,9 @@ import { createChatModel } from "@/server/platform/llm/model";
  * results, cannot be cleanly aborted, and serialize through the RSC protocol.
  * Token streaming, stop-generation and HTTP observability all need a real
  * endpoint.
+ *
+ * Everything here is transport. Reading a body, validating it, and turning a
+ * Result into either a stream or a problem document is the whole job.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ chatId: string }> }) {
   const { chatId } = await params;
@@ -32,47 +24,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ cha
   try {
     body = await request.json();
   } catch {
-    return problemResponse(AppError.conflict("the request body is not JSON"), instance);
+    return problemResponse(AppError.badRequest("the request body is not JSON"), instance);
   }
 
   const parsed = sendMessageRequest.safeParse(body);
 
   if (!parsed.success) {
     return problemResponse(
-      AppError.conflict(parsed.error.issues.map((i) => i.message).join("; ")),
+      AppError.badRequest(parsed.error.issues.map((issue) => issue.message).join("; ")),
       instance,
     );
   }
 
-  const configuration = env();
-  const db = await createServerDbClient();
-
-  const cache = createCache({
-    redis:
-      configuration.UPSTASH_REDIS_REST_URL && configuration.UPSTASH_REDIS_REST_TOKEN
-        ? new Redis({
-            url: configuration.UPSTASH_REDIS_REST_URL,
-            token: configuration.UPSTASH_REDIS_REST_TOKEN,
-          })
-        : undefined,
-  });
-
-  const retrieval = createRetrievalService({
-    embeddings: createEmbeddingsClient({
-      baseUrl: configuration.EMBEDDINGS_BASE_URL,
-      apiKey: configuration.MULTIUTILITY_API_KEY ?? "",
-    }),
-    repository: createRetrievalRepository(db),
-    cache,
-  });
-
-  const service = createChatService({
-    repository: createChatRepository(db),
-    retrieval,
-    chunks: createChunksRepository(db),
-    memories: createMemoryRepository(db),
-    model: () => createChatModel({ apiKey: configuration.GEMINI_API_KEY }),
-  });
+  const service = await chatServiceForRequest();
 
   const result = await service.send({
     chatId,

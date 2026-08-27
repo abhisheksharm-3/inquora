@@ -23,6 +23,7 @@ export class AppError extends Error {
     this.retryAfterSeconds = retryAfterSeconds;
   }
 
+  static badRequest = (detail?: string) => new AppError(400, "/errors/bad-request", detail);
   static notFound = (detail?: string) => new AppError(404, "/errors/not-found", detail);
   static conflict = (detail?: string) => new AppError(409, "/errors/conflict", detail);
   static rateLimited = (retryAfterSeconds: number, detail?: string) =>

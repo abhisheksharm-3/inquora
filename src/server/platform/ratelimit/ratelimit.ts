@@ -11,7 +11,7 @@ import { err, ok, type Result } from "@/core/result";
  * stays correct.
  */
 
-export type Bucket = "messages" | "ingestion" | "uploads";
+export type Bucket = "messages" | "ingestion" | "uploads" | "auth";
 
 /** Requests allowed per window, per user, per bucket. */
 const LIMITS: Record<Bucket, { limit: number; windowSeconds: number }> = {
@@ -19,6 +19,9 @@ const LIMITS: Record<Bucket, { limit: number; windowSeconds: number }> = {
   messages: { limit: 30, windowSeconds: 60 },
   ingestion: { limit: 20, windowSeconds: 60 },
   uploads: { limit: 20, windowSeconds: 60 },
+  // Tighter and over a longer window, because this one is guarding a password
+  // against being guessed rather than a budget against being spent.
+  auth: { limit: 10, windowSeconds: 300 },
 };
 
 /**

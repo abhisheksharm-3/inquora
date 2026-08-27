@@ -48,6 +48,22 @@ describe("createRateLimiter", () => {
     expect(keys[1]).toContain("uploads");
   });
 
+  it("guards sign-in over a longer window than it guards spending", async () => {
+    const windows: number[] = [];
+    const redis = {
+      eval: vi.fn(async (_script: string, _keys: string[], args: (string | number)[]) => {
+        windows.push(Number(args[0]));
+        return [1];
+      }),
+    };
+    const limiter = createRateLimiter({ redis: redis as never });
+
+    await limiter.check("messages", "user-1");
+    await limiter.check("auth", "someone@example.com");
+
+    expect(windows[1]).toBeGreaterThan(windows[0]);
+  });
+
   it("allows the request when Redis itself fails, rather than locking everyone out", async () => {
     const redis = {
       eval: vi.fn(async () => {

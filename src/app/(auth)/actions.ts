@@ -3,7 +3,7 @@
 import { supabaseServerClient } from "@/data/supabase/server";
 import { getSiteUrl } from "@/config/env";
 import { z } from "zod";
-import { checkRateLimit, RATE_LIMIT_CONFIGS } from "@/utils/rate-limit";
+import { guardSignIn, guardSignUp } from "@/server/modules/auth/auth.service";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -39,8 +39,8 @@ export const signIn = async (formData: FormData) => {
   try {
     const { email, password } = extractFormData(formData, loginSchema);
 
-    const rateLimitResult = await checkRateLimit(`auth:login:${email}`, RATE_LIMIT_CONFIGS.auth);
-    if (!rateLimitResult.allowed) {
+    const allowed = await guardSignIn(email);
+    if (!allowed.ok) {
       return "Too many login attempts. Please wait a moment before trying again.";
     }
 
@@ -66,11 +66,8 @@ export const signUp = async (formData: FormData) => {
   try {
     const data = extractFormData(formData, signupSchema);
 
-    const rateLimitResult = await checkRateLimit(
-      `auth:signup:${data.email}`,
-      RATE_LIMIT_CONFIGS.signup,
-    );
-    if (!rateLimitResult.allowed) {
+    const allowed = await guardSignUp(data.email);
+    if (!allowed.ok) {
       return "Too many signup attempts. Please wait before trying again.";
     }
 
