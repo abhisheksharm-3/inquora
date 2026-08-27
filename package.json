@@ -11,7 +11,10 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:types": "supabase gen types typescript --linked > src/core/database.types.ts",
+    "db:test": "bun run scripts/run-pgtap.ts",
+    "db:push": "supabase db push --linked"
   },
   "description": "Inquora – Chat with documents, videos, and more using AI.",
   "dependencies": {
@@ -78,6 +81,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/bun": "^1.4.0",
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
