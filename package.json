@@ -14,9 +14,10 @@
     "test:watch": "vitest",
     "db:types": "supabase gen types typescript --linked > src/core/database.types.ts",
     "db:test": "bun run scripts/run-pgtap.ts",
-    "db:push": "supabase db push --linked"
+    "db:push": "supabase db push --linked",
+    "eval": "bun run scripts/eval-retrieval.ts"
   },
-  "description": "Inquora – Chat with documents, videos, and more using AI.",
+  "description": "Inquora \u2013 Chat with documents, videos, and more using AI.",
   "dependencies": {
     "@danielxceron/youtube-transcript": "^1.2.3",
     "@distube/ytdl-core": "^4.16.12",

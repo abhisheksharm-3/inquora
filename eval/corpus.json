@@ -1,0 +1,72 @@
+{
+  "documents": [
+    {
+      "slug": "revenue-review-q3",
+      "kind": "pdf",
+      "title": "Revenue review, Q3",
+      "chunks": [
+        "Q3 revenue closed at 4.12 million against a forecast of 4.68 million, a shortfall of twelve percent. Pipeline coverage averaged 3.4x through the quarter, above the 3.0x target.",
+        "The shortfall is concentrated in the northern region, where three deals slipped past the quarter end. Two of them closed in the first week of October and are recognised in Q4.",
+        "Win rates held at 31 percent, in line with the trailing four quarters. Average contract value fell from 48,000 to 41,500, which accounts for roughly two thirds of the gap.",
+        "Outlook for Q4 assumes the two slipped deals plus normal seasonality, giving a range of 4.9 to 5.3 million. The forecast has been revised down from 5.6 million."
+      ]
+    },
+    {
+      "slug": "engineering-onboarding",
+      "kind": "doc",
+      "title": "Engineering onboarding",
+      "chunks": [
+        "New engineers get access to the repository, the staging environment and the on-call rota in their first week. Production access follows the first completed pairing session.",
+        "The build runs on bun. Use bun install and bun run dev. npm is not supported and a package-lock.json in a pull request will be rejected by review.",
+        "Deployments go out from main automatically. A failed migration blocks the deploy rather than shipping code ahead of its schema.",
+        "Ask questions in the open channel rather than by direct message, so the answer is searchable by the next person who hits the same wall."
+      ]
+    },
+    {
+      "slug": "incident-2026-07-14",
+      "kind": "web",
+      "title": "Incident report, 14 July 2026",
+      "chunks": [
+        "At 02:11 UTC the ingestion queue stopped draining. The cause was error PG-4711 raised by a statement-level trigger that referenced NEW, which does not exist outside a row-level trigger.",
+        "Two hundred and thirteen documents were left in the pending state. No alert fired, because the only signal was a status column nobody was watching.",
+        "The fix was a transition table per operation and a view over jobs claimed but not completed, wired to a scheduled check.",
+        "Time to detection was eleven days. Time to repair after detection was forty minutes."
+      ]
+    }
+  ],
+  "pairs": [
+    {
+      "question": "why did Q3 revenue miss the forecast",
+      "expect": ["revenue-review-q3#0", "revenue-review-q3#1"]
+    },
+    {
+      "question": "which region was the shortfall concentrated in",
+      "expect": ["revenue-review-q3#1"]
+    },
+    { "question": "what happened to average contract value", "expect": ["revenue-review-q3#2"] },
+    { "question": "what is the Q4 revenue range", "expect": ["revenue-review-q3#3"] },
+    { "question": "was pipeline coverage above target", "expect": ["revenue-review-q3#0"] },
+    {
+      "question": "when do new engineers get production access",
+      "expect": ["engineering-onboarding#0"]
+    },
+    {
+      "question": "which package manager does this project use",
+      "expect": ["engineering-onboarding#1"]
+    },
+    {
+      "question": "can I open a pull request with package-lock.json",
+      "expect": ["engineering-onboarding#1"]
+    },
+    { "question": "how are deployments triggered", "expect": ["engineering-onboarding#2"] },
+    { "question": "where should I ask questions", "expect": ["engineering-onboarding#3"] },
+    { "question": "what caused error PG-4711", "expect": ["incident-2026-07-14#0"] },
+    { "question": "how many documents were stuck pending", "expect": ["incident-2026-07-14#1"] },
+    {
+      "question": "why did no alert fire during the incident",
+      "expect": ["incident-2026-07-14#1"]
+    },
+    { "question": "what was the time to detection", "expect": ["incident-2026-07-14#3"] },
+    { "question": "how was the queue problem fixed", "expect": ["incident-2026-07-14#2"] }
+  ]
+}
