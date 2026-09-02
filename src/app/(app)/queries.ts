@@ -45,6 +45,21 @@ export const listChats = async (): Promise<ChatEntry[]> => {
   return chats.ok ? chats.value : [];
 };
 
+/**
+ * Conversations matching a search, from the URL rather than from client state.
+ *
+ * A form and a query parameter, so the result is shareable, the back button
+ * works, and the page needs no client-side search state at all.
+ */
+export const searchChats = async (query: string): Promise<ChatEntry[]> => {
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return [];
+
+  const found = await bound.value.workspace.findChats(query, 100);
+
+  return found.ok ? found.value : [];
+};
+
 export const listDocuments = async (): Promise<DocumentEntry[]> => {
   const bound = await workspaceForRequest();
   if (!bound.ok) return [];

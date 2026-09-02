@@ -83,24 +83,38 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
 
     if (error) return err(AppError.badGateway(`could not list conversations: ${error.message}`));
 
-    return ok(
-      data.map(
-        (row): ChatEntry => ({
-          id: row.id,
-          title: row.title,
-          updatedAt: row.updated_at,
-          webSearch: row.web_search,
-          documents: row.chat_documents
-            .filter((link) => link.documents !== null)
-            .map((link) => ({
-              id: link.documents.id,
-              title: link.documents.title,
-              enabled: link.enabled,
-            })),
-          messageCount: row.messages[0]?.count ?? 0,
-        }),
-      ),
-    );
+    return ok(data.map(toChatEntry));
+  },
+
+  /**
+   * Searched in Postgres, for the same reason documents are: the browser
+   * cannot filter a list it has not been sent, and sending every conversation
+   * somebody has ever had so a keystroke can filter it stops working at
+   * exactly the point search becomes worth having.
+   *
+   * Titles only, and that is now the question they asked, since a conversation
+   * is named after its question rather than after its files.
+   */
+  async findChats(query, limit) {
+    const term = query.trim();
+    if (term.length === 0) return ok([]);
+
+    const { data, error } = await db
+      .from("chats")
+      .select(
+        `id, title, updated_at, web_search,
+         chat_documents(enabled, documents(id, title)),
+         messages(count)`,
+      )
+      // `%` and `_` are wildcards in `like`, and both turn up in a typed
+      // question, so they are escaped before they get there.
+      .ilike("title", `%${term.replace(/[\\%_]/g, (match) => `\\${match}`)}%`)
+      .order("updated_at", { ascending: false })
+      .limit(limit);
+
+    if (error) return err(AppError.badGateway(`could not search conversations: ${error.message}`));
+
+    return ok(data.map(toChatEntry));
   },
 
   async chat(chatId) {
@@ -335,6 +349,30 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
 
     return ok(usage);
   },
+});
+
+type ChatRow = {
+  id: string;
+  title: string | null;
+  updated_at: string;
+  web_search: boolean;
+  chat_documents: { enabled: boolean; documents: { id: string; title: string } | null }[];
+  messages: { count: number }[];
+};
+
+const toChatEntry = (row: ChatRow): ChatEntry => ({
+  id: row.id,
+  title: row.title,
+  updatedAt: row.updated_at,
+  webSearch: row.web_search,
+  documents: row.chat_documents
+    .filter((link) => link.documents !== null)
+    .map((link) => ({
+      id: link.documents?.id ?? "",
+      title: link.documents?.title ?? "",
+      enabled: link.enabled,
+    })),
+  messageCount: row.messages[0]?.count ?? 0,
 });
 
 type DocumentRow = {

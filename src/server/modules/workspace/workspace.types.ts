@@ -10,6 +10,8 @@ import type {
 
 export interface WorkspaceRepository {
   listChats(): Promise<Result<ChatEntry[], AppError>>;
+  /** Conversations whose question matches, for the search on the history page. */
+  findChats(query: string, limit: number): Promise<Result<ChatEntry[], AppError>>;
   listDocuments(): Promise<Result<DocumentEntry[], AppError>>;
   /** Ready documents whose title matches, for bringing one into a question. */
   findDocuments(query: string, limit: number): Promise<Result<DocumentEntry[], AppError>>;
