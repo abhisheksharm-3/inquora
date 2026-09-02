@@ -81,10 +81,7 @@ export const AddSource = ({
         </form>
 
         <p className="mt-4 border-rule border-t pt-4 font-record text-label text-faint">
-          <label
-            htmlFor={fileId}
-            className="cursor-pointer border-rule border-b pb-0.5 text-soft hover:text-ink"
-          >
+          <label htmlFor={fileId} className="border-rule border-b pb-0.5 text-soft hover:text-ink">
             Or choose a file
           </label>
           <span className="ml-3 hidden sm:inline">

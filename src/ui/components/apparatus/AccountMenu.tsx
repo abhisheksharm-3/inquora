@@ -81,7 +81,7 @@ export const AccountMenu = ({ account }: { account: Account }) => {
               <Dropdown.RadioItem
                 key={choice.value}
                 value={choice.value}
-                className="flex cursor-pointer items-center justify-between gap-6 px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none data-highlighted:bg-wash data-highlighted:text-ink data-[state=checked]:text-ink"
+                className="flex items-center justify-between gap-6 px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none data-highlighted:bg-wash data-highlighted:text-ink data-[state=checked]:text-ink"
               >
                 {choice.label}
                 <Dropdown.ItemIndicator>
@@ -99,7 +99,7 @@ export const AccountMenu = ({ account }: { account: Account }) => {
             <Dropdown.Item asChild>
               <button
                 type="submit"
-                className="flex w-full cursor-pointer items-center px-3.5 py-2 text-left font-record text-[0.78rem] text-soft outline-none hover:text-ink data-highlighted:bg-wash data-highlighted:text-ink"
+                className="flex w-full items-center px-3.5 py-2 text-left font-record text-[0.78rem] text-soft outline-none hover:text-ink data-highlighted:bg-wash data-highlighted:text-ink"
               >
                 Sign out
               </button>
@@ -121,7 +121,7 @@ const Item = ({ href, children }: { href: string; children: React.ReactNode }) =
   <Dropdown.Item asChild>
     <Link
       href={href}
-      className="flex cursor-pointer items-center px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none hover:text-ink data-highlighted:bg-wash data-highlighted:text-ink"
+      className="flex items-center px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none hover:text-ink data-highlighted:bg-wash data-highlighted:text-ink"
     >
       {children}
     </Link>

@@ -115,7 +115,12 @@ export const HomeSurface = ({
                   <p className="mb-2.5 font-record text-label text-faint uppercase tracking-[0.13em]">
                     Or try
                   </p>
-                  <ul className="m-0 grid list-none gap-px border border-rule bg-rule p-0 sm:grid-cols-3">
+                  <ul
+                    className="m-0 grid list-none gap-px border border-rule bg-rule p-0"
+                    style={{
+                      gridTemplateColumns: `repeat(${openers.length}, minmax(0, 1fr))`,
+                    }}
+                  >
                     {openers.map((opener) => (
                       <li key={opener} className="bg-ground">
                         <button
@@ -201,7 +206,7 @@ export const HomeSurface = ({
                   <span>Carry on with</span>
                   <Link
                     href={DASHBOARD_ROUTES.HISTORY}
-                    className="normal-case tracking-normal hover:text-ink"
+                    className="tracking-[0.13em] hover:text-ink"
                   >
                     all {chats.length}
                   </Link>

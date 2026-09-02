@@ -179,6 +179,22 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* A control should say it is a control. Tailwind's reset leaves a button at
+     the browser default, which is an arrow, so every button in the interface
+     looked inert until it was clicked. Set once, here, rather than as a class
+     on each one and missing on the next one written. */
+  a[href],
+  button:not(:disabled),
+  label[for],
+  summary,
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
   /* Focus rings are never removed. 2px minimum, in the mark, offset so it
      reads as a ring rather than a border. */
   :focus-visible {
