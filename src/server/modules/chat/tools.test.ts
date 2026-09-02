@@ -46,17 +46,20 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
     expect((tools as InvokableTool[]).map((t) => t.name).sort()).toEqual([
       "calculate",
       "get_outline",
+      "get_transcript",
       "grep_document",
       "list_documents",
       "list_tables",
       "query_table",
       "read_chunks",
+      "read_file",
       "remember",
       "search_documents",
     ]);
@@ -73,6 +76,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -95,6 +99,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: (ids) => seen.push(ids),
     });
 
@@ -111,6 +116,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -127,6 +133,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -145,6 +152,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -171,6 +179,7 @@ describe("createTools", () => {
         query: async () => err(AppError.badRequest("the query may not use delete")),
       },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -194,6 +203,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -220,6 +230,7 @@ describe("createTools", () => {
         query: async () => ok([]),
       },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -244,6 +255,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -266,6 +278,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -289,6 +302,7 @@ describe("createTools", () => {
         outline: async () => ok({ headings: [{ level: 1, title: "Revenue", at: 0 }] }),
         grep: async () => ok([]),
       },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -301,6 +315,81 @@ describe("createTools", () => {
     expect(answer).toContain("Revenue");
   });
 
+  it("reads a file from a repository with its line range", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: {
+        file: async () => ok([{ content: "export function first() {}", fromLine: 1, toLine: 30 }]),
+        transcript: async () => ok([]),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "read_file").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        path: "src/a.ts",
+      }),
+    );
+
+    expect(answer).toContain("src/a.ts:1-30");
+    expect(answer).toContain("export function first");
+  });
+
+  it("points at the file tree when a path does not exist", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "read_file").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        path: "src/missing.ts",
+      }),
+    );
+
+    expect(answer).toContain("get_outline");
+  });
+
+  it("returns a transcript segment with the timestamps a deep link needs", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: {
+        file: async () => ok([]),
+        transcript: async () =>
+          ok([{ content: "Revenue came in under forecast.", startSeconds: 30, endSeconds: 75 }]),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "get_transcript").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        start_s: 0,
+        end_s: 120,
+      }),
+    );
+
+    expect(answer).toBe("[30s-75s] Revenue came in under forecast.");
+  });
+
   it("calculates arithmetic without reaching a language model for it", async () => {
     const tools = createTools({
       context,
@@ -309,6 +398,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -325,6 +415,7 @@ describe("createTools", () => {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
       onCitations: () => {},
     });
 

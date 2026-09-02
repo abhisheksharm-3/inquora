@@ -328,15 +328,49 @@ const readTranscript = async (url: string): Promise<Result<Source, AppError>> =>
       return err(AppError.badGateway(`the subtitle service returned ${response.status}`));
     }
 
-    const body = (await response.json()) as { subtitles?: string[] };
+    const body = (await response.json()) as {
+      subtitles?: (string | { text?: string; start?: number; duration?: number })[];
+    };
+
     const lines = body.subtitles ?? [];
 
-    // The endpoint returns lines without timings, so the window is derived from
-    // position. A real timestamp arrives when the service exposes one; until then
-    // a citation points at a passage rather than a second.
+    if (lines.length === 0) {
+      return err(AppError.badRequest("that video has no subtitles"));
+    }
+
+    // The endpoint returns either plain strings or objects carrying a start
+    // time. A real start is used when it is there; otherwise the time is
+    // interpolated across the lines, which is honest about being an estimate and
+    // still puts a citation within seconds of the moment.
+    const timed = lines.every(
+      (line) => typeof line === "object" && line !== null && typeof line.start === "number",
+    );
+
+    if (timed) {
+      return ok({
+        kind: "video",
+        transcript: (lines as { text?: string; start: number }[]).map((line) => ({
+          start: Math.round(line.start),
+          text: (line.text ?? "").trim(),
+        })),
+      });
+    }
+
+    const texts = lines.map((line) => (typeof line === "string" ? line : String(line.text ?? "")));
+
+    // Roughly three words a second is normal speech, which is a better estimate
+    // than treating every line as equally long.
+    const WORDS_PER_SECOND = 3;
+    let elapsed = 0;
+
     return ok({
       kind: "video",
-      transcript: lines.map((text, index) => ({ start: index * 5, text })),
+      transcript: texts.map((text) => {
+        const start = Math.round(elapsed);
+        elapsed += Math.max(text.split(/\s+/).filter(Boolean).length / WORDS_PER_SECOND, 1);
+
+        return { start, text };
+      }),
     });
   } catch (cause) {
     return err(

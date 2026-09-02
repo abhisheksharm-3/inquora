@@ -586,6 +586,29 @@ export type Database = {
         }
         Returns: Json
       }
+      read_document_file: {
+        Args: {
+          p_document_id: string
+          p_from_line?: number
+          p_path: string
+          p_to_line?: number
+        }
+        Returns: {
+          chunk_index: number
+          content: string
+          from_line: number
+          to_line: number
+        }[]
+      }
+      read_document_transcript: {
+        Args: { p_document_id: string; p_end_s?: number; p_start_s?: number }
+        Returns: {
+          chunk_index: number
+          content: string
+          end_s: number
+          start_s: number
+        }[]
+      }
       search_chunks: {
         Args: {
           p_document_ids: string[]

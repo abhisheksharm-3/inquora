@@ -51,6 +51,7 @@ export interface AgentDependencies {
   memories: MemoryPort;
   tables: TablesPort;
   structure: OutlinePort;
+  slices: SlicePort;
 }
 
 /** The tabular surface the query_table tool depends on. */
@@ -76,6 +77,21 @@ export interface OutlinePort {
   }): Promise<Result<{ lineNumber: number; line: string }[], AppError>>;
 }
 
+/** The by-position surface read_file and get_transcript depend on. */
+export interface SlicePort {
+  file(args: {
+    documentId: string;
+    path: string;
+    fromLine?: number;
+    toLine?: number;
+  }): Promise<Result<{ content: string; fromLine: number; toLine: number }[], AppError>>;
+  transcript(args: {
+    documentId: string;
+    startSeconds?: number;
+    endSeconds?: number;
+  }): Promise<Result<{ content: string; startSeconds: number; endSeconds: number }[], AppError>>;
+}
+
 export interface ToolDependencies {
   context: ChatContext;
   retrieval: RetrievalPort;
@@ -83,6 +99,7 @@ export interface ToolDependencies {
   memories: MemoryPort;
   tables: TablesPort;
   structure: OutlinePort;
+  slices: SlicePort;
   /** Called with the chunk ids a search returned, so the answer can cite them. */
   onCitations: (chunkIds: string[]) => void;
 }
@@ -121,5 +138,6 @@ export interface ChatServiceDependencies {
   memories: MemoryPort;
   tables: TablesPort;
   structure: OutlinePort;
+  slices: SlicePort;
   model: () => Promise<Result<BaseChatModel, AppError>>;
 }

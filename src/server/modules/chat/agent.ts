@@ -62,6 +62,7 @@ export const createAnsweringAgent = ({
   memories,
   tables,
   structure,
+  slices,
 }: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
   let answer = "";
@@ -104,6 +105,7 @@ export const createAnsweringAgent = ({
     memories,
     tables,
     structure,
+    slices,
     onCitations: (ids: string[]) => {
       for (const id of ids) if (!citations.includes(id)) citations.push(id);
     },

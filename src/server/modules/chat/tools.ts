@@ -34,6 +34,7 @@ export const createTools = ({
   memories,
   tables,
   structure,
+  slices,
   onCitations,
 }: ToolDependencies) => {
   const documentIds = context.documents.map((d) => d.id);
@@ -252,6 +253,95 @@ export const createTools = ({
     },
   );
 
+  const readFile = tool(
+    async ({
+      document_id,
+      path,
+      from_line,
+      to_line,
+    }: {
+      document_id: string;
+      path: string;
+      from_line?: number;
+      to_line?: number;
+    }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await slices.file({
+        documentId: document_id,
+        path,
+        fromLine: from_line,
+        toLine: to_line,
+      });
+
+      if (!found.ok) return `Could not read that file: ${found.error.detail ?? found.error.type}`;
+      if (found.value.length === 0) {
+        return `No file at ${path} in that repository. Use get_outline to see the file tree.`;
+      }
+
+      return found.value
+        .map((slice) => `${path}:${slice.fromLine}-${slice.toLine}\n${slice.content}`)
+        .join("\n\n");
+    },
+    {
+      name: "read_file",
+      description:
+        "Read a file from a repository document by path, optionally a line range. Use get_outline " +
+        "first to see which files exist.",
+      schema: z.object({
+        document_id: z.guid(),
+        path: z.string().min(1).max(400),
+        from_line: z.number().int().min(1).optional(),
+        to_line: z.number().int().min(1).optional(),
+      }),
+    },
+  );
+
+  const getTranscript = tool(
+    async ({
+      document_id,
+      start_s,
+      end_s,
+    }: {
+      document_id: string;
+      start_s?: number;
+      end_s?: number;
+    }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await slices.transcript({
+        documentId: document_id,
+        startSeconds: start_s,
+        endSeconds: end_s,
+      });
+
+      if (!found.ok)
+        return `Could not read that segment: ${found.error.detail ?? found.error.type}`;
+      if (found.value.length === 0) return "Nothing was said in that part of the video.";
+
+      // The timestamps are what make a citation a deep link rather than a
+      // reference to the whole video.
+      return found.value
+        .map((segment) => `[${segment.startSeconds}s-${segment.endSeconds}s] ${segment.content}`)
+        .join("\n\n");
+    },
+    {
+      name: "get_transcript",
+      description:
+        "Read what was said in a video between two times, in seconds, with timestamps so an " +
+        "answer can point at the moment.",
+      schema: z.object({
+        document_id: z.guid(),
+        start_s: z.number().int().min(0).optional(),
+        end_s: z.number().int().min(0).optional(),
+      }),
+    },
+  );
+
   return [
     searchDocuments,
     readChunks,
@@ -260,6 +350,8 @@ export const createTools = ({
     grepDocument,
     listTables,
     queryTable,
+    readFile,
+    getTranscript,
     remember,
     calculate,
   ];

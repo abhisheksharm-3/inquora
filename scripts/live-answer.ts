@@ -152,6 +152,7 @@ try {
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
     });
 
     console.log("4. streaming an answer from the real model");

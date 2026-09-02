@@ -51,3 +51,33 @@ export interface OutlineRepository {
   outline(documentId: string): Promise<Result<Outline | null, AppError>>;
   grep(query: GrepQuery): Promise<Result<GrepMatch[], AppError>>;
 }
+
+/** A slice of one file of a repository. */
+export interface FileSlice {
+  chunkIndex: number;
+  content: string;
+  fromLine: number;
+  toLine: number;
+}
+
+/** A segment of a video transcript, timed so a citation can deep-link. */
+export interface TranscriptSegment {
+  chunkIndex: number;
+  content: string;
+  startSeconds: number;
+  endSeconds: number;
+}
+
+export interface SliceRepository {
+  file(args: {
+    documentId: string;
+    path: string;
+    fromLine?: number;
+    toLine?: number;
+  }): Promise<Result<FileSlice[], AppError>>;
+  transcript(args: {
+    documentId: string;
+    startSeconds?: number;
+    endSeconds?: number;
+  }): Promise<Result<TranscriptSegment[], AppError>>;
+}
