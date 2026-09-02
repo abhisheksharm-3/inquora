@@ -45,9 +45,10 @@ export const SignInForm = ({ next }: { next?: string }) => {
           autoComplete="current-password"
           error={state.field === "password" ? state.error : undefined}
         />
-        {/* Beside the field it concerns, not beside the submit button, where it
-            competed with the primary action for the same line. */}
-        <p className="-mt-3 mb-7 text-right font-record text-label text-faint">
+        {/* Under the field it concerns and on the same left edge as everything
+            else in the stack. Right-aligned it floated between two gaps with
+            nothing to align to, since every label in this form is left-set. */}
+        <p className="-mt-4 mb-8 font-record text-label text-faint">
           <Underlined href="/forgot-password">Forgotten your password?</Underlined>
         </p>
 

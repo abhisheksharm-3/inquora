@@ -4,7 +4,7 @@ import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
 import type { Entry } from "@/ui/components/apparatus/apparatus.types";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
 import { HistoryList } from "@/ui/components/history/HistoryList";
-import { listChats } from "../queries";
+import { listChats, readAccount } from "../queries";
 
 export const metadata: Metadata = {
   title: "History",
@@ -16,31 +16,35 @@ export const metadata: Metadata = {
  * heading paint immediately rather than waiting on the query. That is what
  * replaced the `'use cache'` plan, which cannot be used for a per-user read.
  */
-const HistoryPage = () => (
-  <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
-    <Chrome current="history" />
+const HistoryPage = async () => {
+  const account = await readAccount();
 
-    <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
-      <h1 className="mb-6 font-light font-reading text-[1.55rem] leading-tight">
-        Everything you have asked.
-      </h1>
+  return (
+    <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
+      <Chrome current="history" account={account} />
 
-      <Suspense
-        fallback={
-          <p className="font-record text-label text-faint uppercase tracking-[0.14em]">Reading</p>
-        }
-      >
-        <Records />
-      </Suspense>
-    </main>
+      <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
+        <h1 className="mb-6 font-light font-reading text-[1.55rem] leading-tight">
+          Everything you have asked.
+        </h1>
 
-    <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
-      <Suspense fallback={null}>
-        <HistoryApparatus />
-      </Suspense>
-    </aside>
-  </div>
-);
+        <Suspense
+          fallback={
+            <p className="font-record text-label text-faint uppercase tracking-[0.14em]">Reading</p>
+          }
+        >
+          <Records />
+        </Suspense>
+      </main>
+
+      <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
+        <Suspense fallback={null}>
+          <HistoryApparatus />
+        </Suspense>
+      </aside>
+    </div>
+  );
+};
 
 const Records = async () => <HistoryList chats={await listChats()} />;
 

@@ -2,20 +2,25 @@ import type { Metadata } from "next";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
 import { ChooseSurface } from "@/ui/components/documents/ChooseSurface";
-import { listDocuments } from "../queries";
+import { listChats, listDocuments, readAccount } from "../queries";
 
 export const metadata: Metadata = {
-  title: "New conversation",
-  description: "Choose what to read.",
+  title: "Your documents",
+  description: "Add a document, or ask one of the ones you have.",
 };
 
 /**
- * Surface 03, with surface 04 folded into it. The chrome is rendered here and
- * passed down as a prop: it is a server component, so it stays out of the
- * client bundle even though a client component places it in the grid.
+ * The home of the product. The chrome is rendered here and passed down as a
+ * prop: it is a server component, so it stays out of the client bundle even
+ * though a client component places it in the grid.
  */
 const ChoosePage = async () => {
-  const [documents, bound] = await Promise.all([listDocuments(), workspaceForRequest()]);
+  const [documents, chats, account, bound] = await Promise.all([
+    listDocuments(),
+    listChats(),
+    readAccount(),
+    workspaceForRequest(),
+  ]);
 
   // The layout already redirected an expired session, so this is narrowing
   // rather than a second guard.
@@ -23,8 +28,9 @@ const ChoosePage = async () => {
 
   return (
     <ChooseSurface
-      chrome={<Chrome current="choose" />}
+      chrome={<Chrome current="choose" account={account} />}
       documents={documents}
+      chats={chats}
       userId={bound.value.userId}
     />
   );

@@ -1,9 +1,11 @@
+import type { Account } from "@/core/workspace/account.types";
 import type {
   AccountUsage,
   ChatDetail,
   ChatEntry,
   DocumentEntry,
 } from "@/core/workspace/workspace.types";
+import { currentAccount } from "@/server/modules/auth/auth.service";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
 
 /**
@@ -59,6 +61,13 @@ export const readChat = async (chatId: string): Promise<ChatDetail | null> => {
   const chat = await bound.value.workspace.chat(chatId);
 
   return chat.ok ? chat.value : null;
+};
+
+/** Who is signed in, for the bar. Null only if the session expired mid-render. */
+export const readAccount = async (): Promise<Account | null> => {
+  const account = await currentAccount();
+
+  return account.ok ? account.value : null;
 };
 
 export const readUsage = async (): Promise<AccountUsage | null> => {

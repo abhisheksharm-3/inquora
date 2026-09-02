@@ -69,6 +69,58 @@ export const signUpWithPassword = async (
  * The link points at the same callback as OAuth, which exchanges the code for a
  * session and then sends them on to set a new password.
  */
+/** Who is signed in, for the account menu. */
+export const currentAccount = async (): Promise<
+  Result<
+    { id: string; email: string; displayName: string | null; avatarUrl: string | null },
+    AppError
+  >
+> => {
+  const db = await createServerDbClient();
+  const { data: identity } = await db.auth.getUser();
+
+  if (!identity.user) return err(AppError.unauthorized("not signed in"));
+
+  // The display name lives on the profile row, which the on_auth_user_created
+  // trigger fills from the sign-up metadata. Read from there rather than from
+  // the auth metadata, so a later rename has one home.
+  const { data: profile } = await db
+    .from("profiles")
+    .select("display_name")
+    .eq("id", identity.user.id)
+    .maybeSingle();
+
+  // Google puts the profile picture in the OAuth metadata, under `avatar_url`
+  // on some providers and `picture` on others. Only the one host it can come
+  // from is allowed in next.config, so a crafted value cannot make the image
+  // optimiser fetch somewhere else.
+  const metadata = identity.user.user_metadata as {
+    avatar_url?: unknown;
+    picture?: unknown;
+    full_name?: unknown;
+  };
+  const avatar = [metadata.avatar_url, metadata.picture].find(
+    (value) => typeof value === "string" && value.startsWith("https://"),
+  );
+
+  return ok({
+    id: identity.user.id,
+    email: identity.user.email ?? "",
+    displayName:
+      profile?.display_name ?? (typeof metadata.full_name === "string" ? metadata.full_name : null),
+    avatarUrl: typeof avatar === "string" ? avatar : null,
+  });
+};
+
+export const signOut = async (): Promise<Result<void, AppError>> => {
+  const db = await createServerDbClient();
+  const { error } = await db.auth.signOut();
+
+  if (error) return err(AppError.badGateway(error.message));
+
+  return ok(undefined);
+};
+
 export const startPasswordReset = async (email: string): Promise<Result<void, AppError>> => {
   const allowed = await rateLimiter().check("auth", `reset:${email}`);
   if (!allowed.ok) return err(allowed.error);

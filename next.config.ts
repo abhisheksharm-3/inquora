@@ -39,14 +39,12 @@ const nextConfig: NextConfig = {
         hostname: "nujgeowsnjculknvimbh.supabase.co",
         pathname: "/**",
       },
+      // Where Google serves the profile picture of somebody who signed in with
+      // it. Nothing else is allowed, so a crafted avatar_url cannot make this
+      // application fetch an arbitrary host.
       {
         protocol: "https",
-        hostname: "images.pexels.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "avatars.githubusercontent.com",
+        hostname: "lh3.googleusercontent.com",
         pathname: "/**",
       },
     ],

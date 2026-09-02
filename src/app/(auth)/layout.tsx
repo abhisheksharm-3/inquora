@@ -42,7 +42,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-dvh bg-ground">
     <SiteHeader variant="auth" />
 
-    <div className="grid min-h-[calc(100svh-4rem)] grid-cols-1 wide:grid-cols-[60fr_40fr]">
+    <div className="grid min-h-[calc(100svh-4rem)] grid-cols-1 wide:grid-cols-[70fr_30fr]">
       <aside className="order-2 border-rule border-t px-7 py-10 wide:order-1 wide:border-t-0 wide:border-r wide:bg-panel wide:px-10 wide:py-12">
         {/* The example is hidden on a phone. It is a wide artefact — a question,
             an answer and two quoted passages — and on a 390px screen it pushed

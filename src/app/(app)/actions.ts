@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { DASHBOARD_ROUTES } from "@/core/routes";
+import { signOut } from "@/server/modules/auth/auth.service";
 import { requestUploadTicket } from "@/server/modules/documents/documents.factory";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
 import type { ActionState, PassageState, UploadRequestInput, UploadTicketState } from "./app.types";
@@ -217,4 +218,17 @@ export const readPassage = async (chunkId: string): Promise<PassageState> => {
   if (!passage.value) return { error: "That passage is no longer there." };
 
   return { passage: passage.value };
+};
+
+/**
+ * Sign out, then go to the landing page.
+ *
+ * A server action rather than a route, because it changes a cookie and then
+ * navigates, which is exactly what an action does. `redirect` after it so the
+ * browser lands somewhere a signed-out person can be.
+ */
+export const signOutAction = async (): Promise<void> => {
+  await signOut();
+
+  redirect("/");
 };

@@ -4,7 +4,7 @@ import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
 import type { Entry } from "@/ui/components/apparatus/apparatus.types";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
 import { DocumentShelf } from "@/ui/components/settings/DocumentShelf";
-import { listDocuments, readUsage } from "../queries";
+import { listDocuments, readAccount, readUsage } from "../queries";
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -19,29 +19,35 @@ export const metadata: Metadata = {
  * lines, larger than the chat interface at 290. There is no skeleton here. The
  * shell paints, and each section streams in when its query answers.
  */
-const SettingsPage = () => (
-  <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
-    <Chrome current="settings" />
+const SettingsPage = async () => {
+  const account = await readAccount();
 
-    <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
-      <h1 className="mb-6 font-light font-reading text-[1.55rem] leading-tight">Your documents.</h1>
+  return (
+    <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
+      <Chrome current="settings" account={account} />
 
-      <Suspense
-        fallback={
-          <p className="font-record text-label text-faint uppercase tracking-[0.14em]">Reading</p>
-        }
-      >
-        <Shelf />
-      </Suspense>
-    </main>
+      <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
+        <h1 className="mb-6 font-light font-reading text-[1.55rem] leading-tight">
+          Your documents.
+        </h1>
 
-    <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
-      <Suspense fallback={null}>
-        <Usage />
-      </Suspense>
-    </aside>
-  </div>
-);
+        <Suspense
+          fallback={
+            <p className="font-record text-label text-faint uppercase tracking-[0.14em]">Reading</p>
+          }
+        >
+          <Shelf />
+        </Suspense>
+      </main>
+
+      <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
+        <Suspense fallback={null}>
+          <Usage />
+        </Suspense>
+      </aside>
+    </div>
+  );
+};
 
 const Shelf = async () => <DocumentShelf documents={await listDocuments()} />;
 

@@ -1,62 +1,63 @@
 import Link from "next/link";
 import { DASHBOARD_ROUTES } from "@/core/routes";
+import type { Account } from "@/core/workspace/account.types";
 import { ThemeToggle } from "@/ui/components/shared/ThemeToggle";
+import { AccountMenu } from "./AccountMenu";
 
 /**
- * The one piece of chrome the product has: a wordmark, three destinations and
- * the theme choice, on a hairline rule spanning both columns.
+ * The bar across every signed-in surface, in the order things matter.
  *
- * There is no sidebar. A persistent list of conversations would occupy the
- * width the reading column needs, and history is a surface of its own that says
- * more about a conversation than a truncated title in a rail can.
+ * `New` is first and set as a control rather than as a third link, because
+ * starting a conversation is what somebody came to do. `History` is the other
+ * place to go. `Settings` is not here: it belongs to the account, so it is in
+ * the account menu with the other things that belong to being signed in.
+ *
+ * There is no sidebar. A persistent list of conversations would take the width
+ * the reading column needs, and history is a surface of its own that says more
+ * about a conversation than a truncated title in a rail can.
  */
-export const Chrome = ({ current }: { current: "choose" | "history" | "settings" | "chat" }) => (
-  <header className="col-span-full flex items-center justify-between gap-6 border-rule border-b px-6 py-4 wide:px-8">
+export const Chrome = ({
+  current,
+  account,
+}: {
+  current: "choose" | "history" | "settings" | "chat";
+  account: Account | null;
+}) => (
+  <header className="col-span-full flex h-16 items-center justify-between gap-4 border-rule border-b px-6 sm:px-7 wide:px-10">
     <Link
       href={DASHBOARD_ROUTES.HOME}
-      className="font-reading text-[1rem] text-ink tracking-[0.02em]"
+      className="font-reading text-[1.2rem] text-ink tracking-[0.01em]"
     >
       Inquora
     </Link>
 
-    <nav className="flex items-center gap-5 font-record text-label text-faint uppercase tracking-[0.14em]">
-      <Destination href={DASHBOARD_ROUTES.CHOOSE} active={current === "choose"}>
-        New
-      </Destination>
-      <Destination href={DASHBOARD_ROUTES.HISTORY} active={current === "history"}>
+    <nav className="flex items-center gap-4 sm:gap-6">
+      <Link
+        href={DASHBOARD_ROUTES.HISTORY}
+        aria-current={current === "history" ? "page" : undefined}
+        className={`flex h-9 items-center whitespace-nowrap font-record text-[0.72rem] uppercase tracking-[0.11em] ${
+          current === "history" ? "text-ink" : "text-soft hover:text-ink"
+        }`}
+      >
         History
-      </Destination>
-      <Destination href={DASHBOARD_ROUTES.SETTINGS} active={current === "settings"}>
-        Settings
-      </Destination>
-      <ThemeToggle />
+      </Link>
+
+      <Link
+        href={DASHBOARD_ROUTES.CHOOSE}
+        aria-current={current === "choose" ? "page" : undefined}
+        className="flex h-9 items-center whitespace-nowrap rounded-hair border border-mark px-4 font-record text-[0.72rem] text-mark uppercase tracking-[0.11em] transition-colors duration-150 ease-out-quart hover:bg-wash"
+      >
+        <span className="sm:hidden">New</span>
+        <span className="hidden sm:inline">New conversation</span>
+      </Link>
+
+      {/* The theme and the account are both utilities, so they sit together
+            as one cluster. Apart, with equal gaps, a square theme button and a
+            round avatar read as two unrelated widgets. */}
+      <span className="flex items-center gap-1.5">
+        <ThemeToggle className="border-transparent hover:border-rule" />
+        {account ? <AccountMenu account={account} /> : null}
+      </span>
     </nav>
   </header>
-);
-
-/**
- * `prefetch` is left at its default, which in Next 16 prefetches the route's
- * cached shell for links in the viewport. There are three of them and they are
- * always in the viewport, so this is the whole of what "instant" means here.
- */
-const Destination = ({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) => (
-  <Link
-    href={href}
-    aria-current={active ? "page" : undefined}
-    className={
-      active
-        ? "border-mark border-b pb-0.5 text-ink"
-        : "border-transparent border-b pb-0.5 hover:text-ink"
-    }
-  >
-    {children}
-  </Link>
 );

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { readPassage } from "@/app/(app)/actions";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
 import { ChatSurface } from "@/ui/components/chat/ChatSurface";
-import { readChat } from "../../queries";
+import { readAccount, readChat } from "../../queries";
 
 /**
  * The per-chat title, which the old interface never set: every tab said
@@ -37,7 +37,7 @@ const ChatPage = async ({
   params: Promise<{ chatId: string }>;
   searchParams: Promise<{ passage?: string; specimen?: string }>;
 }) => {
-  const [{ chatId }, query] = await Promise.all([params, searchParams]);
+  const [{ chatId }, query, account] = await Promise.all([params, searchParams, readAccount()]);
   const chat = await readChat(chatId);
 
   // Row-level security already refuses somebody else's conversation, so a null
@@ -49,7 +49,7 @@ const ChatPage = async ({
 
   return (
     <ChatSurface
-      chrome={<Chrome current="chat" />}
+      chrome={<Chrome current="chat" account={account} />}
       chat={chat}
       following={
         followed?.passage
