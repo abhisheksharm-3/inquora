@@ -35,12 +35,6 @@ const BY_EXTENSION: Record<string, DocumentKind> = {
   jpeg: "image",
   webp: "image",
   gif: "image",
-
-  mp4: "video",
-  mov: "video",
-  webm: "video",
-  m4a: "video",
-  mp3: "video",
 };
 
 /** The extension, lower-cased, or null for a name that has none. */
@@ -64,4 +58,51 @@ export const ACCEPTED_EXTENSIONS = Object.keys(BY_EXTENSION)
 
 /** What a person is told when the answer is null. */
 export const ACCEPTED_DESCRIPTION =
-  "PDF, Word, text and Markdown, spreadsheets, slides, images, audio and video.";
+  "PDF, Word, text and Markdown, spreadsheets, slides and images.";
+
+/**
+ * A link, and what reads it.
+ *
+ * These three kinds never touch storage: the extractor fetches them. A YouTube
+ * video is read as its transcript by a service that already has one, a
+ * repository is fetched as an archive, and a web page is fetched and stripped
+ * to its text. The interface offered none of them for months while all three
+ * worked.
+ */
+export const sourceKindForUrl = (raw: string): { kind: DocumentKind; url: string } | null => {
+  let url: URL;
+
+  try {
+    url = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+
+  // http and https only. A `file:` or `data:` URL would be asking the server to
+  // read something on its own side.
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+
+  const host = url.hostname.replace(/^www\./, "");
+
+  if (host === "youtube.com" || host === "youtu.be" || host === "m.youtube.com") {
+    return { kind: "video", url: url.toString() };
+  }
+
+  if (host === "github.com") return { kind: "github", url: url.toString() };
+
+  return { kind: "web", url: url.toString() };
+};
+
+/** How a link reads in the register before its real title is known. */
+export const titleForUrl = (raw: string, kind: DocumentKind): string => {
+  try {
+    const url = new URL(raw);
+
+    if (kind === "github") return url.pathname.replace(/^\/+|\/+$/g, "") || url.hostname;
+    if (kind === "video") return `Video · ${url.searchParams.get("v") ?? url.pathname.slice(1)}`;
+
+    return `${url.hostname.replace(/^www\./, "")}${url.pathname === "/" ? "" : url.pathname}`;
+  } catch {
+    return raw;
+  }
+};

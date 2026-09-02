@@ -204,7 +204,7 @@ export const completeOAuthSignIn = async (code: string): Promise<Result<void, Ap
  * `x-forwarded-host: evil.example` redirected a just-signed-in user there.
  */
 export const signedInDestination = async (path: string): Promise<string> => {
-  const safe = path.startsWith("/") && !path.startsWith("//") ? path : "/choose";
+  const safe = path.startsWith("/") && !path.startsWith("//") ? path : "/ask";
 
   return new URL(safe, siteUrl()).toString();
 };

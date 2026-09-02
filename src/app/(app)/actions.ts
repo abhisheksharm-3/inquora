@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sourceKindForUrl, titleForUrl } from "@/core/documents/kind";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import { signOut } from "@/server/modules/auth/auth.service";
-import { requestUploadTicket } from "@/server/modules/documents/documents.factory";
+import { addSourceByUrl, requestUploadTicket } from "@/server/modules/documents/documents.factory";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
 import type { ActionState, PassageState, UploadRequestInput, UploadTicketState } from "./app.types";
 
@@ -231,4 +232,72 @@ export const signOutAction = async (): Promise<void> => {
   await signOut();
 
   redirect("/");
+};
+
+/**
+ * Ask a question from the home screen.
+ *
+ * One act rather than three. The screen this replaced made you pick documents,
+ * press a button, land in an empty conversation and then type — so the thing
+ * somebody came to do was four steps from the door. Here the question and the
+ * documents arrive together: the chat is created, and the question travels with
+ * the redirect so the conversation opens already answering it.
+ */
+export const askFromHome = async (
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
+  const question = String(formData.get("question") ?? "").trim();
+  const documentIds = formData.getAll("document").map(String);
+
+  if (!question) return failed("Type a question first.");
+
+  const parsed = z.array(uuid).min(1).safeParse(documentIds);
+  if (!parsed.success) return failed("Choose at least one document to read.");
+
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return failed(bound.error.detail ?? "Sign in first.");
+
+  // Named after the question rather than the files. On a history page "Why did
+  // Q3 revenue miss the forecast?" tells you what it was; "q3-forecast.xlsx and
+  // 2 more" does not.
+  const created = await bound.value.workspace.createChat({
+    title: question.slice(0, 120),
+    documentIds: parsed.data,
+  });
+
+  if (!created.ok) return failed(created.error.detail ?? "Could not start it.");
+
+  redirect(`${DASHBOARD_ROUTES.CHAT(created.value)}?ask=${encodeURIComponent(question)}`);
+};
+
+/**
+ * Add a repository, a video or a web page by its link.
+ *
+ * All three have worked in the extractor since the backend was built and the
+ * interface offered none of them, so the only way in was a file. Which kind a
+ * link is comes from its host, and a link that is neither GitHub nor YouTube is
+ * read as a page.
+ */
+export const addLink = async (_previous: ActionState, formData: FormData): Promise<ActionState> => {
+  const raw = String(formData.get("url") ?? "");
+  const source = sourceKindForUrl(raw);
+
+  if (!source) {
+    return failed("That is not a link. Paste a web address starting with https://");
+  }
+
+  const added = await addSourceByUrl({
+    url: source.url,
+    kind: source.kind,
+    title: titleForUrl(source.url, source.kind),
+  });
+
+  if (!added.ok) return failed(added.error.detail ?? "Could not add that link.");
+
+  return {
+    message: added.value.alreadyIndexed
+      ? "You have already added that one."
+      : "Reading it now. It appears in your files when it is ready.",
+  };
 };

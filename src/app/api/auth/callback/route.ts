@@ -11,15 +11,15 @@ function validateNextPath(next: string): string {
     trimmed.includes("?") ||
     trimmed.includes("#")
   ) {
-    return "/choose";
+    return "/ask";
   }
   try {
     const parsed = new URL(trimmed, "http://localhost");
     if (parsed.origin !== "http://localhost" || parsed.pathname !== trimmed) {
-      return "/choose";
+      return "/ask";
     }
   } catch {
-    return "/choose";
+    return "/ask";
   }
   return trimmed;
 }
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
-    const rawNext = searchParams.get("next") ?? "/choose";
+    const rawNext = searchParams.get("next") ?? "/ask";
     const next = validateNextPath(rawNext);
 
     if (!code) {

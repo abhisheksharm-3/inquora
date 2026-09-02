@@ -24,11 +24,14 @@ export const ChatSurface = ({
   chrome,
   chat,
   following,
+  initialQuestion,
 }: {
   chrome: React.ReactNode;
   chat: ChatDetail;
   /** The passage being read, when a citation has been followed. */
   following?: { passage: PassageInContext; specimenNumber: number };
+  /** Asked on the home screen, and sent as soon as this opens. */
+  initialQuestion?: string;
 }) => {
   const { turns, send, stop, streaming } = useConversation(chat);
   const tail = useRef<HTMLDivElement>(null);
@@ -41,6 +44,23 @@ export const ChatSurface = ({
 
     tail.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [turns, following]);
+
+  // Sent once. A ref rather than a state flag, because a second render must not
+  // be able to ask the same question twice, and the request is idempotent on the
+  // server anyway.
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (!initialQuestion || asked.current || chat.messages.length > 0) return;
+
+    asked.current = true;
+    send(initialQuestion);
+
+    // The question is dropped from the address bar once it has been asked, so a
+    // reload does not read as a fresh one and the URL stops carrying what
+    // somebody typed.
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [initialQuestion, chat.messages.length, send]);
 
   const entries = turnEntries(turns);
 

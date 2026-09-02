@@ -1,3 +1,4 @@
+import type { DocumentKind } from "@/core/documents/kind";
 import { AppError } from "@/core/errors";
 import { err } from "@/core/result";
 import type { Result } from "@/core/result.types";
@@ -6,6 +7,26 @@ import { rateLimiter } from "@/server/platform/ratelimit/redis";
 import type { UploadRequest } from "./documents.schema";
 import { createDocumentsService } from "./documents.service";
 import type { UploadTicket } from "./documents.types";
+
+/**
+ * One link, rate limited on the same bucket as an upload: both create a document
+ * and both cost an ingestion job.
+ */
+export const addSourceByUrl = async (request: {
+  url: string;
+  kind: DocumentKind;
+  title: string;
+}): Promise<Result<{ documentId: string; alreadyIndexed: boolean }, AppError>> => {
+  const db = await createServerDbClient();
+
+  const { data } = await db.auth.getUser();
+  if (!data.user) return err(AppError.unauthorized("sign in to add a document"));
+
+  const allowed = await rateLimiter().check("uploads", data.user.id);
+  if (!allowed.ok) return err(allowed.error);
+
+  return createDocumentsService(db, data.user.id).addSource(request);
+};
 
 /**
  * One upload ticket, rate limited. The handler stays transport-only, so the

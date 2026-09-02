@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import type { ChatEntry } from "@/core/workspace/workspace.types";
 import { formatWhen } from "@/ui/components/documents/document.format";
+import { DeleteChat } from "./DeleteChat";
 
 /**
  * Surface 08. Conversations as dated records under a month heading, with what
@@ -72,10 +73,10 @@ export const HistoryList = ({ chats }: { chats: ChatEntry[] }) => {
             </h2>
             <ul className="m-0 list-none p-0">
               {entries.map((chat) => (
-                <li key={chat.id}>
+                <li key={chat.id} className="flex items-baseline gap-5 border-rule border-b py-3">
                   <Link
                     href={DASHBOARD_ROUTES.CHAT(chat.id)}
-                    className="grid min-h-11 grid-cols-[56px_minmax(0,1fr)_auto] items-baseline gap-4 border-rule border-b py-3"
+                    className="grid min-h-11 min-w-0 flex-1 grid-cols-[56px_minmax(0,1fr)_auto] items-baseline gap-4"
                   >
                     <time
                       dateTime={chat.updatedAt}
@@ -98,6 +99,8 @@ export const HistoryList = ({ chats }: { chats: ChatEntry[] }) => {
                       <span className="block">{formatWhen(chat.updatedAt)}</span>
                     </span>
                   </Link>
+
+                  <DeleteChat chatId={chat.id} title={chat.title ?? "Untitled"} />
                 </li>
               ))}
             </ul>

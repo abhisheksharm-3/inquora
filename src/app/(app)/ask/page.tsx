@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
-import { ChooseSurface } from "@/ui/components/documents/ChooseSurface";
+import { HomeSurface } from "@/ui/components/home/HomeSurface";
 import { listChats, listDocuments, readAccount } from "../queries";
 
 export const metadata: Metadata = {
-  title: "Your documents",
-  description: "Add a document, or ask one of the ones you have.",
+  title: "Ask your documents",
+  description: "Ask a question of what you have added, and follow every answer to its source.",
 };
 
-/**
- * The home of the product. The chrome is rendered here and passed down as a
- * prop: it is a server component, so it stays out of the client bundle even
- * though a client component places it in the grid.
- */
-const ChoosePage = async () => {
+const HomePage = async () => {
   const [documents, chats, account, bound] = await Promise.all([
     listDocuments(),
     listChats(),
@@ -27,8 +22,9 @@ const ChoosePage = async () => {
   if (!bound.ok) return null;
 
   return (
-    <ChooseSurface
+    <HomeSurface
       chrome={<Chrome current="choose" account={account} />}
+      account={account}
       documents={documents}
       chats={chats}
       userId={bound.value.userId}
@@ -36,4 +32,4 @@ const ChoosePage = async () => {
   );
 };
 
-export default ChoosePage;
+export default HomePage;

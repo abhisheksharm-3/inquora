@@ -1,3 +1,4 @@
+import type { DocumentKind } from "@/core/documents/kind";
 import type { Outline } from "@/core/documents/outline.types";
 import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result.types";
@@ -14,6 +15,12 @@ export interface UploadTicket {
 
 export interface DocumentsService {
   requestUpload(request: UploadRequest): Promise<Result<UploadTicket, AppError>>;
+  /** A link the extractor fetches: a repository, a video, or a web page. */
+  addSource(request: {
+    url: string;
+    kind: DocumentKind;
+    title: string;
+  }): Promise<Result<{ documentId: string; alreadyIndexed: boolean }, AppError>>;
 }
 
 /** One sheet of a document, as the model is shown it. */

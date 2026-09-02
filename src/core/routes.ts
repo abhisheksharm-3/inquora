@@ -13,18 +13,23 @@ export const AUTH_ROUTES = {
   LOGOUT: "/logout",
 } as const;
 
-/** Dashboard routes requiring authentication */
+/**
+ * Routes that require a session.
+ *
+ * `/ask` rather than `/choose`. The old name described what the screen made you
+ * do — choose documents from a list — and that screen is gone. This one is for
+ * asking, so it says so, and an address a person can read is worth the rename.
+ */
 export const DASHBOARD_ROUTES = {
-  HOME: "/choose",
+  HOME: "/ask",
   CHAT: (chatId: string) => `/chat/${chatId}` as const,
   HISTORY: "/history",
   SETTINGS: "/settings",
-  CHOOSE: "/choose",
 } as const;
 
 /** Route matchers for middleware */
 export const ROUTE_MATCHERS = {
-  PROTECTED: ["/dashboard", "/chat", "/history", "/settings", "/choose"],
+  PROTECTED: ["/ask", "/chat", "/history", "/settings"],
   // Not the recovery routes. A recovery link signs you in before you set a new
   // password, and an auth-only rule would bounce you to the dashboard with the
   // old password still in place.

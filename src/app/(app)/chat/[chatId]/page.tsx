@@ -35,7 +35,7 @@ const ChatPage = async ({
   searchParams,
 }: {
   params: Promise<{ chatId: string }>;
-  searchParams: Promise<{ passage?: string; specimen?: string }>;
+  searchParams: Promise<{ passage?: string; specimen?: string; ask?: string }>;
 }) => {
   const [{ chatId }, query, account] = await Promise.all([params, searchParams, readAccount()]);
   const chat = await readChat(chatId);
@@ -56,6 +56,7 @@ const ChatPage = async ({
           ? { passage: followed.passage, specimenNumber: Number(query.specimen) || 1 }
           : undefined
       }
+      initialQuestion={query.ask}
     />
   );
 };

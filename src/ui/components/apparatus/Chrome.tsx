@@ -43,7 +43,7 @@ export const Chrome = ({
       </Link>
 
       <Link
-        href={DASHBOARD_ROUTES.CHOOSE}
+        href={DASHBOARD_ROUTES.HOME}
         aria-current={current === "choose" ? "page" : undefined}
         className="flex h-9 items-center whitespace-nowrap rounded-hair border border-mark px-4 font-record text-[0.72rem] text-mark uppercase tracking-[0.11em] transition-colors duration-150 ease-out-quart hover:bg-wash"
       >

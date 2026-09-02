@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/core/database.types";
+import { contentHash } from "@/core/documents/content-hash";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
@@ -19,6 +20,63 @@ export const createDocumentsService = (
   db: SupabaseClient<Database>,
   userId: string,
 ): DocumentsService => ({
+  /**
+   * A repository, a video or a web page. Nothing is uploaded: the row carries a
+   * URL and the extractor fetches it, which is how all three have worked since
+   * the backend was built and which the interface never offered.
+   *
+   * The URL is its own identity, hashed into `content_hash`, so adding the same
+   * link twice reuses the document rather than indexing it again — the same rule
+   * the unique index already enforces for bytes.
+   */
+  async addSource({ url, kind, title }) {
+    const identity = await contentHash(new TextEncoder().encode(url));
+
+    const { data: existing, error: lookupError } = await db
+      .from("documents")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("content_hash", identity)
+      .maybeSingle();
+
+    if (lookupError) {
+      return err(AppError.badGateway(`could not check for a duplicate: ${lookupError.message}`));
+    }
+
+    if (existing?.status === "ready") {
+      return ok({ documentId: existing.id, alreadyIndexed: true });
+    }
+
+    // A half-finished attempt goes back to pending, which the requeue trigger
+    // turns into a fresh job rather than leaving it stuck.
+    if (existing) {
+      await db
+        .from("documents")
+        .update({ status: "pending", error: null, source_url: url })
+        .eq("id", existing.id);
+
+      return ok({ documentId: existing.id, alreadyIndexed: false });
+    }
+
+    const { data: document, error: insertError } = await db
+      .from("documents")
+      .insert({
+        user_id: userId,
+        kind,
+        title,
+        source_url: url,
+        content_hash: identity,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      return err(AppError.badGateway(`could not add the link: ${insertError.message}`));
+    }
+
+    return ok({ documentId: document.id, alreadyIndexed: false });
+  },
+
   async requestUpload(request: UploadRequest): Promise<Result<UploadTicket, AppError>> {
     // Re-uploading the same bytes reuses the existing chunks rather than paying
     // to embed them again. The unique index enforces it; this reports it.
