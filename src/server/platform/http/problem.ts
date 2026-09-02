@@ -27,9 +27,21 @@ export const toProblemDetails = (error: AppError, instance: string): ProblemDeta
   };
 };
 
-/** The same document as a Response, with Retry-After when the error carries one. */
-export const problemResponse = (error: AppError, instance: string): Response =>
-  new Response(JSON.stringify(toProblemDetails(error, instance)), {
+/**
+ * The same document as a Response, with Retry-After when the error carries one.
+ *
+ * A 5xx detail is withheld from the client and written to the server log instead.
+ * Hiding it without recording it anywhere is how a deployment becomes
+ * undiagnosable: the first version of this hid the detail and logged nothing, so
+ * "SUPABASE_SERVICE_ROLE_KEY is not set" became "something on our side failed"
+ * and stayed that way.
+ */
+export const problemResponse = (error: AppError, instance: string): Response => {
+  if (error.status >= 500) {
+    console.error(`[${error.status}] ${instance}: ${error.detail ?? error.type}`);
+  }
+
+  return new Response(JSON.stringify(toProblemDetails(error, instance)), {
     status: error.status,
     headers: {
       "content-type": "application/problem+json",
@@ -38,3 +50,4 @@ export const problemResponse = (error: AppError, instance: string): Response =>
         : { "retry-after": String(error.retryAfterSeconds) }),
     },
   });
+};
