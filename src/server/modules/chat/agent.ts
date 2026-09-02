@@ -6,6 +6,7 @@ import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieva
 import type { StreamEvent } from "@/server/platform/http/sse";
 import type { ChatContext } from "./chat.schema";
 import { createTools } from "./tools";
+import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
 
 /**
  * The cap on tool calls in one run. A model can call the same tool forever
@@ -17,12 +18,30 @@ import { createTools } from "./tools";
 const MAX_TOOL_CALLS = 8;
 
 const buildSystemPrompt = (context: ChatContext): string => {
-  const documents =
-    context.documents.length === 0
-      ? "No documents are attached to this conversation."
-      : context.documents
-          .map((d) => `- ${d.title} (${d.kind}, ${d.status}, ${d.chunkCount} passages)`)
-          .join("\n");
+  if (context.documents.length === 0) {
+    return [
+      "You answer questions about the user's documents. None are attached to this",
+      "conversation yet, so answer questions about the conversation itself and say plainly that",
+      "there is nothing to search.",
+    ].join(" ");
+  }
+
+  const documents = context.documents
+    .map(
+      (d) =>
+        `- ${d.title} — ${SPECIALISTS[d.kind as DocumentKind]?.label ?? d.kind}, ${d.status}, ${d.chunkCount} passages, id ${d.id}`,
+    )
+    .join("\n");
+
+  // The specialist sections are what make this worth composing rather than
+  // writing once. A repository and a spreadsheet are answered by different tools
+  // in a different order, and a model told only "documents" treats them alike.
+  const specialists = specialistsFor(context.documents.map((d) => d.kind))
+    .map((specialist) => {
+      const caveat = specialist.caveat ? `\n  Limits: ${specialist.caveat}` : "";
+      return `${specialist.label.replace(/^a /, "").toUpperCase()}\n  ${specialist.guidance}${caveat}`;
+    })
+    .join("\n\n");
 
   const memories =
     context.memories.length === 0
@@ -33,25 +52,29 @@ const buildSystemPrompt = (context: ChatContext): string => {
     ? ` You are talking to ${context.profile.displayName}.`
     : "";
 
-  // Deliberately short. The old prompt-engineering module generated adaptive
-  // system prompts of several hundred lines, and every token of a system prompt
-  // is billed on every turn of every conversation.
+  // Deliberately no adaptive prose beyond this. The old prompt-engineering module
+  // generated several hundred lines per turn, and every system-prompt token is
+  // billed on every turn of every conversation.
   return `You answer questions about the user's documents.${name}
 
-Attached documents:
+Attached:
 ${documents}
 ${memories}
-Search before answering anything about document content. Cite the passage a claim
-came from by its number. When the answer is not in these documents, say so
-plainly rather than answering from general knowledge.
+How to work with what is attached:
 
-For a spreadsheet, query it rather than searching it: list_tables then
-query_table. Searching the text of a sheet can find the right region and cannot
-add up a column.
+${specialists}
 
-For an exact string — an error code, an identifier, a version — use
-grep_document rather than search_documents. get_outline shows what a document
-contains before you search it.`;
+Always: search before answering anything about document content, cite the passage
+a claim came from, and when the answer is not in these documents say so plainly
+rather than answering from general knowledge.${
+    context.chat.webSearch
+      ? `
+
+Web search is on for this conversation. Use it only for what the attached
+documents cannot answer, and mark plainly which parts of your answer came from
+the web rather than from the user's own documents.`
+      : ""
+  }`;
 };
 
 export const createAnsweringAgent = ({
@@ -63,6 +86,7 @@ export const createAnsweringAgent = ({
   tables,
   structure,
   slices,
+  web,
 }: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
   let answer = "";
@@ -106,6 +130,7 @@ export const createAnsweringAgent = ({
     tables,
     structure,
     slices,
+    web,
     onCitations: (ids: string[]) => {
       for (const id of ids) if (!citations.includes(id)) citations.push(id);
     },
@@ -200,6 +225,7 @@ export const createAnsweringAgent = ({
     systemPrompt: () => systemPrompt,
   };
 };
+import type { DocumentKind } from "@/server/modules/documents/documents.schema";
 import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
 
 export type { AnsweringAgent, TurnUsage } from "./chat.types";

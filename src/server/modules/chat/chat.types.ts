@@ -52,6 +52,7 @@ export interface AgentDependencies {
   tables: TablesPort;
   structure: OutlinePort;
   slices: SlicePort;
+  web: WebSearchPort;
 }
 
 /** The tabular surface the query_table tool depends on. */
@@ -92,6 +93,15 @@ export interface SlicePort {
   }): Promise<Result<{ content: string; startSeconds: number; endSeconds: number }[], AppError>>;
 }
 
+/** The web surface, present only when the deployment has a provider configured. */
+export interface WebSearchPort {
+  readonly configured: boolean;
+  search(
+    query: string,
+    limit?: number,
+  ): Promise<Result<{ title: string; url: string; extract: string }[], AppError>>;
+}
+
 export interface ToolDependencies {
   context: ChatContext;
   retrieval: RetrievalPort;
@@ -100,6 +110,7 @@ export interface ToolDependencies {
   tables: TablesPort;
   structure: OutlinePort;
   slices: SlicePort;
+  web: WebSearchPort;
   /** Called with the chunk ids a search returned, so the answer can cite them. */
   onCitations: (chunkIds: string[]) => void;
 }
@@ -139,5 +150,6 @@ export interface ChatServiceDependencies {
   tables: TablesPort;
   structure: OutlinePort;
   slices: SlicePort;
+  web: WebSearchPort;
   model: () => Promise<Result<BaseChatModel, AppError>>;
 }

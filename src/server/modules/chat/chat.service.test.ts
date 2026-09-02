@@ -5,7 +5,7 @@ import { err, ok } from "@/core/result";
 import { createChatService } from "./chat.service";
 
 const context = {
-  chat: { id: "22222222-2222-2222-2222-222222222222", title: null },
+  chat: { id: "22222222-2222-2222-2222-222222222222", title: null, webSearch: false },
   documents: [
     {
       id: "11111111-1111-1111-1111-111111111111",
@@ -59,6 +59,7 @@ const deps = (overrides: Record<string, unknown> = {}) => ({
   tables: { list: async () => ok([]), query: async () => ok([]) },
   structure: { outline: async () => ok(null), grep: async () => ok([]) },
   slices: { file: async () => ok([]), transcript: async () => ok([]) },
+  web: { configured: false, search: async () => ok([]) },
   model: async () => ok(new FakeToolCallingModel({ toolCalls: [[]] })),
   ...overrides,
 });

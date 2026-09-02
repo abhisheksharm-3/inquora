@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { resolveQuestion } from "./resolve-question";
 
 const context = (turns: string[]) => ({
-  chat: { id: "22222222-2222-2222-2222-222222222222", title: null },
+  chat: { id: "22222222-2222-2222-2222-222222222222", title: null, webSearch: false },
   documents: [],
   messages: turns.map((text, index) => ({
     id: `1111111${index}-1111-1111-1111-111111111111`,

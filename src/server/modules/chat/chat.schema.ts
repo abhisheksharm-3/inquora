@@ -21,6 +21,8 @@ export const chatContext = z.object({
   chat: z.object({
     id: z.guid(),
     title: z.string().nullable(),
+    /** Whether this conversation may reach the open web. Off by default. */
+    webSearch: z.boolean().default(false),
   }),
   documents: z.array(
     z.object({

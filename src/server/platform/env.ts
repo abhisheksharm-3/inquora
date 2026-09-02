@@ -31,6 +31,20 @@ const schema = z
     /** provider:model. Changing the answering model is a variable, not a deploy. */
     ANSWER_MODEL: z.string().min(3).optional(),
 
+    /**
+     * Observability. All optional: instrumentation runs either way and simply
+     * exports nowhere, because a missing DSN must not stop the application from
+     * answering a question.
+     */
+    SENTRY_DSN: z.string().url().optional(),
+    NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
+    LANGFUSE_PUBLIC_KEY: z.string().min(1).optional(),
+    LANGFUSE_SECRET_KEY: z.string().min(1).optional(),
+    LANGFUSE_BASE_URL: z.string().url().default("https://cloud.langfuse.com"),
+
+    /** Web search. Absent means the tool is not offered at all. */
+    TAVILY_API_KEY: z.string().min(1).optional(),
+
     /** Raises GitHub's rate limit from sixty an hour. Repository ingestion works without it. */
     GITHUB_TOKEN: z.string().min(1).optional(),
 
@@ -97,6 +111,12 @@ export const env = (): Env => {
     MULTIUTILITY_API_KEY: process.env.MULTIUTILITY_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     ANSWER_MODEL: process.env.ANSWER_MODEL,
+    SENTRY_DSN: process.env.SENTRY_DSN,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    LANGFUSE_PUBLIC_KEY: process.env.LANGFUSE_PUBLIC_KEY,
+    LANGFUSE_SECRET_KEY: process.env.LANGFUSE_SECRET_KEY,
+    LANGFUSE_BASE_URL: process.env.LANGFUSE_BASE_URL,
+    TAVILY_API_KEY: process.env.TAVILY_API_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,

@@ -1,7 +1,8 @@
 import { AppError } from "@/core/errors";
 import { mmr, type Candidate } from "@/core/mmr";
 import { err, ok, type Result } from "@/core/result";
-import { EMBEDDING_TTL_SECONDS, embeddingKey, type Cache } from "@/server/platform/cache/cache";
+import { EMBEDDING_TTL_SECONDS, embeddingKey } from "@/server/platform/cache/cache";
+import { withSpan } from "@/server/platform/telemetry/span";
 import type { RetrievalRequest, RetrievedChunk } from "./retrieval.schema";
 
 /** Relevance-dominant, per the design. */
@@ -21,35 +22,44 @@ export const createRetrievalService = ({
   cache,
 }: RetrievalDependencies): RetrievalService => ({
   async retrieve({ query, documentIds, limit }) {
-    const key = await embeddingKey(query);
-    const cached = await cache.get<number[]>(key);
+    return withSpan("retrieval", { documents: documentIds.length, limit }, async (span) => {
+      const key = await embeddingKey(query);
+      const cached = await cache.get<number[]>(key);
 
-    let vector = cached;
+      span.set({ embedding_cached: Boolean(cached) });
 
-    if (!vector) {
-      const embedded = await embeddings.embed([query]);
-      if (!embedded.ok) return err(embedded.error);
+      let vector = cached;
 
-      vector = embedded.value[0];
-      await cache.set(key, vector, EMBEDDING_TTL_SECONDS);
-    }
+      if (!vector) {
+        const embedded = await withSpan("embedding", { texts: 1 }, () => embeddings.embed([query]));
+        if (!embedded.ok) return err(embedded.error);
 
-    const found = await repository.search({ documentIds, embedding: vector, query, limit });
-    if (!found.ok) return err(found.error);
+        vector = embedded.value[0];
+        await cache.set(key, vector, EMBEDDING_TTL_SECONDS);
+      }
 
-    if (found.value.length === 0) {
-      return err(AppError.notFound("no passage in these documents matched the question"));
-    }
+      const found = await repository.search({ documentIds, embedding: vector, query, limit });
+      if (!found.ok) return err(found.error);
 
-    const candidates: Candidate[] = found.value.map((chunk) => ({
-      id: chunk.chunkId,
-      embedding: chunk.embedding,
-      score: chunk.score,
-    }));
+      span.set({ candidates: found.value.length });
 
-    const kept = new Set(mmr(candidates, { lambda: MMR_LAMBDA, limit }).map((c) => c.id));
+      if (found.value.length === 0) {
+        return err(AppError.notFound("no passage in these documents matched the question"));
+      }
 
-    return ok(found.value.filter((chunk) => kept.has(chunk.chunkId)));
+      const candidates: Candidate[] = found.value.map((chunk) => ({
+        id: chunk.chunkId,
+        embedding: chunk.embedding,
+        score: chunk.score,
+      }));
+
+      const kept = new Set(mmr(candidates, { lambda: MMR_LAMBDA, limit }).map((c) => c.id));
+      const chosen = found.value.filter((chunk) => kept.has(chunk.chunkId));
+
+      span.set({ returned: chosen.length });
+
+      return ok(chosen);
+    });
   },
 });
 import type { RetrievalDependencies, RetrievalService } from "./retrieval.types";

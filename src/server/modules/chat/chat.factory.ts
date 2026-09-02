@@ -11,6 +11,7 @@ import { createTablesRepository } from "@/server/modules/documents/tables.reposi
 import { createCache } from "@/server/platform/cache/cache";
 import { createServerDbClient } from "@/server/platform/db/client";
 import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
+import { createWebSearchClient } from "@/server/platform/websearch/client";
 import { env } from "@/server/platform/env";
 import { createChatModel } from "@/server/platform/llm/model";
 import { rateLimiter } from "@/server/platform/ratelimit/redis";
@@ -71,6 +72,7 @@ export const chatServiceForRequest = async (): Promise<Result<ChatService, AppEr
       tables: createTablesRepository(db),
       structure: createOutlineRepository(db),
       slices: createSliceRepository(db),
+      web: createWebSearchClient({ apiKey: configuration.TAVILY_API_KEY }),
       model: () =>
         createChatModel({
           apiKey: configuration.GEMINI_API_KEY,

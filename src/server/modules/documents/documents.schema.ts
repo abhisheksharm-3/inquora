@@ -30,3 +30,4 @@ export const uploadRequest = z.object({
 });
 
 export type UploadRequest = z.infer<typeof uploadRequest>;
+export type DocumentKind = z.infer<typeof documentKind>;

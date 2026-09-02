@@ -4,7 +4,7 @@ import { ok } from "@/core/result";
 import { createAnsweringAgent } from "./agent";
 
 const context = {
-  chat: { id: "22222222-2222-2222-2222-222222222222", title: null },
+  chat: { id: "22222222-2222-2222-2222-222222222222", title: null, webSearch: false },
   documents: [
     {
       id: "11111111-1111-1111-1111-111111111111",
@@ -37,6 +37,7 @@ const dependencies = (overrides: Record<string, unknown> = {}) => ({
   tables: { list: async () => ok([]), query: async () => ok([]) },
   structure: { outline: async () => ok(null), grep: async () => ok([]) },
   slices: { file: async () => ok([]), transcript: async () => ok([]) },
+  web: { configured: false, search: async () => ok([]) },
   ...overrides,
 });
 
@@ -83,6 +84,46 @@ describe("createAnsweringAgent", () => {
     agent.warm("what did we discuss?");
 
     expect(retrieve).not.toHaveBeenCalled();
+  });
+
+  it("tells the model how to work with the kind of document that is attached", () => {
+    const model = new FakeToolCallingModel({ toolCalls: [[]] });
+    const agent = createAnsweringAgent({ ...dependencies(), model });
+
+    // A pdf is attached, so the prompt carries the prose guidance and not the
+    // repository or spreadsheet guidance.
+    expect(agent.systemPrompt()).toContain("read_chunks");
+    expect(agent.systemPrompt()).not.toContain("::numeric");
+  });
+
+  it("specializes on a repository when one is attached", () => {
+    const model = new FakeToolCallingModel({ toolCalls: [[]] });
+    const agent = createAnsweringAgent({
+      ...dependencies({
+        context: {
+          ...context,
+          documents: [{ ...context.documents[0], kind: "github", title: "inquora" }],
+        },
+      }),
+      model,
+    });
+
+    const prompt = agent.systemPrompt();
+
+    expect(prompt).toContain("file tree");
+    expect(prompt).toContain("path:line");
+    // And it states the limit rather than letting the model discover it.
+    expect(prompt).toContain("four hundred");
+  });
+
+  it("says plainly that there is nothing to search when nothing is attached", () => {
+    const model = new FakeToolCallingModel({ toolCalls: [[]] });
+    const agent = createAnsweringAgent({
+      ...dependencies({ context: { ...context, documents: [] } }),
+      model,
+    });
+
+    expect(agent.systemPrompt()).toContain("nothing to search");
   });
 
   it("puts what the user asked to be remembered into the system prompt", () => {

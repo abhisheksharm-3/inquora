@@ -132,7 +132,7 @@ try {
 
     const agent = createAnsweringAgent({
       context: {
-        chat: { id: "cccccccc-cccc-cccc-cccc-cccccccccccc", title: null },
+        chat: { id: "cccccccc-cccc-cccc-cccc-cccccccccccc", title: null, webSearch: false },
         documents: [
           {
             id: documentId,
@@ -153,6 +153,7 @@ try {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
     });
 
     console.log("4. streaming an answer from the real model");

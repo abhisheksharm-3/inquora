@@ -1,4 +1,5 @@
 import { tool } from "langchain";
+import { withSpan } from "@/server/platform/telemetry/span";
 import { z } from "zod";
 import type { AppError } from "@/core/errors";
 import { evaluateArithmetic } from "@/core/arithmetic";
@@ -35,6 +36,7 @@ export const createTools = ({
   tables,
   structure,
   slices,
+  web,
   onCitations,
 }: ToolDependencies) => {
   const documentIds = context.documents.map((d) => d.id);
@@ -342,6 +344,47 @@ export const createTools = ({
     },
   );
 
+  const webSearch = tool(
+    async ({ query }: { query: string }) => {
+      const results = await web.search(query);
+
+      if (!results.ok)
+        return `The web search failed: ${results.error.detail ?? results.error.type}`;
+      if (results.value.length === 0) return `Nothing on the web matched "${query}".`;
+
+      // Marked as web rather than presented like a passage from the user's own
+      // documents, because the two are not the same kind of evidence and an
+      // answer that blurs them is misleading even when it is correct.
+      return results.value
+        .map((result) => `[web] ${result.title} — ${result.url}\n${result.extract}`)
+        .join("\n\n");
+    },
+    {
+      name: "web_search",
+      description:
+        "Search the open web. Only for what the attached documents cannot answer, and say in your " +
+        "answer which parts came from the web rather than from the user's documents.",
+      schema: z.object({ query: z.string().min(1).max(400) }),
+    },
+  );
+
+  /**
+   * Every tool call gets a span carrying its name and duration, so a model that
+   * calls the same tool eleven times shows up in a trace rather than only on the
+   * bill. ADR 0005 names the tool loop as the new failure mode this arrival
+   * brings.
+   */
+  const traced = <T extends { name: string; invoke: (input: never) => Promise<unknown> }>(
+    definition: T,
+  ): T => {
+    const original = definition.invoke.bind(definition);
+
+    definition.invoke = ((input: never) =>
+      withSpan("tool", { tool: definition.name }, () => original(input))) as T["invoke"];
+
+    return definition;
+  };
+
   return [
     searchDocuments,
     readChunks,
@@ -354,6 +397,9 @@ export const createTools = ({
     getTranscript,
     remember,
     calculate,
-  ];
+    // Two gates, both required: the deployment has a provider, and this
+    // conversation asked for it. Neither implies the other.
+    ...(web.configured && context.chat.webSearch ? [webSearch] : []),
+  ].map((definition) => traced(definition as never));
 };
 import type { ToolDependencies } from "./chat.types";

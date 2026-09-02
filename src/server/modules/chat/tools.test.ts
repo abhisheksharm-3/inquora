@@ -14,7 +14,7 @@ const chunk = (id: string, index: number, content: string) => ({
 });
 
 const context = {
-  chat: { id: "22222222-2222-2222-2222-222222222222", title: null },
+  chat: { id: "22222222-2222-2222-2222-222222222222", title: null, webSearch: false },
   documents: [
     {
       id: "11111111-1111-1111-1111-111111111111",
@@ -47,6 +47,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -77,6 +78,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -100,6 +102,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: (ids) => seen.push(ids),
     });
 
@@ -117,6 +120,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -134,6 +138,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -153,6 +158,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -180,6 +186,7 @@ describe("createTools", () => {
       },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -204,6 +211,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -231,6 +239,7 @@ describe("createTools", () => {
       },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -256,6 +265,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -279,6 +289,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -303,6 +314,7 @@ describe("createTools", () => {
         grep: async () => ok([]),
       },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -327,6 +339,7 @@ describe("createTools", () => {
         file: async () => ok([{ content: "export function first() {}", fromLine: 1, toLine: 30 }]),
         transcript: async () => ok([]),
       },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -350,6 +363,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -376,6 +390,7 @@ describe("createTools", () => {
         transcript: async () =>
           ok([{ content: "Revenue came in under forecast.", startSeconds: 30, endSeconds: 75 }]),
       },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -390,6 +405,70 @@ describe("createTools", () => {
     expect(answer).toBe("[30s-75s] Revenue came in under forecast.");
   });
 
+  it("does not offer web search when the deployment has no provider", () => {
+    const tools = createTools({
+      context: { ...context, chat: { ...context.chat, webSearch: true } },
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
+      onCitations: () => {},
+    });
+
+    expect((tools as InvokableTool[]).map((t) => t.name)).not.toContain("web_search");
+  });
+
+  it("does not offer web search when the conversation has not asked for it", () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: true, search: async () => ok([]) },
+      onCitations: () => {},
+    });
+
+    // Both gates are required, and neither implies the other.
+    expect((tools as InvokableTool[]).map((t) => t.name)).not.toContain("web_search");
+  });
+
+  it("marks a web result as web, so it is not mistaken for the user's own document", async () => {
+    const tools = createTools({
+      context: { ...context, chat: { ...context.chat, webSearch: true } },
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: {
+        configured: true,
+        search: async () =>
+          ok([
+            {
+              title: "Postgres statement timeout",
+              url: "https://example.com/timeout",
+              extract: "statement_timeout aborts a statement that runs longer than the value.",
+            },
+          ]),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "web_search").invoke({ query: "postgres statement timeout" }),
+    );
+
+    expect(answer).toContain("[web]");
+    expect(answer).toContain("https://example.com/timeout");
+  });
+
   it("calculates arithmetic without reaching a language model for it", async () => {
     const tools = createTools({
       context,
@@ -399,6 +478,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -416,6 +496,7 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
       onCitations: () => {},
     });
 
