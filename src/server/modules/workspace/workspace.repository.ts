@@ -329,6 +329,12 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
       return err(AppError.badGateway(`could not count usage: ${failed.error.message}`));
     }
 
+    const { data: sizes, error: sizeError } = await db.from("documents").select("byte_size");
+
+    if (sizeError) {
+      return err(AppError.badGateway(`could not read document sizes: ${sizeError.message}`));
+    }
+
     const { data: tokens, error: tokenError } = await db
       .from("messages")
       .select("tokens_in, tokens_out")
@@ -340,6 +346,7 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
 
     const usage: AccountUsage = {
       documents: counts[0].count ?? 0,
+      bytes: sizes.reduce((total, row) => total + (row.byte_size ?? 0), 0),
       chats: counts[1].count ?? 0,
       messages: counts[2].count ?? 0,
       chunks: counts[3].count ?? 0,

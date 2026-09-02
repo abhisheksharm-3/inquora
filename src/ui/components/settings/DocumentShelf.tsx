@@ -27,16 +27,16 @@ export const DocumentShelf = ({ documents }: { documents: DocumentEntry[] }) => 
 
   return (
     <>
-      <ul className="m-0 list-none p-0">
+      <ul className="m-0 list-none border-rule border-t p-0">
         {documents.map((document) => (
           <li
             key={document.id}
-            className="grid grid-cols-[26px_minmax(0,1fr)_auto] items-baseline gap-3.5 border-rule border-b py-3"
+            className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-4 border-rule border-b py-3.5"
           >
             <span className="font-record text-label text-faint uppercase tracking-[0.1em]">
               {kindLabel[document.kind]}
             </span>
-            <span className="min-w-0 font-light font-reading text-[1.02rem] text-ink">
+            <span className="min-w-0 font-light font-reading text-[1.08rem] text-ink">
               <span className="block truncate">{document.title}</span>
               <span className="mt-0.5 block font-record text-label text-faint">
                 {describeDocument(document)}

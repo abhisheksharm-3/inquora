@@ -1,48 +1,64 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
-import type { Entry } from "@/ui/components/apparatus/apparatus.types";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
+import { AccountPanel } from "@/ui/components/settings/AccountPanel";
 import { DocumentShelf } from "@/ui/components/settings/DocumentShelf";
 import { listDocuments, readAccount, readUsage } from "../queries";
 
 export const metadata: Metadata = {
   title: "Settings",
-  description: "Your documents, and what this account has used.",
+  description: "Your account, your documents, and what this account holds.",
 };
 
 /**
- * Surface 09. The apparatus carries what this account has actually used, which
- * is the one thing a settings page owes you and the thing most of them hide.
+ * Your account and everything in it.
  *
- * The largest file in the old interface was this page's loading skeleton: 421
- * lines, larger than the chat interface at 290. There is no skeleton here. The
- * shell paints, and each section streams in when its query answers.
+ * The panel used to be four numbered notes — "Indexed · 1 document · 9
+ * passages", "Tokens · 0 in · 0 out", and a paragraph explaining that the
+ * embedding has 1024 dimensions — under the heading "What this account has used
+ * 4 notes". The embedding dimension is a fact about the implementation rather
+ * than about the account, and it lives on /how-it-works with the others.
+ *
+ * A settings page owes you who you are signed in as, how you sign in, when you
+ * joined, what the account holds, and a way to remove any of it. It now says
+ * all of that.
+ *
+ * The largest file in the interface this replaced was this page's loading
+ * skeleton: 421 lines, bigger than the chat surface. There is no skeleton. The
+ * shell paints and each section streams in when its query answers.
  */
 const SettingsPage = async () => {
   const account = await readAccount();
 
   return (
-    <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
+    <div className="grid min-h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)] wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
       <Chrome current="settings" account={account} />
 
-      <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
-        <h1 className="mb-6 font-light font-reading text-[1.55rem] leading-tight">
-          Your documents.
-        </h1>
+      <main className="min-w-0 px-7 py-12 wide:px-12 wide:py-14">
+        <div className="w-full max-w-[86ch]">
+          <h1 className="mb-2.5 font-light font-reading text-[2.1rem] text-ink leading-tight tracking-[-0.02em]">
+            Your documents.
+          </h1>
+          <p className="mb-9 max-w-[54ch] font-light font-reading text-[1.05rem] text-soft leading-relaxed">
+            Everything you have added. Deleting one removes its passages, its rows and the citations
+            pointing at it, and it cannot be undone.
+          </p>
 
-        <Suspense
-          fallback={
-            <p className="font-record text-label text-faint uppercase tracking-[0.14em]">Reading</p>
-          }
-        >
-          <Shelf />
-        </Suspense>
+          <Suspense
+            fallback={
+              <p className="font-record text-label text-faint uppercase tracking-[0.14em]">
+                Reading
+              </p>
+            }
+          >
+            <Shelf />
+          </Suspense>
+        </div>
       </main>
 
-      <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
+      <aside className="border-rule border-t px-7 py-12 wide:border-t-0 wide:border-l wide:bg-panel wide:py-14">
         <Suspense fallback={null}>
-          <Usage />
+          <Panel account={account} />
         </Suspense>
       </aside>
     </div>
@@ -51,41 +67,8 @@ const SettingsPage = async () => {
 
 const Shelf = async () => <DocumentShelf documents={await listDocuments()} />;
 
-const Usage = async () => {
-  const usage = await readUsage();
-
-  if (!usage) return null;
-
-  const entries: Entry[] = [
-    {
-      kind: "operation",
-      tick: "01",
-      title: "Indexed",
-      detail: `${usage.documents} document${usage.documents === 1 ? "" : "s"} · ${usage.chunks.toLocaleString()} passages`,
-    },
-    {
-      kind: "operation",
-      tick: "02",
-      title: "Asked",
-      detail: `${usage.chats} conversation${usage.chats === 1 ? "" : "s"} · ${usage.messages} message${usage.messages === 1 ? "" : "s"}`,
-    },
-    {
-      kind: "operation",
-      tick: "03",
-      title: "Tokens",
-      // Both directions, because output is the expensive one and a single
-      // total hides which of the two is growing.
-      detail: `${usage.tokensIn.toLocaleString()} in · ${usage.tokensOut.toLocaleString()} out`,
-    },
-    {
-      kind: "operation",
-      tick: "04",
-      title: "Embedding",
-      detail: "1024 dimensions, self-hosted. Passages are embedded once and reused.",
-    },
-  ];
-
-  return <ApparatusColumn entries={entries} label="What this account has used" />;
-};
+const Panel = async ({ account }: { account: Awaited<ReturnType<typeof readAccount>> }) => (
+  <AccountPanel account={account} usage={await readUsage()} />
+);
 
 export default SettingsPage;

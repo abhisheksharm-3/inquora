@@ -113,6 +113,8 @@ export type PassageInContext = {
 /** What this account has actually used, for the settings surface. */
 export type AccountUsage = {
   documents: number;
+  /** Bytes across every document, for the one number a file list cannot total. */
+  bytes: number;
   chats: number;
   messages: number;
   chunks: number;

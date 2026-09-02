@@ -18,29 +18,24 @@ export const AccountStats = ({ usage }: { usage: AccountUsage }) => {
     { label: "Questions asked", value: usage.chats.toLocaleString() },
     { label: "Documents added", value: usage.documents.toLocaleString() },
     { label: "Passages searchable", value: usage.chunks.toLocaleString() },
-    {
-      label: "Words the model wrote",
-      value: usage.tokensOut > 0 ? approximate(usage.tokensOut) : "none yet",
-    },
-    {
-      label: "Words it read to answer",
-      value: usage.tokensIn > 0 ? approximate(usage.tokensIn) : "none yet",
-    },
+    { label: "Words written", value: usage.tokensOut > 0 ? approximate(usage.tokensOut) : "—" },
+    { label: "Words read", value: usage.tokensIn > 0 ? approximate(usage.tokensIn) : "—" },
   ];
 
   return (
     <div>
-      <h2 className="mb-5 border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.13em]">
+      <h2 className="mb-1 border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.13em]">
         This account
       </h2>
 
-      <dl className="m-0 grid gap-6">
+      <dl className="m-0 grid">
         {rows.map((row) => (
-          <div key={row.label}>
-            <dd className="m-0 font-light font-reading text-[1.7rem] text-ink leading-none tabular tracking-[-0.015em]">
-              {row.value}
-            </dd>
-            <dt className="mt-2 font-record text-label text-faint">{row.label}</dt>
+          <div
+            key={row.label}
+            className="flex items-baseline justify-between gap-6 border-rule border-b py-2.5"
+          >
+            <dt className="font-record text-record text-soft">{row.label}</dt>
+            <dd className="m-0 font-record text-record text-ink tabular">{row.value}</dd>
           </div>
         ))}
       </dl>

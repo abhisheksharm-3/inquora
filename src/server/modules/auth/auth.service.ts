@@ -72,7 +72,14 @@ export const signUpWithPassword = async (
 /** Who is signed in, for the account menu. */
 export const currentAccount = async (): Promise<
   Result<
-    { id: string; email: string; displayName: string | null; avatarUrl: string | null },
+    {
+      id: string;
+      email: string;
+      displayName: string | null;
+      avatarUrl: string | null;
+      provider: string;
+      createdAt: string;
+    },
     AppError
   >
 > => {
@@ -86,7 +93,7 @@ export const currentAccount = async (): Promise<
   // the auth metadata, so a later rename has one home.
   const { data: profile } = await db
     .from("profiles")
-    .select("display_name")
+    .select("display_name, created_at")
     .eq("id", identity.user.id)
     .maybeSingle();
 
@@ -109,6 +116,13 @@ export const currentAccount = async (): Promise<
     displayName:
       profile?.display_name ?? (typeof metadata.full_name === "string" ? metadata.full_name : null),
     avatarUrl: typeof avatar === "string" ? avatar : null,
+    // How they signed in, which is the difference between offering "change
+    // your password" and offering nothing to change.
+    provider:
+      typeof identity.user.app_metadata?.provider === "string"
+        ? identity.user.app_metadata.provider
+        : "email",
+    createdAt: profile?.created_at ?? identity.user.created_at,
   });
 };
 

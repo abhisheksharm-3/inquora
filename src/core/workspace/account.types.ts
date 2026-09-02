@@ -11,4 +11,8 @@ export type Account = {
   displayName: string | null;
   /** Set when they signed in with Google, which supplies a picture. */
   avatarUrl: string | null;
+  /** How they sign in: `google`, or `email` for a password. */
+  provider: string;
+  /** When the profile row was created, which is when they joined. */
+  createdAt: string;
 };

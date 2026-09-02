@@ -19,21 +19,21 @@ export const DeleteChat = ({ chatId, title }: { chatId: string; title: string })
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <form action={remove} className="shrink-0">
+    <form action={remove} className="inline">
       <input type="hidden" name="chatId" value={chatId} />
 
       {confirming ? (
-        <span className="flex items-center gap-3">
+        <span className="inline-flex items-baseline gap-3">
           <button
             type="submit"
-            className="min-h-9 whitespace-nowrap border-danger border-b pb-0.5 font-record text-label text-danger"
+            className="whitespace-nowrap border-danger border-b font-record text-label text-danger"
           >
             Delete for good
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="min-h-9 whitespace-nowrap font-record text-label text-faint hover:text-ink"
+            className="whitespace-nowrap font-record text-label text-faint hover:text-ink"
           >
             Keep
           </button>
@@ -43,7 +43,7 @@ export const DeleteChat = ({ chatId, title }: { chatId: string; title: string })
           type="button"
           onClick={() => setConfirming(true)}
           aria-label={`Delete "${title}"`}
-          className="min-h-9 whitespace-nowrap font-record text-label text-faint hover:text-danger"
+          className="whitespace-nowrap font-record text-label text-faint hover:text-danger"
         >
           Delete
         </button>
