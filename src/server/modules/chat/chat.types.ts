@@ -50,6 +50,7 @@ export interface AgentDependencies {
   chunks: ChunkRangePort;
   memories: MemoryPort;
   tables: TablesPort;
+  structure: OutlinePort;
 }
 
 /** The tabular surface the query_table tool depends on. */
@@ -65,12 +66,23 @@ export interface TablesPort {
   }): Promise<Result<Record<string, unknown>[], AppError>>;
 }
 
+/** The structural surface the outline and grep tools depend on. */
+export interface OutlinePort {
+  outline(documentId: string): Promise<Result<unknown, AppError>>;
+  grep(query: {
+    documentId: string;
+    pattern: string;
+    limit?: number;
+  }): Promise<Result<{ lineNumber: number; line: string }[], AppError>>;
+}
+
 export interface ToolDependencies {
   context: ChatContext;
   retrieval: RetrievalPort;
   chunks: ChunkRangePort;
   memories: MemoryPort;
   tables: TablesPort;
+  structure: OutlinePort;
   /** Called with the chunk ids a search returned, so the answer can cite them. */
   onCitations: (chunkIds: string[]) => void;
 }
@@ -108,5 +120,6 @@ export interface ChatServiceDependencies {
   chunks: ChunkRangePort;
   memories: MemoryPort;
   tables: TablesPort;
+  structure: OutlinePort;
   model: () => Promise<Result<BaseChatModel, AppError>>;
 }

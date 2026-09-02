@@ -1,5 +1,6 @@
 import type { Chunk } from "@/core/chunking.types";
 import type { AppError } from "@/core/errors";
+import type { Outline } from "@/core/outline.types";
 import type { Result } from "@/core/result";
 
 export interface ClaimedJob {
@@ -31,10 +32,19 @@ export interface ExtractedDocument {
   chunks: Chunk[];
   expectedChunks: number;
   tables?: ExtractedTable[];
+  /** What the document is made of, so a model can look before it searches. */
+  outline?: Outline;
+  /** The document as text, kept so grep can match literally. */
+  text?: string;
 }
 
 export interface ChunkStore {
   setExpectedChunks(documentId: string, expected: number): Promise<Result<void, AppError>>;
+  setOutline(
+    documentId: string,
+    outline: Outline,
+    text: string | undefined,
+  ): Promise<Result<void, AppError>>;
   insertChunks(
     documentId: string,
     chunks: { chunk_index: number; content: string; embedding: number[]; metadata: unknown }[],

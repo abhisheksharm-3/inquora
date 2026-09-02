@@ -34,12 +34,20 @@ export const createIngestionWorker = ({
     const extracted = await extract(job);
     if (!extracted.ok) return failJob(extracted.error.detail ?? extracted.error.type);
 
-    const { chunks, expectedChunks, tables } = extracted.value;
+    const { chunks, expectedChunks, tables, outline, text } = extracted.value;
 
     // Written before embedding starts, so the interface can show a true fraction
     // instead of one of four words.
     const expected = await store.setExpectedChunks(job.documentId, expectedChunks);
     if (!expected.ok) return failJob(expected.error.detail ?? expected.error.type);
+
+    // The outline and the retained text are written before embedding, because
+    // they cost nothing and a document that fails halfway is still greppable and
+    // still has a structure a reader can see.
+    if (outline) {
+      const described = await store.setOutline(job.documentId, outline, text);
+      if (!described.ok) return failJob(described.error.detail ?? described.error.type);
+    }
 
     const mark = await queue.highWaterMark(job.documentId);
     if (!mark.ok) return failJob(mark.error.detail ?? mark.error.type);

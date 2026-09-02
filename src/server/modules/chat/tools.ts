@@ -33,6 +33,7 @@ export const createTools = ({
   chunks,
   memories,
   tables,
+  structure,
   onCitations,
 }: ToolDependencies) => {
   const documentIds = context.documents.map((d) => d.id);
@@ -205,6 +206,62 @@ export const createTools = ({
     },
   );
 
-  return [searchDocuments, readChunks, listDocuments, listTables, queryTable, remember, calculate];
+  const getOutline = tool(
+    async ({ document_id }: { document_id: string }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await structure.outline(document_id);
+
+      if (!found.ok) return `Could not read the outline: ${found.error.detail ?? found.error.type}`;
+      if (!found.value) return "That document has no outline recorded.";
+
+      return JSON.stringify(found.value);
+    },
+    {
+      name: "get_outline",
+      description:
+        "What a document is made of: its headings, or its sheets and their columns. Reading this " +
+        "before searching costs one call and tells you whether the document even covers what was " +
+        "asked.",
+      schema: z.object({ document_id: z.guid() }),
+    },
+  );
+
+  const grepDocument = tool(
+    async ({ document_id, pattern }: { document_id: string; pattern: string }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await structure.grep({ documentId: document_id, pattern });
+
+      if (!found.ok) return `That pattern was refused: ${found.error.detail ?? found.error.type}`;
+      if (found.value.length === 0) return `Nothing in that document matches ${pattern}.`;
+
+      return found.value.map((match) => `${match.lineNumber}: ${match.line}`).join("\n");
+    },
+    {
+      name: "grep_document",
+      description:
+        "Find lines in a document matching a literal string or a regular expression, with their " +
+        "line numbers. Use this for error codes, identifiers, version strings and exact phrases, " +
+        "which a meaning-based search flattens and often misses.",
+      schema: z.object({ document_id: z.guid(), pattern: z.string().min(1).max(200) }),
+    },
+  );
+
+  return [
+    searchDocuments,
+    readChunks,
+    listDocuments,
+    getOutline,
+    grepDocument,
+    listTables,
+    queryTable,
+    remember,
+    calculate,
+  ];
 };
 import type { ToolDependencies } from "./chat.types";

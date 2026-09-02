@@ -47,7 +47,11 @@ plainly rather than answering from general knowledge.
 
 For a spreadsheet, query it rather than searching it: list_tables then
 query_table. Searching the text of a sheet can find the right region and cannot
-add up a column.`;
+add up a column.
+
+For an exact string — an error code, an identifier, a version — use
+grep_document rather than search_documents. get_outline shows what a document
+contains before you search it.`;
 };
 
 export const createAnsweringAgent = ({
@@ -57,6 +61,7 @@ export const createAnsweringAgent = ({
   chunks,
   memories,
   tables,
+  structure,
 }: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
   let answer = "";
@@ -98,6 +103,7 @@ export const createAnsweringAgent = ({
     chunks,
     memories,
     tables,
+    structure,
     onCitations: (ids: string[]) => {
       for (const id of ids) if (!citations.includes(id)) citations.push(id);
     },

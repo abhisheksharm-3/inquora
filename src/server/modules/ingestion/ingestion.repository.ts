@@ -70,6 +70,21 @@ export const createIngestionRepository = (db: SupabaseClient<Database>) => ({
     return ok(undefined);
   },
 
+  async setOutline(
+    documentId: string,
+    outline: unknown,
+    text: string | undefined,
+  ): Promise<Result<void, AppError>> {
+    const { error } = await db
+      .from("documents")
+      .update({ outline: outline as never, extracted_text: text ?? null })
+      .eq("id", documentId);
+
+    if (error) return err(AppError.badGateway(`could not record the outline: ${error.message}`));
+
+    return ok(undefined);
+  },
+
   async insertTable(
     documentId: string,
     table: { name: string; header: string[]; rows: Record<string, string>[] },

@@ -5,6 +5,7 @@ import { createChunksRepository } from "@/server/modules/retrieval/chunks.reposi
 import { createRetrievalRepository } from "@/server/modules/retrieval/retrieval.repository";
 import { createRetrievalService } from "@/server/modules/retrieval/retrieval.service";
 import { createMemoryRepository } from "@/server/modules/memory/memory.repository";
+import { createOutlineRepository } from "@/server/modules/documents/outline.repository";
 import { createTablesRepository } from "@/server/modules/documents/tables.repository";
 import { createCache } from "@/server/platform/cache/cache";
 import { createServerDbClient } from "@/server/platform/db/client";
@@ -67,6 +68,7 @@ export const chatServiceForRequest = async (): Promise<Result<ChatService, AppEr
       chunks: createChunksRepository(db),
       memories: createMemoryRepository(db),
       tables: createTablesRepository(db),
+      structure: createOutlineRepository(db),
       model: () =>
         createChatModel({
           apiKey: configuration.GEMINI_API_KEY,

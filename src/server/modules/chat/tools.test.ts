@@ -45,11 +45,14 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
     expect((tools as InvokableTool[]).map((t) => t.name).sort()).toEqual([
       "calculate",
+      "get_outline",
+      "grep_document",
       "list_documents",
       "list_tables",
       "query_table",
@@ -69,6 +72,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -90,6 +94,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: (ids) => seen.push(ids),
     });
 
@@ -105,6 +110,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -120,6 +126,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -137,6 +144,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -162,6 +170,7 @@ describe("createTools", () => {
         list: async () => ok([]),
         query: async () => err(AppError.badRequest("the query may not use delete")),
       },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -184,6 +193,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -209,6 +219,7 @@ describe("createTools", () => {
         list: async () => ok([{ name: "Pipeline", header: ["Account", "Value"], rowCount: 3 }]),
         query: async () => ok([]),
       },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -222,6 +233,74 @@ describe("createTools", () => {
     expect(answer).toContain("Account, Value");
   });
 
+  it("finds an exact identifier that a meaning-based search flattens", async () => {
+    const grep = vi.fn(async (_q: Record<string, unknown>) =>
+      ok([{ lineNumber: 2, line: "The cause was error PG-4711 in a trigger." }]),
+    );
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "grep_document").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        pattern: "PG-4711",
+      }),
+    );
+
+    // The line number matters: a citation points at a line, not at a document.
+    expect(answer).toBe("2: The cause was error PG-4711 in a trigger.");
+  });
+
+  it("says plainly when a document has no outline yet", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "get_outline").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+      }),
+    );
+
+    expect(answer).toContain("no outline");
+  });
+
+  it("returns the outline a document does have", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: {
+        outline: async () => ok({ headings: [{ level: 1, title: "Revenue", at: 0 }] }),
+        grep: async () => ok([]),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "get_outline").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+      }),
+    );
+
+    expect(answer).toContain("Revenue");
+  });
+
   it("calculates arithmetic without reaching a language model for it", async () => {
     const tools = createTools({
       context,
@@ -229,6 +308,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -244,6 +324,7 @@ describe("createTools", () => {
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
       tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: { outline: async () => ok(null), grep: async () => ok([]) },
       onCitations: () => {},
     });
 

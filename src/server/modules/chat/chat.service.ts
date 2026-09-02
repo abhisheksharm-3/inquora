@@ -13,6 +13,7 @@ export const createChatService = ({
   chunks,
   memories,
   tables,
+  structure,
   model,
 }: ChatServiceDependencies): ChatService => ({
   async send({ chatId, content, parentId, signal }) {
@@ -65,6 +66,7 @@ export const createChatService = ({
       chunks,
       memories,
       tables,
+      structure,
     });
 
     // Dispatched before the first model call rather than after it, so the common

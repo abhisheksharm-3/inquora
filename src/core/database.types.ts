@@ -226,9 +226,11 @@ export type Database = {
           created_at: string
           error: string | null
           expected_chunks: number | null
+          extracted_text: string | null
           id: string
           indexed_at: string | null
           kind: Database["public"]["Enums"]["document_kind"]
+          outline: Json | null
           source_url: string | null
           status: Database["public"]["Enums"]["processing_status"]
           storage_path: string | null
@@ -243,9 +245,11 @@ export type Database = {
           created_at?: string
           error?: string | null
           expected_chunks?: number | null
+          extracted_text?: string | null
           id?: string
           indexed_at?: string | null
           kind: Database["public"]["Enums"]["document_kind"]
+          outline?: Json | null
           source_url?: string | null
           status?: Database["public"]["Enums"]["processing_status"]
           storage_path?: string | null
@@ -260,9 +264,11 @@ export type Database = {
           created_at?: string
           error?: string | null
           expected_chunks?: number | null
+          extracted_text?: string | null
           id?: string
           indexed_at?: string | null
           kind?: Database["public"]["Enums"]["document_kind"]
+          outline?: Json | null
           source_url?: string | null
           status?: Database["public"]["Enums"]["processing_status"]
           storage_path?: string | null
@@ -549,6 +555,13 @@ export type Database = {
       get_chat_context: {
         Args: { p_chat_id: string; p_history_limit?: number }
         Returns: Json
+      }
+      grep_document: {
+        Args: { p_document_id: string; p_limit?: number; p_pattern: string }
+        Returns: {
+          line: string
+          line_number: number
+        }[]
       }
       insert_document_chunks: {
         Args: { p_chunks: Json; p_document_id: string }

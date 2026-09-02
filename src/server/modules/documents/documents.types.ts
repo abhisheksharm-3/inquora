@@ -1,5 +1,6 @@
 import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result";
+import type { Outline } from "@/core/outline.types";
 import type { UploadRequest } from "./documents.schema";
 
 export interface UploadTicket {
@@ -32,4 +33,21 @@ export interface TableQuery {
 export interface TablesRepository {
   list(documentId: string): Promise<Result<DocumentTable[], AppError>>;
   query(query: TableQuery): Promise<Result<Record<string, unknown>[], AppError>>;
+}
+
+/** One line of a document that matched a pattern. */
+export interface GrepMatch {
+  lineNumber: number;
+  line: string;
+}
+
+export interface GrepQuery {
+  documentId: string;
+  pattern: string;
+  limit?: number;
+}
+
+export interface OutlineRepository {
+  outline(documentId: string): Promise<Result<Outline | null, AppError>>;
+  grep(query: GrepQuery): Promise<Result<GrepMatch[], AppError>>;
 }

@@ -3,6 +3,7 @@ import { AppError } from "@/core/errors";
 import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import { fetchExternal } from "@/server/platform/http/fetch-external";
+import { outlineFromSheets, outlineFromText } from "@/core/outline";
 import { chunkSource } from "./extract";
 import type { ClaimedJob, ExtractedDocument, Source } from "./ingestion.types";
 
@@ -47,7 +48,20 @@ export const extractDocument = async (
     ),
   }));
 
-  return ok({ chunks: chunks.value, expectedChunks: chunks.value.length, tables });
+  const outline =
+    source.value.sheets && source.value.sheets.length > 0
+      ? outlineFromSheets(source.value.sheets)
+      : outlineFromText(source.value.text ?? "");
+
+  return ok({
+    chunks: chunks.value,
+    expectedChunks: chunks.value.length,
+    tables,
+    outline,
+    // Only prose keeps its text. A workbook's rows are the queryable form of it,
+    // and storing a flattened copy would be the mistake the old extractor made.
+    text: source.value.sheets ? undefined : source.value.text,
+  });
 };
 
 type DocumentRow = {
