@@ -22,56 +22,55 @@ export const HistoryList = ({ chats }: { chats: ChatEntry[] }) => (
   <>
     {groupByMonth(chats).map(([month, entries]) => (
       <section key={month} className="mb-10">
-        <h2 className="mb-1 border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.14em]">
+        <h2 className="mb-2 border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.14em]">
           {month}
         </h2>
 
         <ul className="m-0 list-none p-0">
           {entries.map((chat) => (
-            <li
-              key={chat.id}
-              className="flex items-baseline gap-6 border-rule border-b py-4 transition-colors duration-150 ease-out-quart hover:bg-panel"
-            >
-              <Link
-                href={DASHBOARD_ROUTES.CHAT(chat.id)}
-                className="grid min-w-0 flex-1 grid-cols-[3.4rem_minmax(0,1fr)] items-baseline gap-5"
-              >
-                {/* The day only. The month is the heading above it, and the
-                    first version printed both. */}
-                <time
-                  dateTime={chat.updatedAt}
-                  className="font-record text-label text-faint tabular"
-                >
-                  {new Intl.DateTimeFormat("en", { day: "2-digit" }).format(
-                    new Date(chat.updatedAt),
-                  )}
-                </time>
-
-                <span className="min-w-0">
-                  <span className="line-clamp-2 font-light font-reading text-[1.12rem] text-ink">
+            <li key={chat.id} className="border-rule border-b py-4">
+              <div className="flex items-baseline justify-between gap-6">
+                <Link href={DASHBOARD_ROUTES.CHAT(chat.id)} className="min-w-0 flex-1">
+                  <span className="line-clamp-2 max-w-[64ch] font-light font-reading text-[1.2rem] text-ink leading-snug">
                     {chat.title ?? "Untitled"}
                   </span>
-                  <span className="mt-1.5 flex flex-wrap items-baseline gap-x-3 font-record text-label text-faint">
-                    <span>{formatWhen(chat.updatedAt)}</span>
-                    {chat.documents.length > 0 ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <span className="min-w-0 truncate">
-                          {chat.documents.map((document) => document.title).join(", ")}
-                        </span>
-                      </>
-                    ) : null}
-                    {chat.messageCount === 0 ? (
-                      <>
-                        <span aria-hidden>·</span>
-                        <span className="text-soft">never answered</span>
-                      </>
-                    ) : null}
-                  </span>
-                </span>
-              </Link>
+                </Link>
 
-              <DeleteChat chatId={chat.id} title={chat.title ?? "Untitled"} />
+                {/* Always visible. It was revealed on hover, which is
+                    undiscoverable: a control nobody can see is a control
+                    nobody has. */}
+                <DeleteChat chatId={chat.id} title={chat.title ?? "Untitled"} />
+              </div>
+
+              <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-record text-label text-faint">
+                <time dateTime={chat.updatedAt}>{formatWhen(chat.updatedAt)}</time>
+
+                {chat.documents.length > 0 ? (
+                  <>
+                    <span aria-hidden>·</span>
+                    {chat.documents.slice(0, 2).map((document) => (
+                      <span
+                        key={document.id}
+                        className="max-w-[24ch] truncate rounded-full border border-rule px-2 py-0.5"
+                      >
+                        {document.title}
+                      </span>
+                    ))}
+                    {chat.documents.length > 2 ? (
+                      <span>and {chat.documents.length - 2} more</span>
+                    ) : null}
+                  </>
+                ) : null}
+
+                <span aria-hidden>·</span>
+                {chat.messageCount === 0 ? (
+                  <span className="text-soft">never answered</span>
+                ) : (
+                  <span>
+                    {chat.messageCount} message{chat.messageCount === 1 ? "" : "s"}
+                  </span>
+                )}
+              </p>
             </li>
           ))}
         </ul>

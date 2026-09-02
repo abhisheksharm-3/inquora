@@ -3,8 +3,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import { Chrome } from "@/ui/components/apparatus/Chrome";
+import { AccountStats } from "@/ui/components/history/AccountStats";
 import { HistoryList } from "@/ui/components/history/HistoryList";
-import { listChats, readAccount, searchChats } from "../queries";
+import { listChats, readAccount, readUsage, searchChats } from "../queries";
 
 export const metadata: Metadata = {
   title: "History",
@@ -29,11 +30,11 @@ const HistoryPage = async ({ searchParams }: { searchParams: Promise<{ q?: strin
   const query = q?.trim() ?? "";
 
   return (
-    <div className="grid min-h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)]">
+    <div className="grid min-h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)] wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
       <Chrome current="history" account={account} />
 
-      <main className="px-7 py-12 wide:px-12 wide:py-14">
-        <div className="mx-auto w-full max-w-[1100px]">
+      <main className="min-w-0 px-7 py-12 wide:px-12 wide:py-14">
+        <div className="w-full max-w-[86ch]">
           <h1 className="mb-8 font-light font-reading text-[2.1rem] text-ink leading-tight tracking-[-0.02em]">
             Everything you have asked.
           </h1>
@@ -80,8 +81,20 @@ const HistoryPage = async ({ searchParams }: { searchParams: Promise<{ q?: strin
           </Suspense>
         </div>
       </main>
+
+      <aside className="border-rule border-t px-7 py-12 wide:border-t-0 wide:border-l wide:bg-panel wide:py-14">
+        <Suspense fallback={null}>
+          <Usage />
+        </Suspense>
+      </aside>
     </div>
   );
+};
+
+const Usage = async () => {
+  const usage = await readUsage();
+
+  return usage ? <AccountStats usage={usage} /> : null;
 };
 
 const Questions = async ({ query }: { query: string }) => {
