@@ -5,6 +5,7 @@ import type {
   ChatDetail,
   ChatEntry,
   DocumentEntry,
+  PassageInContext,
 } from "@/core/workspace/workspace.types";
 
 export interface WorkspaceRepository {
@@ -26,4 +27,5 @@ export interface WorkspaceRepository {
   removeDocument(documentId: string): Promise<Result<void, AppError>>;
   setWebSearch(chatId: string, enabled: boolean): Promise<Result<void, AppError>>;
   usage(): Promise<Result<AccountUsage, AppError>>;
+  passage(chunkId: string): Promise<Result<PassageInContext | null, AppError>>;
 }

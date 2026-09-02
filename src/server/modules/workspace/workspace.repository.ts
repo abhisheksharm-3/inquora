@@ -9,6 +9,7 @@ import type {
   DocumentEntry,
   Message,
 } from "@/core/workspace/workspace.types";
+import { PASSAGE_CONTEXT } from "./workspace.constants";
 import type { WorkspaceRepository } from "./workspace.types";
 
 /**
@@ -225,6 +226,45 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
     if (error) return err(AppError.badGateway(`could not change web search: ${error.message}`));
 
     return ok(undefined);
+  },
+
+  async passage(chunkId) {
+    const { data: cited, error } = await db
+      .from("document_chunks")
+      .select("document_id, chunk_index, documents(title, chunk_count)")
+      .eq("id", chunkId)
+      .maybeSingle();
+
+    if (error) return err(AppError.badGateway(`could not read the passage: ${error.message}`));
+    if (!cited?.documents) return ok(null);
+
+    // Two either side. Enough to see where a passage sits without turning the
+    // viewer into the whole document, which is a different surface.
+    const from = Math.max(0, cited.chunk_index - PASSAGE_CONTEXT);
+    const to = cited.chunk_index + PASSAGE_CONTEXT;
+
+    const { data: around, error: aroundError } = await db
+      .from("document_chunks")
+      .select("chunk_index, content")
+      .eq("document_id", cited.document_id)
+      .gte("chunk_index", from)
+      .lte("chunk_index", to)
+      .order("chunk_index");
+
+    if (aroundError) {
+      return err(AppError.badGateway(`could not read around it: ${aroundError.message}`));
+    }
+
+    return ok({
+      documentId: cited.document_id,
+      documentTitle: cited.documents.title,
+      chunkIndex: cited.chunk_index,
+      chunkCount: cited.documents.chunk_count,
+      passages: (around ?? []).map((row) => ({
+        chunkIndex: row.chunk_index,
+        content: row.content,
+      })),
+    });
   },
 
   async usage() {

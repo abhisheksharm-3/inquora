@@ -1,157 +1,131 @@
 import type { Metadata } from "next";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
+import type { Entry } from "@/ui/components/apparatus/apparatus.types";
 
 export const metadata: Metadata = {
-  title: "Inquora — down for a rebuild",
-  description: "Inquora is offline while it is rebuilt from the database up.",
+  title: "Inquora — every answer, traced to the passage it came from",
+  description:
+    "Ask a question of your documents and reach the passage behind any claim in one action.",
 };
 
-const specimens = [
-  {
-    source: "Why",
-    passage:
-      "Two hundred and thirteen of two hundred and forty-one documents were stuck unprocessed, and answers were assembled from eight model calls before the first word appeared. That is not a bug list, it is a foundation problem.",
-  },
-  {
-    source: "What is being replaced",
-    passage:
-      "The schema, with derived state maintained by the database rather than by application code that mostly did not run. Retrieval, as one hybrid query instead of four dense ones. Streaming, so the answer arrives as it is written.",
-  },
-  {
-    source: "What is not changing",
-    passage:
-      "Every answer stays traceable to the passage it came from. Your documents stay yours, and nothing trains on them.",
-  },
-];
-
-const budget = [
-  ["Model calls before an answer", "5 to 8", "1, or 2 when it searches"],
-  ["Embedding calls per question", "4 to 8", "1, cached"],
-  ["Vector searches per question", "4 to 8", "1"],
-  ["Database roundtrips per turn", "8, sequential", "3"],
-  ["First word of the answer", "after the whole answer", "as it is written"],
-];
-
-const swaps = [
-  [
-    "Retrieval",
-    "Four dense vector queries to a separate service, re-ranked by counting shared words.",
-    "One query that runs vector and full-text search together and fuses them by rank, in the same database as everything else.",
-  ],
-  [
-    "Correctness of state",
-    "Application code wrote back whether a document had finished processing, and usually did not.",
-    "The database maintains it. A count cannot drift from the rows it counts.",
-  ],
-  [
-    "Failures",
-    "Saved as assistant messages, so every error became a permanent turn in the conversation.",
-    "Errors are errors. They are reported, not remembered as something the assistant said.",
-  ],
-];
-
 /**
- * The landing page while the product is offline. Static on purpose: no client
- * components and no WebGL, so the one page that has to work cannot be broken by
- * the rebuild happening behind it.
+ * Surface 01, the brand register.
+ *
+ * No centred hero and no split hero with an animation on one side, both of
+ * which are hard bans. The landing page is built like the product: a claim on
+ * the left, an apparatus on the right backing each claim with a numbered
+ * specimen. The page argues the way the product argues.
+ *
+ * The brand register differs from the product register by committing to the
+ * dark ground, not by introducing a saturated colour, so `data-theme` is set on
+ * this surface rather than a second palette being invented for it.
+ *
+ * A server component with no client JavaScript at all. The page this replaced
+ * mounted a 390-line WebGL shader canvas.
  */
-const Home = () => (
-  <main className={styles.page}>
-    <div className={styles.nav}>
-      <span className={styles.wordmark}>Inquora</span>
-      <span>Offline · rebuilding</span>
-    </div>
+const specimens: Entry[] = [
+  {
+    kind: "specimen",
+    number: 1,
+    source: ["Retrieval"],
+    passage:
+      "Vector similarity and full-text search run as one query and are fused by rank, so exact terms and meaning both count.",
+  },
+  {
+    kind: "specimen",
+    number: 2,
+    source: ["Provenance"],
+    passage:
+      "Every answer stores the passages it used. Reopen a conversation a month later and the sources are still attached.",
+  },
+  {
+    kind: "specimen",
+    number: 3,
+    source: ["Spreadsheets"],
+    passage:
+      "Tables are queried as tables. Numbers are read from cells, not guessed from a paragraph describing them.",
+  },
+];
 
-    <div className={styles.stage}>
-      <h1 className={styles.thesis}>
-        Inquora is down, and is being <em>rebuilt</em>.
+const strip = [
+  {
+    heading: "Documents",
+    body: "PDFs, documents, spreadsheets, slides, repositories, recorded video.",
+  },
+  {
+    heading: "Together",
+    body: "Several documents in one conversation, each one switchable in and out of scope.",
+  },
+  {
+    heading: "Honest",
+    body: "When the answer is not in your documents, it says so instead of inventing one.",
+  },
+];
+
+const Home = () => (
+  <div
+    data-theme="dark"
+    className="grid min-h-dvh grid-cols-1 content-start bg-ground wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]"
+  >
+    <header className="col-span-full flex items-center justify-between gap-6 border-rule border-b px-6 py-4 wide:px-8">
+      <span className="font-reading text-[1rem] text-ink tracking-[0.02em]">Inquora</span>
+      <nav className="flex items-center gap-5 font-record text-label text-faint uppercase tracking-[0.14em]">
+        <Link href="/login" className="min-h-11 border-transparent border-b pb-0.5 hover:text-ink">
+          Sign in
+        </Link>
+        <Link href="/signup" className="min-h-11 border-mark border-b pb-0.5 text-ink">
+          Start reading
+        </Link>
+      </nav>
+    </header>
+
+    <main className="px-6 pt-12 pb-11 wide:px-9 wide:pt-14">
+      <h1 className="mb-6 max-w-[15ch] font-light font-reading text-[clamp(2.1rem,4.6vw,3.5rem)] leading-[1.08] tracking-[-0.02em]">
+        Every answer, traced to the <em className="text-mark italic">passage</em> it came from.
       </h1>
 
-      <p className={styles.sub}>
-        The version that stood here has been taken offline. It is being rebuilt from the database
-        up, so nothing is being patched around:{" "}
-        <b>the schema, retrieval, streaming and the interface are all being replaced</b>, in that
-        order.
+      <p className="mb-7 max-w-[46ch] font-record text-[0.86rem] text-soft leading-relaxed">
+        Ask a question of your documents and watch the work happen. Inquora shows what it searched,
+        what it read, and the exact lines behind every claim, in the same view as the answer.
       </p>
 
-      <p className={styles.note}>
-        <b>There is nothing to sign in to in the meantime.</b> This page is the whole site until the
-        rebuild reaches a version worth using.
+      <p className="flex flex-wrap items-center gap-4 font-record text-label uppercase tracking-[0.13em]">
+        <Link
+          href="/signup"
+          className="inline-flex min-h-11 items-center border-mark border-b pb-1 text-ink"
+        >
+          Start reading
+        </Link>
+        <Link
+          href="/login"
+          className="inline-flex min-h-11 items-center border-rule border-b pb-1 text-faint hover:text-ink"
+        >
+          I have an account
+        </Link>
       </p>
-    </div>
+    </main>
 
-    <aside className={styles.apparatus}>
-      <div className={styles.apparatusHead}>
-        <span>Apparatus</span>
-        <span>{specimens.length} specimens</span>
-      </div>
-
-      {specimens.map((specimen, index) => (
-        <div className={styles.specimen} key={specimen.source}>
-          <span className={styles.number}>{String(index + 1).padStart(2, "0")}</span>
-          <div>
-            <p className={styles.source}>{specimen.source}</p>
-            <p className={styles.passage}>{specimen.passage}</p>
-          </div>
-        </div>
-      ))}
+    <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
+      <ApparatusColumn entries={specimens} label="Apparatus" />
     </aside>
 
-    <section className={styles.ledger}>
-      <div className={styles.ledgerMain}>
-        <h2 className={styles.heading}>What the rebuild is measured against</h2>
-        <p className={styles.lede}>
-          The old system was slow because of how much it did per question, not because of where it
-          ran. These are the numbers being designed to, per question asked.
-        </p>
-
-        <div className={styles.scroller}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th scope="col">Per question</th>
-                <th scope="col">Was</th>
-                <th scope="col">Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {budget.map(([metric, was, target]) => (
-                <tr key={metric}>
-                  <td>{metric}</td>
-                  <td>{was}</td>
-                  <td className={styles.target}>{target}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <section className="col-span-full grid grid-cols-1 border-rule border-t sm:grid-cols-3">
+      {strip.map((cell) => (
+        <div
+          key={cell.heading}
+          className="border-rule border-b px-6 py-6 sm:border-b-0 sm:border-r sm:last:border-r-0 wide:px-7"
+        >
+          <h2 className="mb-2 font-medium font-record text-label text-faint uppercase tracking-[0.13em]">
+            {cell.heading}
+          </h2>
+          <p className="max-w-[34ch] font-record text-[0.78rem] text-soft leading-relaxed">
+            {cell.body}
+          </p>
         </div>
-
-        <p className={styles.caption}>
-          Measured on 2026-08-25 against the running system. Targets are the design budget, not
-          results: they will be published once the rebuild can be measured the same way.
-        </p>
-      </div>
-
-      <aside className={styles.ledgerSide}>
-        <p className={styles.sideHead}>Three things changing shape</p>
-        <dl className={styles.swap}>
-          {swaps.map(([title, was, now]) => (
-            <div key={title}>
-              <dt>{title}</dt>
-              <dd>
-                <span className={styles.was}>Was</span>
-                {was}
-              </dd>
-              <dd>
-                <span className={styles.now}>Now</span>
-                <b>{now}</b>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </aside>
+      ))}
     </section>
-  </main>
+  </div>
 );
 
 export default Home;

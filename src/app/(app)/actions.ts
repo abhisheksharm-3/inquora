@@ -5,7 +5,7 @@ import { z } from "zod";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import { requestUploadTicket } from "@/server/modules/documents/documents.factory";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
-import type { ActionState, UploadRequestInput, UploadTicketState } from "./app.types";
+import type { ActionState, PassageState, UploadRequestInput, UploadTicketState } from "./app.types";
 
 /**
  * The transport edge for the signed-in surfaces. Every action reads a form,
@@ -194,4 +194,27 @@ const defaultTitle = (titles: string[]): string => {
   if (!first) return "Untitled";
 
   return rest.length === 0 ? first.slice(0, 120) : `${first.slice(0, 90)} and ${rest.length} more`;
+};
+
+/**
+ * The passage behind a citation, with the passages either side of it.
+ *
+ * A server action rather than a route handler because it is a read the browser
+ * asks for by id and nothing streams. Row-level security decides whether the
+ * chunk is readable, so a crafted id answers null rather than somebody else's
+ * document.
+ */
+export const readPassage = async (chunkId: string): Promise<PassageState> => {
+  const parsed = uuid.safeParse(chunkId);
+  if (!parsed.success) return { error: "That is not a passage." };
+
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return { error: bound.error.detail ?? "Sign in first." };
+
+  const passage = await bound.value.workspace.passage(parsed.data);
+
+  if (!passage.ok) return { error: passage.error.detail ?? "Could not open the passage." };
+  if (!passage.value) return { error: "That passage is no longer there." };
+
+  return { passage: passage.value };
 };

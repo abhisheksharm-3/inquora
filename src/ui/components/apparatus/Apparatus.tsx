@@ -73,7 +73,11 @@ const SpecimenEntry = ({ entry }: { entry: Specimen }) => {
   return (
     <div id={`specimen-${entry.number}`} className="mb-5 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
       {entry.href ? (
-        <Link href={entry.href} aria-label={`Open the passage behind ${entry.number}`}>
+        <Link
+          href={entry.href}
+          scroll={false}
+          aria-label={`Open the passage behind ${entry.number}`}
+        >
           {number}
         </Link>
       ) : (

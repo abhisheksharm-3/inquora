@@ -103,7 +103,10 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: (chunks) => (seen.push(chunks.map((chunk) => chunk.chunkId)), []),
+      onCitations: (chunks) => {
+        seen.push(chunks.map((chunk) => chunk.chunkId));
+        return [];
+      },
     });
 
     await byName(tools, "search_documents").invoke({ query: "revenue" });

@@ -1,4 +1,5 @@
 import type { DocumentKind } from "@/core/documents/kind";
+import type { PassageInContext } from "@/core/workspace/workspace.types";
 import type { UploadTicket } from "@/server/modules/documents/documents.types";
 
 /**
@@ -14,6 +15,9 @@ export type ActionState = {
 };
 
 export const emptyActionState: ActionState = {};
+
+/** What the viewer gets when a citation is followed. */
+export type PassageState = { passage?: PassageInContext; error?: string };
 
 /** What the upload hook asks for, computed in the browser before any bytes move. */
 export type UploadRequestInput = {

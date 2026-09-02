@@ -25,12 +25,21 @@ export const turnEntries = (turns: Turn[]): Entry[] =>
       (specimen): Entry => ({
         kind: "specimen",
         number: specimen.number,
-        source: [specimen.documentTitle, `passage ${specimen.chunkIndex}`],
+        source: [specimen.documentTitle, `passage ${specimen.chunkIndex + 1}`],
         passage: specimen.content,
+        href: passageHref(specimen.chunkId, specimen.number),
       }),
     ),
     ...failureOf(turn),
   ]);
+
+/**
+ * Where following a citation goes. A URL rather than a click handler: the back
+ * button becomes the "one action returns" the design asks for, the view is
+ * shareable, and the apparatus stays a server component.
+ */
+export const passageHref = (chunkId: string, number: number) =>
+  `?passage=${encodeURIComponent(chunkId)}&specimen=${number}`;
 
 /**
  * A failure is a record of what happened, not a turn in the conversation. The

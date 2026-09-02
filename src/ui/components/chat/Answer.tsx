@@ -1,4 +1,6 @@
+import Link from "next/link";
 import type { Specimen } from "@/core/workspace/workspace.types";
+import { passageHref } from "./turn-apparatus";
 
 const MARK = /\[(\d{1,3})\]/g;
 
@@ -16,7 +18,7 @@ const MARK = /\[(\d{1,3})\]/g;
  * text can be ahead of the apparatus.
  */
 export const Answer = ({ text, specimens }: { text: string; specimens: Specimen[] }) => {
-  const known = new Set(specimens.map((specimen) => specimen.number));
+  const known = new Map(specimens.map((specimen) => [specimen.number, specimen]));
 
   return (
     <div className="max-w-measure font-light font-reading text-ink text-read">
@@ -36,7 +38,7 @@ export const Answer = ({ text, specimens }: { text: string; specimens: Specimen[
  * Split on the citation marks rather than replacing them, so a passage that
  * happens to contain square brackets stays text.
  */
-const withMarks = (paragraph: string, known: Set<number>): React.ReactNode[] => {
+const withMarks = (paragraph: string, known: Map<number, Specimen>): React.ReactNode[] => {
   const out: React.ReactNode[] = [];
   let last = 0;
 
@@ -47,22 +49,24 @@ const withMarks = (paragraph: string, known: Set<number>): React.ReactNode[] => 
     out.push(paragraph.slice(last, at));
     last = at + match[0].length;
 
+    const specimen = known.get(number);
+
     out.push(
-      known.has(number) ? (
-        <a
+      specimen ? (
+        <Link
           key={`${at}-${number}`}
-          href={`#specimen-${number}`}
-          aria-label={`Passage ${number}`}
+          href={passageHref(specimen.chunkId, number)}
+          scroll={false}
+          aria-label={`Open passage ${number} from ${specimen.documentTitle}`}
           // No underline under the mark. The mockup underlines the cited phrase,
           // and the model tells us where a citation ends but not where the claim
-          // it supports began, so underlining the number alone would draw a rule
-          // under one character and mean nothing.
+          // it supports began, so underlining one character would mean nothing.
           className="rounded-hair px-px hover:bg-wash"
         >
           <sup className="ml-0.5 align-[0.42em] font-medium font-record text-[0.58rem] text-mark">
             {number}
           </sup>
-        </a>
+        </Link>
       ) : (
         match[0]
       ),

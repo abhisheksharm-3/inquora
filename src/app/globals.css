@@ -70,8 +70,12 @@
 }
 
 /* An explicit choice wins in both directions, which is why the dark values are
-   written twice rather than only inside the media query. */
-:root[data-theme="dark"] {
+   written twice rather than only inside the media query.
+   
+   Not scoped to `:root`, because the brand register commits to the dark ground
+   regardless of the reader's choice, and it does that by carrying this attribute
+   on its own container rather than by inventing a second palette. */
+[data-theme="dark"] {
   color-scheme: dark;
 
   --ground: oklch(0.1803 0.0078 248.26);

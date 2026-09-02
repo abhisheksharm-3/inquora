@@ -96,6 +96,20 @@ export type ChatDetail = {
   messages: Message[];
 };
 
+/**
+ * A passage in its context, for the surface that opens when a citation is
+ * followed: the passages either side of it, with the cited one marked in place.
+ */
+export type PassageInContext = {
+  documentId: string;
+  documentTitle: string;
+  /** The cited passage's own index, which is what gets marked. */
+  chunkIndex: number;
+  /** How many passages the document has, so the viewer can say where you are. */
+  chunkCount: number;
+  passages: { chunkIndex: number; content: string }[];
+};
+
 /** What this account has actually used, for the settings surface. */
 export type AccountUsage = {
   documents: number;

@@ -1,12 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import type { ChatDetail } from "@/core/workspace/workspace.types";
+import type { ChatDetail, PassageInContext } from "@/core/workspace/workspace.types";
 import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
 import { useConversation } from "@/ui/hooks/useConversation";
 import { Answer } from "./Answer";
 import { Composer } from "./Composer";
 import { Openers } from "./Openers";
+import { PassageViewer } from "./PassageViewer";
 import { ScopeBar } from "./ScopeBar";
 import { turnEntries } from "./turn-apparatus";
 
@@ -18,17 +20,27 @@ import { turnEntries } from "./turn-apparatus";
  * Substance left, apparatus right. The question is set large in the serif, the
  * answer under it at reading weight, and nothing is a bubble.
  */
-export const ChatSurface = ({ chrome, chat }: { chrome: React.ReactNode; chat: ChatDetail }) => {
+export const ChatSurface = ({
+  chrome,
+  chat,
+  following,
+}: {
+  chrome: React.ReactNode;
+  chat: ChatDetail;
+  /** The passage being read, when a citation has been followed. */
+  following?: { passage: PassageInContext; specimenNumber: number };
+}) => {
   const { turns, send, stop, streaming } = useConversation(chat);
   const tail = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Scrolled by the growing content rather than on a timer. `block: "end"`
   // keeps the newest line just above the composer instead of centring it.
   useEffect(() => {
-    if (turns.length === 0) return;
+    if (turns.length === 0 || following) return;
 
     tail.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [turns]);
+  }, [turns, following]);
 
   const entries = turnEntries(turns);
 
@@ -39,7 +51,13 @@ export const ChatSurface = ({ chrome, chat }: { chrome: React.ReactNode; chat: C
       <main className="flex min-w-0 flex-col px-6 pt-6 pb-2 wide:overflow-y-auto wide:px-9">
         <ScopeBar chat={chat} />
 
-        {turns.length === 0 ? (
+        {following ? (
+          <PassageViewer
+            passage={following.passage}
+            specimenNumber={following.specimenNumber}
+            onClose={() => router.back()}
+          />
+        ) : turns.length === 0 ? (
           <Openers documents={chat.documents} onPick={send} />
         ) : (
           <div className="flex-1">
@@ -72,17 +90,21 @@ export const ChatSurface = ({ chrome, chat }: { chrome: React.ReactNode; chat: C
           </div>
         )}
 
-        <Composer
-          onSend={send}
-          onStop={stop}
-          streaming={streaming}
-          disabled={chat.documents.length === 0}
-          placeholder={
-            chat.documents.length === 0
-              ? "Add a document to this conversation first"
-              : "Ask something about what is attached"
-          }
-        />
+        {/* No composer while a document is open: the reading column is the
+            document, and asking belongs to the answer you came from. */}
+        {following ? null : (
+          <Composer
+            onSend={send}
+            onStop={stop}
+            streaming={streaming}
+            disabled={chat.documents.length === 0}
+            placeholder={
+              chat.documents.length === 0
+                ? "Add a document to this conversation first"
+                : "Ask something about what is attached"
+            }
+          />
+        )}
       </main>
 
       <aside className="border-rule border-t px-6 py-7 wide:overflow-y-auto wide:border-t-0 wide:border-l wide:bg-panel">
