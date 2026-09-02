@@ -4,31 +4,7 @@ import { err, ok, type Result } from "@/core/result";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import { streamToSse } from "@/server/platform/http/sse";
 import { createAnsweringAgent } from "./agent";
-import type { ChatRepository } from "./chat.repository";
 import type { SendMessageRequest } from "./chat.schema";
-
-interface Dependencies {
-  repository: ChatRepository;
-  retrieval: { retrieve(request: RetrievalRequest): Promise<Result<RetrievedChunk[], AppError>> };
-  chunks: {
-    range(args: {
-      documentId: string;
-      from: number;
-      to: number;
-    }): Promise<Result<RetrievedChunk[], AppError>>;
-  };
-  memories: { remember(content: string): Promise<Result<string, AppError>> };
-  model: () => Promise<Result<BaseChatModel, AppError>>;
-}
-
-export interface SendArgs extends SendMessageRequest {
-  chatId: string;
-  signal?: AbortSignal;
-}
-
-export interface ChatService {
-  send(args: SendArgs): Promise<Result<ReadableStream<Uint8Array>, AppError>>;
-}
 
 export const createChatService = ({
   repository,
@@ -36,7 +12,7 @@ export const createChatService = ({
   chunks,
   memories,
   model,
-}: Dependencies): ChatService => ({
+}: ChatServiceDependencies): ChatService => ({
   async send({ chatId, content, parentId, signal }) {
     const started = Date.now();
 
@@ -98,6 +74,8 @@ export const createChatService = ({
           // as an assistant turn.
           if (answer.length === 0) return;
 
+          const usage = agent.usage();
+
           await repository.append({
             chatId,
             role: "assistant",
@@ -105,9 +83,14 @@ export const createChatService = ({
             parentId: user.value,
             citationChunkIds: agent.citedChunkIds(),
             latencyMs: Date.now() - started,
+            retrievalMs: usage.retrievalMs,
+            tokensIn: usage.tokensIn,
+            tokensOut: usage.tokensOut,
+            model: usage.model,
           });
         },
       }),
     );
   },
 });
+import type { ChatService, ChatServiceDependencies, SendArgs } from "./chat.types";

@@ -1,3 +1,6 @@
+import type { Cache, RedisLike } from "./cache.types";
+
+export type { Cache, RedisLike } from "./cache.types";
 /**
  * The cache is a convenience, never a dependency. Absent Redis means uncached,
  * and a Redis that is down means a miss: the query still gets answered, one
@@ -5,18 +8,6 @@
  * "fallback", which on serverless scoped to a single lambda and so cached almost
  * nothing while reading as though it cached everything.
  */
-
-/** The slice of the Upstash client this uses. Narrow on purpose, so it is fakeable. */
-export interface RedisLike {
-  get(key: string): Promise<unknown>;
-  set(key: string, value: unknown, options: { ex: number }): Promise<unknown>;
-}
-
-export interface Cache {
-  readonly configured: boolean;
-  get<T>(key: string): Promise<T | undefined>;
-  set(key: string, value: unknown, ttlSeconds: number): Promise<void>;
-}
 
 /** Thirty days, per the design. A query embedding does not go stale. */
 export const EMBEDDING_TTL_SECONDS = 60 * 60 * 24 * 30;

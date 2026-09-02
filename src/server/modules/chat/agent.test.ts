@@ -90,6 +90,42 @@ describe("createAnsweringAgent", () => {
     expect(agent.systemPrompt()).toContain("Revenue review");
   });
 
+  it("counts the time spent in retrieval separately from the time spent thinking", async () => {
+    const model = new FakeToolCallingModel({
+      toolCalls: [[{ name: "search_documents", args: { query: "revenue" }, id: "call_1" }], []],
+    });
+    const slowRetrieval = {
+      retrieve: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return ok([chunk]);
+      },
+    };
+
+    const agent = createAnsweringAgent({
+      ...dependencies({ retrieval: slowRetrieval }),
+      model,
+    });
+
+    for await (const _ of agent.stream("why did revenue miss?")) {
+      // drain
+    }
+
+    expect(agent.usage().retrievalMs).toBeGreaterThanOrEqual(20);
+  });
+
+  it("reports no token counts when the model reports none, rather than inventing zeroes", async () => {
+    const model = new FakeToolCallingModel({ toolCalls: [[]] });
+    const agent = createAnsweringAgent({ ...dependencies(), model });
+
+    for await (const _ of agent.stream("why did revenue miss?")) {
+      // drain
+    }
+
+    const usage = agent.usage();
+    expect(usage.tokensIn).toBeUndefined();
+    expect(usage.tokensOut).toBeUndefined();
+  });
+
   it("collects the answer text as it streams, so it can be persisted at the end", async () => {
     const model = new FakeToolCallingModel({ toolCalls: [[]] });
     const agent = createAnsweringAgent({ ...dependencies(), model });

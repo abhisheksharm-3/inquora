@@ -1,15 +1,6 @@
 import { STATUS_CODES } from "node:http";
 import type { AppError } from "@/core/errors";
 
-/** RFC 9457 problem document. Sent as `application/problem+json`. */
-export interface ProblemDetails {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  instance: string;
-}
-
 /**
  * Renders an error as a problem document. The title comes from Node's own
  * STATUS_CODES, so the standard reason phrases are not restated here.
@@ -33,3 +24,6 @@ export const problemResponse = (error: AppError, instance: string): Response =>
         : { "retry-after": String(error.retryAfterSeconds) }),
     },
   });
+import type { ProblemDetails } from "./http.types";
+
+export type { ProblemDetails } from "./http.types";

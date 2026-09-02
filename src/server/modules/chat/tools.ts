@@ -6,21 +6,6 @@ import type { Result } from "@/core/result";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import type { ChatContext } from "./chat.schema";
 
-interface Dependencies {
-  context: ChatContext;
-  retrieval: { retrieve(request: RetrievalRequest): Promise<Result<RetrievedChunk[], AppError>> };
-  chunks: {
-    range(args: {
-      documentId: string;
-      from: number;
-      to: number;
-    }): Promise<Result<RetrievedChunk[], AppError>>;
-  };
-  memories: { remember(content: string): Promise<Result<string, AppError>> };
-  /** Called with the chunk ids a search returned, so the answer can cite them. */
-  onCitations: (chunkIds: string[]) => void;
-}
-
 /** A passage as the model reads it: numbered, attributed, quotable. */
 const renderChunks = (chunks: RetrievedChunk[], context: ChatContext): string =>
   chunks
@@ -48,7 +33,7 @@ export const createTools = ({
   chunks,
   memories,
   onCitations,
-}: Dependencies) => {
+}: ToolDependencies) => {
   const documentIds = context.documents.map((d) => d.id);
 
   const searchDocuments = tool(
@@ -156,3 +141,4 @@ export const createTools = ({
 
   return [searchDocuments, readChunks, listDocuments, remember, calculate];
 };
+import type { ToolDependencies } from "./chat.types";

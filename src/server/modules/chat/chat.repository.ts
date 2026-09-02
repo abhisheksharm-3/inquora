@@ -4,24 +4,6 @@ import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import { chatContext, type ChatContext } from "./chat.schema";
 
-export interface AppendArgs {
-  chatId: string;
-  role: "user" | "assistant";
-  content: string;
-  parentId?: string | null;
-  citationChunkIds: string[];
-  tokensIn?: number;
-  tokensOut?: number;
-  latencyMs?: number;
-  retrievalMs?: number;
-  model?: string;
-}
-
-export interface ChatRepository {
-  context(chatId: string): Promise<Result<ChatContext, AppError>>;
-  append(args: AppendArgs): Promise<Result<string, AppError>>;
-}
-
 /**
  * Two calls, one each way. The old send path made six sequential reads before
  * any thinking started and two writes after, and it wrote failures into
@@ -71,3 +53,4 @@ export const createChatRepository = (db: SupabaseClient<Database>): ChatReposito
     return ok(data);
   },
 });
+import type { AppendArgs, ChatRepository } from "./chat.types";

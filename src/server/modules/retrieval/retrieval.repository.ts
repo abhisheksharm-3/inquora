@@ -4,17 +4,6 @@ import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { RetrievedChunk } from "./retrieval.schema";
 
-export interface SearchArgs {
-  documentIds: string[];
-  embedding: number[];
-  query: string;
-  limit: number;
-}
-
-export interface RetrievalRepository {
-  search(args: SearchArgs): Promise<Result<RetrievedChunk[], AppError>>;
-}
-
 /**
  * Postgres renders a vector as `[0.1,0.2,...]` text over the wire, so it arrives
  * as a string rather than an array. An unparseable value yields an empty vector,
@@ -70,3 +59,4 @@ export const createRetrievalRepository = (db: SupabaseClient<Database>): Retriev
     );
   },
 });
+import type { RetrievalRepository, SearchArgs } from "./retrieval.types";

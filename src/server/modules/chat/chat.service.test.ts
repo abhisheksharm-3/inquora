@@ -41,6 +41,11 @@ const drain = async (stream: ReadableStream<Uint8Array>) => {
 interface AppendCall {
   role: string;
   citationChunkIds: string[];
+  latencyMs?: number;
+  retrievalMs?: number;
+  tokensIn?: number;
+  tokensOut?: number;
+  model?: string;
 }
 
 const deps = (overrides: Record<string, unknown> = {}) => ({
@@ -107,6 +112,24 @@ describe("chat service", () => {
       .find((args) => args.role === "assistant");
 
     expect(assistant?.citationChunkIds).toEqual(["33333333-3333-3333-3333-333333333333"]);
+  });
+
+  it("records what the turn cost, so cost per conversation stays a SQL question", async () => {
+    const dependencies = deps();
+    const result = await createChatService(dependencies as never).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "why did revenue miss?",
+      parentId: null,
+    });
+
+    if (result.ok) await drain(result.value);
+
+    const assistant = dependencies.repository.append.mock.calls
+      .map((call) => call[0])
+      .find((args) => args.role === "assistant");
+
+    expect(assistant?.latencyMs).toBeGreaterThan(0);
+    expect(assistant?.retrievalMs).toBeGreaterThanOrEqual(0);
   });
 
   it("fails before streaming when the chat does not exist", async () => {

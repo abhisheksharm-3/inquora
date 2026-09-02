@@ -1,3 +1,6 @@
+import type { Chunk, ProseOptions, Sheet, TranscriptLine } from "./chunking.types";
+
+export type { Chunk, ProseOptions, Sheet, TranscriptLine } from "./chunking.types";
 /**
  * Chunking, per content kind. Pure functions over text: no I/O, no provider, so
  * every rule here is testable without a network.
@@ -7,17 +10,6 @@
  * One recursive character splitter over everything is what destroyed columns,
  * types and row identity in the old ingestion path.
  */
-
-export interface Chunk {
-  index: number;
-  content: string;
-  metadata: Record<string, unknown>;
-}
-
-export interface ProseOptions {
-  size: number;
-  overlap: number;
-}
 
 /** A markdown or setext heading, captured so a passage knows what it sits under. */
 const HEADING = /^(#{1,6})\s+(.+)$/;
@@ -115,12 +107,6 @@ const splitToSize = (paragraph: string, size: number): string[] => {
   return pieces;
 };
 
-export interface Sheet {
-  name: string;
-  header: string[];
-  rows: string[][];
-}
-
 /**
  * Row groups, with the header row repeated in every chunk.
  *
@@ -153,11 +139,6 @@ export const chunkSheet = (
 
   return chunks;
 };
-
-export interface TranscriptLine {
-  start: number;
-  text: string;
-}
 
 /**
  * Time-windowed, so a citation can deep-link to the moment rather than to the

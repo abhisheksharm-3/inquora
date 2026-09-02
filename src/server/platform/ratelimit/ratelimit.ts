@@ -11,8 +11,6 @@ import { err, ok, type Result } from "@/core/result";
  * stays correct.
  */
 
-export type Bucket = "messages" | "ingestion" | "uploads" | "auth";
-
 /** Requests allowed per window, per user, per bucket. */
 const LIMITS: Record<Bucket, { limit: number; windowSeconds: number }> = {
   // Each message costs at least one model turn, so this is the expensive one.
@@ -36,16 +34,7 @@ end
 return current
 `;
 
-interface RedisLike {
-  eval(script: string, keys: string[], args: (string | number)[]): Promise<unknown>;
-}
-
-export interface RateLimiter {
-  readonly configured: boolean;
-  check(bucket: Bucket, userId: string): Promise<Result<void, AppError>>;
-}
-
-export const createRateLimiter = ({ redis }: { redis?: RedisLike }): RateLimiter => ({
+export const createRateLimiter = ({ redis }: { redis?: RateLimitRedis }): RateLimiter => ({
   configured: Boolean(redis),
 
   async check(bucket, userId) {
@@ -73,3 +62,6 @@ export const createRateLimiter = ({ redis }: { redis?: RedisLike }): RateLimiter
     return ok(undefined);
   },
 });
+import type { Bucket, RateLimiter, RateLimitRedis } from "./ratelimit.types";
+
+export type { Bucket, RateLimiter } from "./ratelimit.types";

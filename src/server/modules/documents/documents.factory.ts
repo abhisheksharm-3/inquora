@@ -2,7 +2,8 @@ import { AppError } from "@/core/errors";
 import { err, type Result } from "@/core/result";
 import { createServerDbClient } from "@/server/platform/db/client";
 import { rateLimiter } from "@/server/platform/ratelimit/redis";
-import { createDocumentsService, type UploadTicket } from "./documents.service";
+import { createDocumentsService } from "./documents.service";
+import type { UploadTicket } from "./documents.types";
 import type { UploadRequest } from "./documents.schema";
 
 /**

@@ -2,6 +2,7 @@ import { lookup } from "node:dns/promises";
 import { AppError } from "@/core/errors";
 import { isPrivateAddress } from "@/core/ip-range";
 import { err, ok, type Result } from "@/core/result";
+import type { CheckedUrl } from "./http.types";
 
 /**
  * Fetches a URL that somebody else chose.
@@ -26,12 +27,7 @@ import { err, ok, type Result } from "@/core/result";
 const MAX_REDIRECTS = 3;
 const MAX_BYTES = 10 * 1024 * 1024;
 
-interface Checked {
-  url: URL;
-  addresses: { address: string; family: number }[];
-}
-
-const assertPublic = async (raw: string): Promise<Result<Checked, AppError>> => {
+const assertPublic = async (raw: string): Promise<Result<CheckedUrl, AppError>> => {
   let url: URL;
 
   try {
@@ -69,7 +65,7 @@ const assertPublic = async (raw: string): Promise<Result<Checked, AppError>> => 
  * A dispatcher whose DNS lookup can only return the addresses already validated.
  * This is what closes the window between checking a name and connecting to it.
  */
-const pinnedDispatcher = async (checked: Checked) => {
+const pinnedDispatcher = async (checked: CheckedUrl) => {
   const { Agent } = await import("undici");
 
   return new Agent({

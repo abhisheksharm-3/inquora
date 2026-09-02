@@ -9,7 +9,8 @@ import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
 import { env } from "@/server/platform/env";
 import { createChatModel } from "@/server/platform/llm/model";
 import { createChatRepository } from "./chat.repository";
-import { createChatService, type ChatService } from "./chat.service";
+import { createChatService } from "./chat.service";
+import type { ChatService } from "./chat.types";
 
 /**
  * Wires the chat service for one request.

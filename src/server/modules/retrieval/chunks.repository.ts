@@ -4,14 +4,6 @@ import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { RetrievedChunk } from "./retrieval.schema";
 
-export interface ChunksRepository {
-  range(args: {
-    documentId: string;
-    from: number;
-    to: number;
-  }): Promise<Result<RetrievedChunk[], AppError>>;
-}
-
 /** How many consecutive passages one read may return, so a tool call cannot pull a whole book. */
 const MAX_RANGE = 20;
 
@@ -47,3 +39,4 @@ export const createChunksRepository = (db: SupabaseClient<Database>): ChunksRepo
     );
   },
 });
+import type { ChunksRepository } from "./retrieval.types";

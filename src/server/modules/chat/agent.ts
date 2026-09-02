@@ -16,31 +16,6 @@ import { createTools } from "./tools";
  */
 const MAX_TOOL_CALLS = 8;
 
-interface Dependencies {
-  context: ChatContext;
-  model: BaseChatModel;
-  retrieval: { retrieve(request: RetrievalRequest): Promise<Result<RetrievedChunk[], AppError>> };
-  chunks: {
-    range(args: {
-      documentId: string;
-      from: number;
-      to: number;
-    }): Promise<Result<RetrievedChunk[], AppError>>;
-  };
-  memories: { remember(content: string): Promise<Result<string, AppError>> };
-}
-
-export interface AnsweringAgent {
-  /** Dispatch the first search without waiting to be asked. See ADR 0005. */
-  warm(query: string): void;
-  stream(query: string, signal?: AbortSignal): AsyncGenerator<StreamEvent>;
-  /** The chunk ids every search returned, in order, for persistence as citations. */
-  citedChunkIds(): string[];
-  /** The answer text as streamed, for one `append_message` at the end. */
-  answerText(): string;
-  systemPrompt(): string;
-}
-
 const buildSystemPrompt = (context: ChatContext): string => {
   const documents =
     context.documents.length === 0
@@ -77,9 +52,11 @@ export const createAnsweringAgent = ({
   retrieval,
   chunks,
   memories,
-}: Dependencies): AnsweringAgent => {
+}: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
   let answer = "";
+  let retrievalMs = 0;
+  const usage: TurnUsage = { retrievalMs: 0 };
 
   /**
    * The speculative first search. Retrieval for the raw user query is dispatched
@@ -92,13 +69,21 @@ export const createAnsweringAgent = ({
 
   const cachingRetrieval = {
     async retrieve(request: RetrievalRequest) {
-      if (warmed && warmedQuery === request.query) {
-        const result = await warmed;
-        warmed = undefined;
-        return result;
-      }
+      const startedAt = Date.now();
 
-      return retrieval.retrieve(request);
+      try {
+        if (warmed && warmedQuery === request.query) {
+          const result = await warmed;
+          warmed = undefined;
+          return result;
+        }
+
+        return await retrieval.retrieve(request);
+      } finally {
+        // Counted whether the search was served from the speculative dispatch or
+        // not, because what matters is how long the answer waited on retrieval.
+        retrievalMs += Date.now() - startedAt;
+      }
     },
   };
 
@@ -107,7 +92,7 @@ export const createAnsweringAgent = ({
     retrieval: cachingRetrieval,
     chunks,
     memories,
-    onCitations: (ids) => {
+    onCitations: (ids: string[]) => {
       for (const id of ids) if (!citations.includes(id)) citations.push(id);
     },
   });
@@ -127,7 +112,7 @@ export const createAnsweringAgent = ({
       warmedQuery = query;
       warmed = retrieval.retrieve({
         query,
-        documentIds: context.documents.map((d) => d.id),
+        documentIds: context.documents.map((d: { id: string }) => d.id),
         limit: 12,
       });
     },
@@ -154,7 +139,12 @@ export const createAnsweringAgent = ({
 
       for await (const chunk of stream) {
         const [message, metadata] = chunk as [
-          { content?: unknown; tool_calls?: unknown[]; getType?: () => string },
+          {
+            content?: unknown;
+            tool_calls?: unknown[];
+            usage_metadata?: { input_tokens?: number; output_tokens?: number };
+            response_metadata?: { model_name?: unknown; model?: unknown };
+          },
           { langgraph_node?: string },
         ];
 
@@ -162,6 +152,18 @@ export const createAnsweringAgent = ({
         const isFromModel = metadata?.langgraph_node !== "tools";
 
         if (text && isFromModel) answer = text;
+
+        // Usage arrives on the final chunk of each model turn, and a tool-calling
+        // turn produces several, so they accumulate rather than overwrite.
+        const meta = message?.usage_metadata;
+
+        if (meta) {
+          usage.tokensIn = (usage.tokensIn ?? 0) + (meta.input_tokens ?? 0);
+          usage.tokensOut = (usage.tokensOut ?? 0) + (meta.output_tokens ?? 0);
+        }
+
+        const named = message?.response_metadata?.model_name ?? message?.response_metadata?.model;
+        if (typeof named === "string") usage.model = named;
 
         yield {
           event: "messages/partial",
@@ -180,6 +182,10 @@ export const createAnsweringAgent = ({
 
     citedChunkIds: () => [...citations],
     answerText: () => answer,
+    usage: () => ({ ...usage, retrievalMs }),
     systemPrompt: () => systemPrompt,
   };
 };
+import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
+
+export type { AnsweringAgent, TurnUsage } from "./chat.types";

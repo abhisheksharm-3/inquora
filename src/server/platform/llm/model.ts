@@ -41,12 +41,6 @@ const PROVIDERS = {
  */
 const DEFAULT_MODEL = "google-genai:gemini-2.5-flash";
 
-export interface ModelConfig {
-  apiKey?: string;
-  model?: string;
-  temperature?: number;
-}
-
 export const createChatModel = async ({
   apiKey,
   model = DEFAULT_MODEL,
@@ -86,3 +80,6 @@ export const createChatModel = async ({
     );
   }
 };
+import type { ModelConfig } from "./llm.types";
+
+export type { ModelConfig } from "./llm.types";

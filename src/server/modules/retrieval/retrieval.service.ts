@@ -2,21 +2,10 @@ import { AppError } from "@/core/errors";
 import { mmr, type Candidate } from "@/core/mmr";
 import { err, ok, type Result } from "@/core/result";
 import { EMBEDDING_TTL_SECONDS, embeddingKey, type Cache } from "@/server/platform/cache/cache";
-import type { RetrievalRepository } from "./retrieval.repository";
 import type { RetrievalRequest, RetrievedChunk } from "./retrieval.schema";
 
 /** Relevance-dominant, per the design. */
 const MMR_LAMBDA = 0.3;
-
-interface Dependencies {
-  embeddings: { embed(texts: string[]): Promise<Result<number[][], AppError>> };
-  repository: RetrievalRepository;
-  cache: Cache;
-}
-
-export interface RetrievalService {
-  retrieve(request: RetrievalRequest): Promise<Result<RetrievedChunk[], AppError>>;
-}
 
 /**
  * One embedding call, one search call, then ranking in process.
@@ -30,7 +19,7 @@ export const createRetrievalService = ({
   embeddings,
   repository,
   cache,
-}: Dependencies): RetrievalService => ({
+}: RetrievalDependencies): RetrievalService => ({
   async retrieve({ query, documentIds, limit }) {
     const key = await embeddingKey(query);
     const cached = await cache.get<number[]>(key);
@@ -63,3 +52,4 @@ export const createRetrievalService = ({
     return ok(found.value.filter((chunk) => kept.has(chunk.chunkId)));
   },
 });
+import type { RetrievalDependencies, RetrievalService } from "./retrieval.types";

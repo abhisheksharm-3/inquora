@@ -5,31 +5,6 @@ import { err, ok, type Result } from "@/core/result";
 export const EMBEDDING_DIMENSIONS = 1024;
 
 /**
- * The one thing this client needs from fetch. Narrower than the global type on
- * purpose: the seam stays small, and a test double does not have to implement
- * the runtime's extensions to it.
- */
-export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
-
-export interface EmbeddingsConfig {
-  baseUrl: string;
-  apiKey: string;
-  /** The Space cold-starts, and a cold start has been measured at 18 seconds. */
-  timeoutMs?: number;
-  fetch?: FetchLike;
-}
-
-export interface EmbeddingsClient {
-  embed(texts: string[]): Promise<Result<number[][], AppError>>;
-}
-
-interface SpaceResponse {
-  embeddings: number[][];
-  model: string;
-  dimensions: number;
-}
-
-/**
  * The longest this client will hold a request open waiting out a 429. Anything
  * longer is handed back, because the ingestion worker has a queue with its own
  * backoff and a query path has a user waiting.
@@ -102,10 +77,10 @@ export const createEmbeddingsClient = (config: EmbeddingsConfig): EmbeddingsClie
         return err(AppError.badGateway(`the embeddings provider returned ${response.status}`));
       }
 
-      let body: SpaceResponse;
+      let body: EmbeddingsResponse;
 
       try {
-        body = (await response.json()) as SpaceResponse;
+        body = (await response.json()) as EmbeddingsResponse;
       } catch {
         return err(AppError.badGateway("the embeddings provider returned a body that is not JSON"));
       }
@@ -135,3 +110,6 @@ export const createEmbeddingsClient = (config: EmbeddingsConfig): EmbeddingsClie
     },
   };
 };
+import type { EmbeddingsClient, EmbeddingsConfig, EmbeddingsResponse } from "./embeddings.types";
+
+export type { EmbeddingsClient, EmbeddingsConfig, FetchLike } from "./embeddings.types";

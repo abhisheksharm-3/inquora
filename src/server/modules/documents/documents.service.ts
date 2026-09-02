@@ -4,15 +4,6 @@ import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { UploadRequest } from "./documents.schema";
 
-export interface UploadTicket {
-  documentId: string;
-  /** Where to PUT the bytes. Expires; it is not a durable link. */
-  uploadUrl: string;
-  path: string;
-  /** True when these exact bytes are already indexed, so there is nothing to upload. */
-  alreadyIndexed: boolean;
-}
-
 const BUCKET = "documents";
 
 /**
@@ -23,7 +14,10 @@ const BUCKET = "documents";
  * And the row exists before the upload, so the insert trigger has already
  * enqueued the ingestion job by the time the file lands.
  */
-export const createDocumentsService = (db: SupabaseClient<Database>, userId: string) => ({
+export const createDocumentsService = (
+  db: SupabaseClient<Database>,
+  userId: string,
+): DocumentsService => ({
   async requestUpload(request: UploadRequest): Promise<Result<UploadTicket, AppError>> {
     // Re-uploading the same bytes reuses the existing chunks rather than paying
     // to embed them again. The unique index enforces it; this reports it.
@@ -81,3 +75,4 @@ export const createDocumentsService = (db: SupabaseClient<Database>, userId: str
     });
   },
 });
+import type { DocumentsService, UploadTicket } from "./documents.types";

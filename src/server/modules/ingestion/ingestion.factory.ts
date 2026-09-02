@@ -7,12 +7,6 @@ import { createIngestionRepository } from "./ingestion.repository";
 import { createIngestionWorker } from "./ingestion.worker";
 import { extractDocument } from "./extract.source";
 
-export interface DrainSummary {
-  processed: number;
-  failed: number;
-  idle: boolean;
-}
-
 /**
  * Drains up to `limit` jobs, then returns a summary. The worker itself is pure
  * orchestration over injected pieces; this is where the real ones are chosen.
@@ -64,3 +58,4 @@ export const drainIngestionQueue = async (
 
   return ok(summary);
 };
+import type { DrainSummary } from "./ingestion.types";

@@ -5,14 +5,6 @@ import { err, ok, type Result } from "@/core/result";
 /** Recursive character splitting at 1000 with 200 of overlap, per the design. */
 const PROSE = { size: 1000, overlap: 200 };
 
-export interface Source {
-  kind: "pdf" | "doc" | "sheet" | "slides" | "image" | "video" | "github" | "web";
-  /** Extracted text, for anything that reduces to prose. */
-  text?: string;
-  sheets?: { name: string; header: string[]; rows: string[][] }[];
-  transcript?: { start: number; text: string }[];
-}
-
 /**
  * Turns extracted content into chunks, choosing the strategy by kind.
  *
@@ -56,3 +48,6 @@ export const chunkSource = (source: Source): Result<Chunk[], AppError> => {
     }
   }
 };
+import type { Source } from "./ingestion.types";
+
+export type { Source } from "./ingestion.types";

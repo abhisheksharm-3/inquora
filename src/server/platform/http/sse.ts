@@ -1,3 +1,6 @@
+import type { FinishReason, SseOptions, StreamEvent } from "./http.types";
+
+export type { FinishReason, SseOptions, StreamEvent } from "./http.types";
 /**
  * Server-sent events, in the shape LangGraph's own stream uses: a named event
  * and a JSON payload.
@@ -6,22 +9,6 @@
  * LangGraph's, because LangChain v1's createAgent is LangGraph underneath and
  * the React runtime already reads that stream. This module only frames it.
  */
-
-export interface StreamEvent {
-  event: string;
-  data: unknown;
-}
-
-export type FinishReason = "completed" | "aborted" | "failed";
-
-export interface SseOptions {
-  signal?: AbortSignal;
-  /**
-   * Called once, whatever happens. This is where persistence goes: an aborted
-   * generation still has to store what it produced.
-   */
-  onFinish?: (reason: FinishReason, error?: unknown) => Promise<void> | void;
-}
 
 /** One SSE frame. JSON.stringify escapes the newlines that would break framing. */
 export const encodeEvent = (event: string, data: unknown): string =>
