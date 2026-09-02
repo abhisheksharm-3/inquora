@@ -19,3 +19,10 @@ export interface TranscriptLine {
   start: number;
   text: string;
 }
+
+/** One file of a repository, as the code chunker reads it. */
+export interface CodeFile {
+  path: string;
+  language: string;
+  content: string;
+}

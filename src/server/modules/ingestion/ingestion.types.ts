@@ -79,4 +79,8 @@ export interface Source {
   text?: string;
   sheets?: { name: string; header: string[]; rows: string[][] }[];
   transcript?: { start: number; text: string }[];
+  slides?: { number: number; text: string }[];
+  /** Pre-chunked content, for kinds whose chunking depends on how they were read. */
+  chunks?: Chunk[];
+  outline?: Outline;
 }

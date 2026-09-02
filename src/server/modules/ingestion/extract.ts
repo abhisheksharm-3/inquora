@@ -1,4 +1,4 @@
-import { chunkProse, chunkSheet, chunkTranscript, type Chunk } from "@/core/chunking";
+import { chunkProse, chunkSheet, chunkSlides, chunkTranscript, type Chunk } from "@/core/chunking";
 import { AppError } from "@/core/errors";
 import { err, ok, type Result } from "@/core/result";
 
@@ -30,12 +30,30 @@ export const chunkSource = (source: Source): Result<Chunk[], AppError> => {
       return chunks.length > 0 ? ok(chunks) : err(AppError.badRequest("that spreadsheet is empty"));
     }
 
+    case "slides": {
+      if (!source.slides?.length) {
+        return err(AppError.badRequest("that presentation has no readable text"));
+      }
+
+      return ok(chunkSlides(source.slides));
+    }
+
     case "video": {
       if (!source.transcript?.length) {
         return err(AppError.badRequest("no subtitles or transcript could be read"));
       }
 
       return ok(chunkTranscript(source.transcript, { windowSeconds: 60 }));
+    }
+
+    case "github": {
+      // A repository arrives already chunked, because where to cut code depends
+      // on the file it came from.
+      if (!source.chunks?.length) {
+        return err(AppError.badRequest("that repository holds no files this can index"));
+      }
+
+      return ok(source.chunks);
     }
 
     default: {

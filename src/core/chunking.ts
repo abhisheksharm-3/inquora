@@ -183,3 +183,17 @@ export const chunkTranscript = (
 
   return chunks;
 };
+
+/**
+ * Slides, one chunk each.
+ *
+ * A slide is already the unit its author chose. Splitting one separates a heading
+ * from the point it introduces, and merging two puts an answer under the wrong
+ * title.
+ */
+export const chunkSlides = (slides: { number: number; text: string }[], startIndex = 0): Chunk[] =>
+  slides.map((slide, offset) => ({
+    index: startIndex + offset,
+    content: `Slide ${slide.number}\n${slide.text}`,
+    metadata: { slide: slide.number },
+  }));

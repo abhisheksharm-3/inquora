@@ -31,6 +31,9 @@ const schema = z
     /** provider:model. Changing the answering model is a variable, not a deploy. */
     ANSWER_MODEL: z.string().min(3).optional(),
 
+    /** Raises GitHub's rate limit from sixty an hour. Repository ingestion works without it. */
+    GITHUB_TOKEN: z.string().min(1).optional(),
+
     UPSTASH_REDIS_REST_URL: z.string().url().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 
@@ -94,6 +97,7 @@ export const env = (): Env => {
     MULTIUTILITY_API_KEY: process.env.MULTIUTILITY_API_KEY,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     ANSWER_MODEL: process.env.ANSWER_MODEL,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     SITE_URL: process.env.SITE_URL,

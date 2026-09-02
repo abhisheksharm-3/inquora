@@ -5,6 +5,8 @@ import type { Database } from "@/core/database.types";
 import { fetchExternal } from "@/server/platform/http/fetch-external";
 import { outlineFromSheets, outlineFromText } from "@/core/outline";
 import { chunkSource } from "./extract";
+import { extractRepository, parseRepositoryUrl } from "./extract-github";
+import { extractSlides } from "./extract-slides";
 import type { ClaimedJob, ExtractedDocument, Source } from "./ingestion.types";
 
 const BUCKET = "documents";
@@ -49,9 +51,10 @@ export const extractDocument = async (
   }));
 
   const outline =
-    source.value.sheets && source.value.sheets.length > 0
+    source.value.outline ??
+    (source.value.sheets && source.value.sheets.length > 0
       ? outlineFromSheets(source.value.sheets)
-      : outlineFromText(source.value.text ?? "");
+      : outlineFromText(source.value.text ?? ""));
 
   return ok({
     chunks: chunks.value,
@@ -82,6 +85,25 @@ const readSource = async (
     return readTranscript(document.source_url);
   }
 
+  // A repository is a URL to fetch, not a file in storage.
+  if (document.kind === "github") {
+    if (!document.source_url) return err(AppError.badRequest("a repository needs a URL"));
+
+    const repository = parseRepositoryUrl(document.source_url);
+    if (!repository.ok) return err(repository.error);
+
+    const { env } = await import("@/server/platform/env");
+    const read = await extractRepository(repository.value, env().GITHUB_TOKEN);
+    if (!read.ok) return err(read.error);
+
+    return ok({
+      kind: "github",
+      chunks: read.value.chunks,
+      outline: read.value.outline,
+      text: read.value.text,
+    });
+  }
+
   if (document.source_url) {
     // Through fetchExternal, never plain fetch: the URL came from whoever created
     // the document, and this code runs with a service-role client inside the
@@ -109,6 +131,14 @@ const readSource = async (
       return readSheet(bytes);
     case "doc":
       return readDoc(bytes, await data.text());
+    case "slides": {
+      const read = await extractSlides(bytes);
+      if (!read.ok) return err(read.error);
+
+      return ok({ kind: "slides", slides: read.value.slides });
+    }
+    case "image":
+      return readImage(bytes, data.type);
     default:
       // Plain text needs no parser.
       return ok({ kind: document.kind, text: await data.text() });
@@ -198,6 +228,66 @@ const readDoc = async (bytes: Uint8Array, fallback: string): Promise<Result<Sour
     return err(
       AppError.badRequest(
         `that document could not be read: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+};
+
+/**
+ * An image has no text to extract, so it is described instead.
+ *
+ * This is the one place ingestion spends a model call. The alternative is an
+ * image nobody can find: a filename is not content, and there is no OCR in this
+ * stack. The description is what gets embedded, so the image is searchable by
+ * what is in it.
+ */
+const readImage = async (
+  bytes: Uint8Array,
+  mimeType: string,
+): Promise<Result<Source, AppError>> => {
+  const { env } = await import("@/server/platform/env");
+  const { createChatModel } = await import("@/server/platform/llm/model");
+  const configuration = env();
+
+  const model = await createChatModel({
+    apiKey: configuration.GEMINI_API_KEY,
+    model: configuration.ANSWER_MODEL,
+  });
+
+  if (!model.ok) return err(model.error);
+
+  try {
+    const described = await model.value.invoke([
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text:
+              "Describe this image so it can be found by someone searching for what it contains. " +
+              "Transcribe any text in it verbatim. Say what kind of image it is — a chart, a " +
+              "screenshot, a photograph, a diagram — and for a chart, state what it plots and the " +
+              "values you can read.",
+          },
+          {
+            type: "image_url",
+            image_url: `data:${mimeType || "image/png"};base64,${Buffer.from(bytes).toString("base64")}`,
+          },
+        ],
+      },
+    ]);
+
+    const text = typeof described.content === "string" ? described.content : "";
+
+    if (text.trim().length === 0) {
+      return err(AppError.badRequest("the image could not be described"));
+    }
+
+    return ok({ kind: "image", text });
+  } catch (cause) {
+    return err(
+      AppError.badGateway(
+        `could not describe the image: ${cause instanceof Error ? cause.message : String(cause)}`,
       ),
     );
   }
