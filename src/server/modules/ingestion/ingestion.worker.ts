@@ -1,6 +1,7 @@
 import type { Chunk } from "@/core/chunking/chunking.types";
 import type { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
+import { EMBEDDING_BATCH } from "@/server/platform/embeddings/embeddings.constants";
 import type { IngestionWorker, WorkerDependencies } from "./ingestion.types";
 
 /**
@@ -18,7 +19,7 @@ export const createIngestionWorker = ({
   extract,
   embeddings,
   store,
-  batchSize = 32,
+  batchSize = EMBEDDING_BATCH,
 }: WorkerDependencies): IngestionWorker => ({
   async runOnce() {
     const claimed = await queue.claim();

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
+import { MAX_TABLE_ROWS } from "@/server/modules/chat/chat.constants";
 import type { DocumentTable, TablesRepository } from "./documents.types";
 
 /**
@@ -36,7 +37,7 @@ export const createTablesRepository = (db: SupabaseClient<Database>): TablesRepo
       p_document_id: documentId,
       p_table_name: tableName,
       p_sql: sql,
-      p_limit: limit ?? 200,
+      p_limit: limit ?? MAX_TABLE_ROWS,
     });
 
     // A rejected query is the model's problem to fix, not a server fault, so the

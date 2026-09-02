@@ -3,16 +3,6 @@
  * Centralizes all route paths for type-safe navigation.
  */
 
-/** Public routes accessible without authentication */
-export const PUBLIC_ROUTES = {
-  HOME: "/",
-  LOGIN: "/login",
-  SIGNUP: "/signup",
-  PRICING: "/pricing",
-  ABOUT: "/about",
-  FAQ: "/faq",
-} as const;
-
 /** Auth routes */
 export const AUTH_ROUTES = {
   LOGIN: "/login",
@@ -30,17 +20,10 @@ export const DASHBOARD_ROUTES = {
   CHOOSE: "/choose",
 } as const;
 
-/** API routes */
-export const API_ROUTES = {
-  AUTH_CALLBACK: "/api/auth/callback",
-  HEALTH: "/api/health",
-} as const;
-
 /** Route matchers for middleware */
 export const ROUTE_MATCHERS = {
   PROTECTED: ["/dashboard", "/chat", "/history", "/settings", "/choose"],
   AUTH_ONLY: ["/login", "/signup"],
-  PUBLIC: ["/", "/pricing", "/about", "/faq"],
 } as const;
 
 /**

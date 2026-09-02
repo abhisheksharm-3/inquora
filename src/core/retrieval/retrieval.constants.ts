@@ -24,3 +24,10 @@ export const OPENING_WORDS = 3;
 
 /** Turns of history a follow-up rewrite is allowed to read. */
 export const HISTORY_TURNS = 6;
+
+/**
+ * Passages the model finally sees. Named here because three places used to write
+ * 12 as a literal and a fourth declared a different ceiling in a Zod schema that
+ * nothing parsed.
+ */
+export const DEFAULT_RETRIEVAL_LIMIT = 12;

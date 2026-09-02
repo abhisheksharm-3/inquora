@@ -3,6 +3,7 @@ import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
 import { createServiceDbClient } from "@/server/platform/db/service";
 import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
+import { BATCH_TIMEOUT_MS } from "@/server/platform/embeddings/embeddings.constants";
 import { env } from "@/server/platform/env";
 import { createIngestionRepository } from "./ingestion.repository";
 import { createIngestionWorker } from "./ingestion.worker";
@@ -38,7 +39,7 @@ export const drainIngestionQueue = async (
       apiKey: configuration.MULTIUTILITY_API_KEY,
       // Embedding a batch of chunks is slower than embedding one query, and the
       // Space cold-starts.
-      timeoutMs: 120_000,
+      timeoutMs: BATCH_TIMEOUT_MS,
     }),
   });
 

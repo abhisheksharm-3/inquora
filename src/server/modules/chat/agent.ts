@@ -6,6 +6,7 @@ import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieva
 import type { StreamEvent } from "@/server/platform/http/http.types";
 import type { ChatContext } from "./chat.schema";
 import { createTools } from "./tools";
+import { DEFAULT_RETRIEVAL_LIMIT } from "@/core/retrieval/retrieval.constants";
 import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
 import type { DocumentKind } from "@/server/modules/documents/documents.schema";
 import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
@@ -146,7 +147,7 @@ export const createAnsweringAgent = ({
       warmed = retrieval.retrieve({
         query,
         documentIds: context.documents.map((d: { id: string }) => d.id),
-        limit: 12,
+        limit: DEFAULT_RETRIEVAL_LIMIT,
       });
     },
 

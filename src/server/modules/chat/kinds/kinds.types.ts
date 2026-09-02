@@ -13,8 +13,6 @@ export interface KindSpecialist {
   kind: DocumentKind;
   /** How a person would describe this kind, for the prompt. */
   label: string;
-  /** The tools that answer questions about this kind well. */
-  tools: string[];
   /** How to work with it, written as instructions rather than as description. */
   guidance: string;
   /** What to warn about, where this kind has a known limit. */

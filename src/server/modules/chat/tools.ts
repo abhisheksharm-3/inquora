@@ -1,5 +1,7 @@
 import { tool } from "langchain";
 import { withSpan } from "@/server/platform/telemetry/span";
+import { DEFAULT_RETRIEVAL_LIMIT } from "@/core/retrieval/retrieval.constants";
+import { MAX_FILE_LINES } from "./chat.constants";
 import { z } from "zod";
 import type { AppError } from "@/core/errors";
 import { evaluateArithmetic } from "@/core/untrusted/arithmetic";
@@ -46,7 +48,11 @@ export const createTools = ({
     async ({ query, limit }: { query: string; limit?: number }) => {
       if (documentIds.length === 0) return "No documents are attached to this conversation.";
 
-      const found = await retrieval.retrieve({ query, documentIds, limit: limit ?? 12 });
+      const found = await retrieval.retrieve({
+        query,
+        documentIds,
+        limit: limit ?? DEFAULT_RETRIEVAL_LIMIT,
+      });
 
       if (!found.ok) {
         return found.error.status === 404
@@ -66,7 +72,9 @@ export const createTools = ({
         "document content.",
       schema: z.object({
         query: z.string().describe("What to look for, in the user's own terms."),
-        limit: z.number().int().min(1).max(30).optional(),
+        // Capped at the default rather than above it: each candidate carries a
+        // halfvec for ranking, so a larger limit is mostly vectors on the wire.
+        limit: z.number().int().min(1).max(DEFAULT_RETRIEVAL_LIMIT).optional(),
       }),
     },
   );
@@ -308,7 +316,12 @@ export const createTools = ({
         document_id: z.guid(),
         path: z.string().min(1).max(400),
         from_line: z.number().int().min(1).optional(),
-        to_line: z.number().int().min(1).optional(),
+        to_line: z
+          .number()
+          .int()
+          .min(1)
+          .max(MAX_FILE_LINES * 100)
+          .optional(),
       }),
     },
   );

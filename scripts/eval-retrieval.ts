@@ -24,12 +24,17 @@ const K = 4;
 const MMR_LAMBDA = 0.3;
 
 /**
- * Floors, so a regression fails rather than scrolling past. They are set just
- * under the numbers this corpus currently produces: recall@4 87.5%, MRR 0.933 on
- * 2026-08-27. Raise them when the corpus grows, never to make a bad run pass.
+ * Floors, so a regression fails rather than scrolling past. Set just under what
+ * this corpus produces: recall@4 93.8%, MRR 0.967 on 2026-09-02.
+ *
+ * The earlier floors were 0.85 and 0.9, matching 87.5% and 0.933. Normalizing the
+ * fused score before mixing it with the diversity term moved both — a review
+ * found that the raw score, bounded by about 0.033, was being weighed against a
+ * cosine in 0..1, so MMR was discarding a relevant passage per two questions.
+ * Raise these when the corpus grows, never to make a bad run pass.
  */
-const RECALL_FLOOR = 0.85;
-const MRR_FLOOR = 0.9;
+const RECALL_FLOOR = 0.9;
+const MRR_FLOOR = 0.95;
 
 /** Thrown to roll the fixture corpus back. Declared here because a class is not hoisted. */
 class Rollback extends Error {}

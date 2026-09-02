@@ -1,5 +1,6 @@
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
+import { MAX_WEB_RESULTS } from "@/server/modules/chat/chat.constants";
 import type { WebResult, WebSearchClient } from "./websearch.types";
 
 /**
@@ -23,7 +24,7 @@ export const createWebSearchClient = ({
 }): WebSearchClient => ({
   configured: Boolean(apiKey),
 
-  async search(query, limit = 5) {
+  async search(query, limit = MAX_WEB_RESULTS) {
     if (!apiKey) {
       return err(AppError.misconfigured("web search is not configured on this deployment"));
     }

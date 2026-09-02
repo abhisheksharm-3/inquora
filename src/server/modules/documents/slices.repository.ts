@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
+import { MAX_FILE_LINES, MAX_TRANSCRIPT_SECONDS } from "@/server/modules/chat/chat.constants";
 import type { FileSlice, SliceRepository, TranscriptSegment } from "./documents.types";
 
 /**
@@ -17,7 +18,7 @@ export const createSliceRepository = (db: SupabaseClient<Database>): SliceReposi
       p_document_id: documentId,
       p_path: path,
       p_from_line: fromLine ?? 1,
-      p_to_line: toLine ?? 400,
+      p_to_line: toLine ?? MAX_FILE_LINES,
     });
 
     if (error) return err(AppError.badGateway(`could not read that file: ${error.message}`));
@@ -37,7 +38,7 @@ export const createSliceRepository = (db: SupabaseClient<Database>): SliceReposi
     const { data, error } = await db.rpc("read_document_transcript", {
       p_document_id: documentId,
       p_start_s: startSeconds ?? 0,
-      p_end_s: endSeconds ?? 600,
+      p_end_s: endSeconds ?? MAX_TRANSCRIPT_SECONDS,
     });
 
     if (error) return err(AppError.badGateway(`could not read that segment: ${error.message}`));

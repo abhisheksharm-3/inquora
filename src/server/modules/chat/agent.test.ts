@@ -114,8 +114,10 @@ describe("createAnsweringAgent", () => {
 
     expect(prompt).toContain("file tree");
     expect(prompt).toContain("path:line");
-    // And it states the limit rather than letting the model discover it.
-    expect(prompt).toContain("four hundred");
+    // And it states its limit rather than letting the model discover it. Asserted
+    // on the presence of a caveat, not its wording, because the number moved once
+    // already and pinned the test to a stale prompt.
+    expect(prompt).toContain("Limits:");
   });
 
   it("says plainly that there is nothing to search when nothing is attached", () => {

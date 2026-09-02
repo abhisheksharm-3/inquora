@@ -4,16 +4,19 @@ import type { KindSpecialist } from "./kinds.types";
 /**
  * One specialist per document kind.
  *
- * The tool list is not a permission — every tool refuses a document that is not
- * attached, and the schema is the boundary. It is an instruction about which tool
- * suits which shape of content, which is the difference between a model that
- * greps a spreadsheet and one that queries it.
+ * Guidance, not permission: every tool is offered to every conversation and each
+ * refuses a document that is not attached. What differs is what the model is told
+ * about the shape of content in front of it, which is the difference between a
+ * model that greps a spreadsheet and one that queries it.
+ *
+ * An earlier version also carried a per-kind tool list. Nothing read it — the
+ * prompt is composed from the guidance and the caveat — so it was a second,
+ * silently ignored description of the same decision.
  */
 export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   github: {
     kind: "github",
     label: "a code repository",
-    tools: ["get_outline", "read_file", "grep_document", "search_documents"],
     guidance: [
       "Start with get_outline to see the file tree; a repository is a structure before it is text.",
       "For a symbol, an import, a call site or an error string, use grep_document: an identifier is",
@@ -23,14 +26,13 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
       "When asked how something works, trace it: entry point, then the functions it calls.",
     ].join(" "),
     caveat:
-      "Only the first four hundred indexable files are read, and grep covers the first megabyte, so " +
-      "say so if a search across a large repository comes back empty.",
+      "Only indexable source and documentation files are read, up to two thousand of them, so say " +
+      "so if something you expect to be in the repository is not there.",
   },
 
   video: {
     kind: "video",
     label: "a video",
-    tools: ["search_documents", "get_transcript"],
     guidance: [
       "You have the transcript, not the picture. Search it to find where a subject comes up, then",
       "get_transcript around that time to read what was actually said either side of it.",
@@ -47,7 +49,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   sheet: {
     kind: "sheet",
     label: "a spreadsheet",
-    tools: ["list_tables", "query_table", "calculate", "search_documents"],
     guidance: [
       "Query it, do not read it. list_tables for the sheets and their real column names, then",
       "query_table with one SQL select against the view named t, quoting column names exactly.",
@@ -63,7 +64,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   slides: {
     kind: "slides",
     label: "a slide deck",
-    tools: ["search_documents", "get_outline"],
     guidance: [
       "Each passage is one slide, numbered. Cite the slide number, because that is how somebody",
       "will find it. A deck argues in sequence, so when a question is about a conclusion, read the",
@@ -75,7 +75,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   pdf: {
     kind: "pdf",
     label: "a document",
-    tools: ["search_documents", "read_chunks", "grep_document", "get_outline"],
     guidance: [
       "Search first, then read_chunks either side of a hit when a sentence looks cut off.",
       "get_outline shows the headings, which is faster than searching to find out whether a subject",
@@ -86,7 +85,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   doc: {
     kind: "doc",
     label: "a document",
-    tools: ["search_documents", "read_chunks", "grep_document", "get_outline"],
     guidance: [
       "Search first, then read_chunks either side of a hit when a sentence looks cut off.",
       "get_outline shows the headings. Quote the passage a claim rests on.",
@@ -96,7 +94,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   web: {
     kind: "web",
     label: "a web page",
-    tools: ["search_documents", "read_chunks", "grep_document"],
     guidance: [
       "This is the text of the page as it was when it was added, with markup stripped, so",
       "navigation and boilerplate may appear alongside the content. Prefer the passage that reads",
@@ -108,7 +105,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
   image: {
     kind: "image",
     label: "an image",
-    tools: ["search_documents"],
     guidance: [
       "What you have is a description of the image and a transcription of any text in it, written",
       "when it was added. Answer from that, and be explicit that you are reading a description",
@@ -118,9 +114,6 @@ export const SPECIALISTS: Record<DocumentKind, KindSpecialist> = {
     caveat: "Fine detail, exact colours and small text may not have survived the description.",
   },
 };
-
-/** The tools every conversation gets, whatever is attached. */
-export const UNIVERSAL_TOOLS = ["list_documents", "remember", "calculate"];
 
 /**
  * The specialists for what is actually attached, deduplicated, so a chat holding
@@ -133,18 +126,4 @@ export const specialistsFor = (kinds: string[]): KindSpecialist[] => {
     .filter((kind): kind is DocumentKind => kind in SPECIALISTS)
     .filter((kind) => (seen.has(kind) ? false : seen.add(kind) !== undefined))
     .map((kind) => SPECIALISTS[kind]);
-};
-
-/**
- * The tool names worth offering for a set of kinds. Everything else is still
- * callable; this is what the prompt puts in front of the model.
- */
-export const toolsFor = (kinds: string[]): string[] => {
-  const tools = new Set(UNIVERSAL_TOOLS);
-
-  for (const specialist of specialistsFor(kinds)) {
-    for (const name of specialist.tools) tools.add(name);
-  }
-
-  return [...tools];
 };
