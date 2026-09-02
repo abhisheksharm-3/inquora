@@ -108,7 +108,7 @@ export const ChatSurface = ({
       </main>
 
       <aside className="border-rule border-t px-6 py-7 wide:overflow-y-auto wide:border-t-0 wide:border-l wide:bg-panel">
-        <ApparatusColumn entries={entries} label="Apparatus" />
+        <ApparatusColumn entries={entries} label="Sources and steps" />
       </aside>
     </div>
   );

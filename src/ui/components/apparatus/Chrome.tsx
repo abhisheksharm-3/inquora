@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DASHBOARD_ROUTES } from "@/core/routes";
-import { ThemeChoice } from "@/ui/components/shared/ThemeChoice";
+import { ThemeToggle } from "@/ui/components/shared/ThemeToggle";
 
 /**
  * The one piece of chrome the product has: a wordmark, three destinations and
@@ -29,7 +29,7 @@ export const Chrome = ({ current }: { current: "choose" | "history" | "settings"
       <Destination href={DASHBOARD_ROUTES.SETTINGS} active={current === "settings"}>
         Settings
       </Destination>
-      <ThemeChoice />
+      <ThemeToggle />
     </nav>
   </header>
 );

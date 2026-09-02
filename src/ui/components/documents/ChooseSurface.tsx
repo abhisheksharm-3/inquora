@@ -5,6 +5,7 @@ import { createChat } from "@/app/(app)/actions";
 import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import type { DocumentEntry } from "@/core/workspace/workspace.types";
 import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
+import { Reading, Surface, SurfaceHeading } from "@/ui/components/apparatus/Surface";
 import { Action } from "@/ui/components/form/Action";
 import { useDocumentProgress } from "@/ui/hooks/useDocumentProgress";
 import { useUpload } from "@/ui/hooks/useUpload";
@@ -50,16 +51,22 @@ export const ChooseSurface = ({
     });
 
   return (
-    <div className="grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
-      {chrome}
-
-      <main className="min-w-0 px-6 py-7 wide:px-9 wide:py-8">
-        <h1 className="mb-1 font-light font-reading text-[1.55rem] leading-tight">
+    <Surface
+      chrome={chrome}
+      apparatusLabel={inFlight.length > 0 ? "Reading your files" : "What you can ask"}
+      apparatus={
+        <ApparatusColumn
+          entries={
+            inFlight.length > 0 ? ingestionEntries(uploads, documents) : toolEntriesFor(chosen)
+          }
+          label={inFlight.length > 0 ? "Reading your files" : "What you can ask"}
+        />
+      }
+    >
+      <Reading>
+        <SurfaceHeading lede="Pick one or several. You can add more later without starting over.">
           What are we reading?
-        </h1>
-        <p className="mb-6 font-record text-[0.8rem] text-soft">
-          Pick one or several. You can add more later without starting over.
-        </p>
+        </SurfaceHeading>
 
         <form action={submit}>
           {documents.length === 0 ? (
@@ -96,16 +103,7 @@ export const ChooseSurface = ({
         </form>
 
         <UploadDrop uploads={uploads} onAdd={add} onDismiss={dismiss} />
-      </main>
-
-      <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
-        <ApparatusColumn
-          entries={
-            inFlight.length > 0 ? ingestionEntries(uploads, documents) : toolEntriesFor(chosen)
-          }
-          label={inFlight.length > 0 ? "Ingestion log" : "Apparatus"}
-        />
-      </aside>
-    </div>
+      </Reading>
+    </Surface>
   );
 };

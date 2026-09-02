@@ -1,11 +1,22 @@
+import { Suspense } from "react";
 import { SignInForm } from "@/ui/components/auth/SignInForm";
 
 /**
- * A server component whose only job is to read the `next` parameter and hand it
- * to the form, so an OAuth round trip returns to the page that asked for a
- * sign-in. The value is validated where it is used, in the callback route.
+ * The `next` parameter, read inside `<Suspense>`.
+ *
+ * Reading it in the page body made the whole route wait on the URL before
+ * anything could paint, which Next reports as a route that cannot have an
+ * instant shell. The form is the same form either way, so it is its own
+ * fallback: the shell paints immediately, and the one link that depends on
+ * `next` resolves a moment later.
  */
-const LoginPage = async ({ searchParams }: { searchParams: Promise<{ next?: string }> }) => {
+const LoginPage = ({ searchParams }: { searchParams: Promise<{ next?: string }> }) => (
+  <Suspense fallback={<SignInForm />}>
+    <WithNext searchParams={searchParams} />
+  </Suspense>
+);
+
+const WithNext = async ({ searchParams }: { searchParams: Promise<{ next?: string }> }) => {
   const { next } = await searchParams;
 
   return <SignInForm next={next} />;

@@ -7,7 +7,7 @@ import type { Entry, Operation, Specimen } from "./apparatus.types";
  */
 export const ApparatusColumn = ({
   entries,
-  label = "Apparatus",
+  label = "Sources",
 }: {
   entries: Entry[];
   label?: string;
@@ -27,7 +27,7 @@ export const ApparatusColumn = ({
 /** `2 notes`, `6 specimens`, `nothing yet` — the count names what is below it. */
 const countEntries = (entries: Entry[]): string => {
   const specimens = entries.filter((entry) => entry.kind === "specimen").length;
-  if (specimens > 0) return `${specimens} specimen${specimens === 1 ? "" : "s"}`;
+  if (specimens > 0) return `${specimens} source${specimens === 1 ? "" : "s"}`;
 
   const operations = entries.length;
   if (operations > 0) return `${operations} note${operations === 1 ? "" : "s"}`;

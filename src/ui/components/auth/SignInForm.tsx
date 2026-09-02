@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { signIn, signInWithGoogle } from "@/app/(auth)/actions";
 import { type AuthState, emptyAuthState } from "@/app/(auth)/auth.types";
 import { Action } from "@/ui/components/form/Action";
 import { Field } from "@/ui/components/form/Field";
+import { Underlined } from "@/ui/components/shared/Underlined";
 
 /**
  * Sign in. Two forms rather than one, because the password path and the Google
@@ -25,11 +25,11 @@ export const SignInForm = ({ next }: { next?: string }) => {
   );
 
   return (
-    <div className="max-w-[34ch]">
-      <h1 className="mb-2.5 font-light font-reading text-[2rem] leading-tight">
+    <div>
+      <h1 className="mb-3 max-w-[20ch] font-light font-reading text-[2.1rem] text-ink leading-[1.15] tracking-[-0.015em]">
         Pick up where you left off.
       </h1>
-      <p className="mb-6 font-record text-[0.82rem] text-soft">
+      <p className="mb-9 max-w-[38ch] font-light font-reading text-[1.05rem] text-soft leading-relaxed">
         Your documents, and every answer traced back to them.
       </p>
 
@@ -54,13 +54,14 @@ export const SignInForm = ({ next }: { next?: string }) => {
       <div className="mt-5 flex flex-wrap items-center gap-3.5 font-record text-label text-faint">
         <form action={submitGoogle}>
           {next ? <input type="hidden" name="next" value={next} /> : null}
-          <button type="submit" className="min-h-11 border-rule border-b pb-0.5 hover:text-ink">
-            Use Google instead
+          <button
+            type="submit"
+            className="inline-flex min-h-11 items-center text-faint hover:text-ink"
+          >
+            <span className="border-rule border-b pb-1">Use Google instead</span>
           </button>
         </form>
-        <Link href="/signup" className="min-h-11 border-rule border-b pb-0.5 hover:text-ink">
-          Create an account
-        </Link>
+        <Underlined href="/signup">Create an account</Underlined>
       </div>
 
       {googleState.error ? (

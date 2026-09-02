@@ -72,10 +72,12 @@
 /* An explicit choice wins in both directions, which is why the dark values are
    written twice rather than only inside the media query.
    
-   Not scoped to `:root`, because the brand register commits to the dark ground
-   regardless of the reader's choice, and it does that by carrying this attribute
-   on its own container rather than by inventing a second palette. */
-[data-theme="dark"] {
+   Scoped to `:root` on purpose. A container that redefines these tokens for its
+   own subtree does not change what its children inherit: `body` has already
+   resolved `color: var(--ink)` and passes that computed colour down. The landing
+   page did exactly this to force a dark ground, and choosing Light gave it
+   near-black text on a dark ground. A theme is a document-level decision. */
+:root[data-theme="dark"] {
   color-scheme: dark;
 
   --ground: oklch(0.1803 0.0078 248.26);
@@ -115,15 +117,15 @@
   --font-record: var(--font-plex-mono), ui-monospace, "SF Mono", monospace;
 
   /* Ratio 1.25 between steps, because a flat scale reads as unconsidered. */
-  --text-record: 0.72rem;
+  --text-record: 0.78rem;
   --text-record--line-height: 1.5;
-  --text-label: 0.66rem;
+  --text-label: 0.7rem;
   --text-label--line-height: 1.4;
   --text-base: 1rem;
   --text-base--line-height: 1.6;
-  --text-read: 1.09rem;
+  --text-read: 1.12rem;
   --text-read--line-height: 1.74;
-  --text-ask: 1.62rem;
+  --text-ask: 1.75rem;
   --text-ask--line-height: 1.32;
   --text-title: 1.95rem;
   --text-title--line-height: 1.12;
@@ -170,7 +172,7 @@
     background: var(--ground);
     color: var(--ink);
     font-family: var(--font-record);
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.6;
     margin: 0;
     -webkit-font-smoothing: antialiased;

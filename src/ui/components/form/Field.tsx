@@ -29,7 +29,7 @@ export const Field = ({
   const describedBy = [error && `${name}-error`, hint && `${name}-hint`].filter(Boolean).join(" ");
 
   return (
-    <div className="mb-4">
+    <div className="mb-6">
       <label
         htmlFor={name}
         className="mb-1.5 block font-record text-label text-faint uppercase tracking-[0.12em]"
@@ -48,7 +48,7 @@ export const Field = ({
         // 44px tall so the touch target clears the floor, and the caret is the
         // mark, which is the one place a colour is spent on an input.
         className={cn(
-          "block h-11 w-full border-0 border-b bg-transparent px-0 py-1.5 font-light font-reading text-[1.02rem] text-ink caret-mark",
+          "block h-9 w-full border-0 border-b bg-transparent px-0 pb-2 font-light font-reading text-[1.08rem] text-ink caret-mark",
           "focus-visible:border-mark focus-visible:outline-none",
           error ? "border-danger" : "border-rule",
         )}

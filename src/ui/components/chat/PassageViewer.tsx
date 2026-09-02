@@ -37,7 +37,7 @@ export const PassageViewer = ({
     </div>
 
     <p className="mb-5 font-record text-label text-faint">
-      Specimen <span className="text-mark tabular">{specimenNumber}</span> is marked below.
+      Source <span className="text-mark tabular">{specimenNumber}</span> is marked below.
     </p>
 
     <div className="max-w-measure font-light font-reading text-ink text-read">

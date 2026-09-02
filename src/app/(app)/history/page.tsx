@@ -73,7 +73,7 @@ const HistoryApparatus = async () => {
     });
   }
 
-  return <ApparatusColumn entries={entries} label="Apparatus" />;
+  return <ApparatusColumn entries={entries} label="This account" />;
 };
 
 export default HistoryPage;
