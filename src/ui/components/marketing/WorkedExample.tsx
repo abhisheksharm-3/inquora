@@ -32,11 +32,11 @@ export const WorkedExample = ({ stacked = false }: { stacked?: boolean }) => (
       <p className="mb-3 font-record text-label text-faint uppercase tracking-[0.14em]">
         The question
       </p>
-      <p className="mb-7 max-w-[26ch] font-normal font-reading text-[1.35rem] text-ink leading-snug after:mt-4 after:block after:h-px after:w-[30px] after:bg-mark">
+      <p className="mb-6 max-w-[30ch] font-normal font-reading text-[1.12rem] text-ink leading-snug after:mt-3.5 after:block after:h-px after:w-[26px] after:bg-mark">
         Why did Q3 revenue miss the forecast?
       </p>
 
-      <div className="max-w-[54ch] font-light font-reading text-[1.05rem] text-ink leading-[1.75]">
+      <div className="max-w-[58ch] font-light font-reading text-[0.98rem] text-soft leading-[1.7]">
         <p className="mb-4">
           Revenue closed at 4.12 million against a forecast of 4.68 million, a miss of twelve per
           cent
@@ -64,7 +64,7 @@ export const WorkedExample = ({ stacked = false }: { stacked?: boolean }) => (
       </h3>
 
       {answerSources.map((source) => (
-        <div key={source.number} className="mb-5 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
+        <div key={source.number} className="mb-4 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
           <span className="grid size-[22px] place-items-center rounded-hair border border-mark font-semibold font-record text-label text-mark tabular">
             {source.number}
           </span>
@@ -73,7 +73,7 @@ export const WorkedExample = ({ stacked = false }: { stacked?: boolean }) => (
               <span className="font-medium text-soft">{source.document}</span>
               <span>{source.where}</span>
             </p>
-            <p className="m-0 font-light font-reading text-[0.92rem] text-ink italic leading-relaxed">
+            <p className="m-0 max-w-[56ch] font-light font-reading text-[0.88rem] text-soft italic leading-relaxed">
               {source.quote}
             </p>
           </div>
