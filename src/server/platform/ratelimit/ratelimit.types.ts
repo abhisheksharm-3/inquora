@@ -1,5 +1,5 @@
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
+import type { Result } from "@/core/result.types";
 
 export type Bucket = "messages" | "ingestion" | "uploads" | "auth";
 

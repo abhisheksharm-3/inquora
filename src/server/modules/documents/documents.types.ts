@@ -1,6 +1,6 @@
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
-import type { Outline } from "@/core/outline.types";
+import type { Result } from "@/core/result.types";
+import type { Outline } from "@/core/documents/outline.types";
 import type { UploadRequest } from "./documents.schema";
 
 export interface UploadTicket {
@@ -35,8 +35,12 @@ export interface TablesRepository {
   query(query: TableQuery): Promise<Result<Record<string, unknown>[], AppError>>;
 }
 
-/** One line of a document that matched a pattern. */
+/**
+ * One matching line. `path` is set for a repository, where a match belongs to a
+ * file, and null for a document that is one body of text.
+ */
 export interface GrepMatch {
+  path: string | null;
   lineNumber: number;
   line: string;
 }
@@ -52,12 +56,17 @@ export interface OutlineRepository {
   grep(query: GrepQuery): Promise<Result<GrepMatch[], AppError>>;
 }
 
-/** A slice of one file of a repository. */
+/**
+ * A slice of one file of a repository — the real lines, not the chunks that
+ * happened to overlap them.
+ */
 export interface FileSlice {
-  chunkIndex: number;
+  path: string;
   content: string;
   fromLine: number;
   toLine: number;
+  /** How long the file is, so the model knows whether it read all of it. */
+  lineCount: number;
 }
 
 /** A segment of a video transcript, timed so a citation can deep-link. */

@@ -253,9 +253,37 @@ describe("createTools", () => {
     expect(answer).toContain("Account, Value");
   });
 
+  it("reports which file a repository match came from, not only the line", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
+      structure: {
+        outline: async () => ok(null),
+        grep: async () =>
+          ok([{ path: "src/queue.ts", lineNumber: 42, line: "  claim_ingestion_job()" }]),
+      },
+      slices: { file: async () => ok([]), transcript: async () => ok([]) },
+      web: { configured: false, search: async () => ok([]) },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "grep_document").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        pattern: "claim_ingestion_job",
+      }),
+    );
+
+    // A line number alone does not say which of two thousand files it is in.
+    expect(answer).toBe("src/queue.ts:42:   claim_ingestion_job()");
+  });
+
   it("finds an exact identifier that a meaning-based search flattens", async () => {
     const grep = vi.fn(async (_q: Record<string, unknown>) =>
-      ok([{ lineNumber: 2, line: "The cause was error PG-4711 in a trigger." }]),
+      ok([{ path: null, lineNumber: 2, line: "The cause was error PG-4711 in a trigger." }]),
     );
     const tools = createTools({
       context,
@@ -336,7 +364,16 @@ describe("createTools", () => {
       tables: { list: async () => ok([]), query: async () => ok([]) },
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: {
-        file: async () => ok([{ content: "export function first() {}", fromLine: 1, toLine: 30 }]),
+        file: async () =>
+          ok([
+            {
+              path: "src/a.ts",
+              content: "export function first() {}",
+              fromLine: 1,
+              toLine: 30,
+              lineCount: 120,
+            },
+          ]),
         transcript: async () => ok([]),
       },
       web: { configured: false, search: async () => ok([]) },
@@ -350,7 +387,9 @@ describe("createTools", () => {
       }),
     );
 
-    expect(answer).toContain("src/a.ts:1-30");
+    // The line range and the file length together tell the model whether it has
+    // seen the whole file or a window into it.
+    expect(answer).toContain("src/a.ts:1-30 of 120 lines");
     expect(answer).toContain("export function first");
   });
 

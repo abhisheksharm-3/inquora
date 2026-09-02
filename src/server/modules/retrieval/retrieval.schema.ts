@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMBEDDING_DIMENSIONS } from "@/server/platform/embeddings/client";
+import { EMBEDDING_DIMENSIONS } from "@/server/platform/embeddings/embeddings.constants";
 
 /** What a caller asks for. The document set is explicit: multi-document is an array, not a rebuild. */
 export const retrievalRequest = z.object({

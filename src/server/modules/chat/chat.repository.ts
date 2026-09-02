@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
-import { chatContext, type ChatContext } from "./chat.schema";
+import { chatContext } from "./chat.schema";
+import type { ChatRepository } from "./chat.types";
 
 /**
  * Two calls, one each way. The old send path made six sequential reads before
@@ -53,4 +54,3 @@ export const createChatRepository = (db: SupabaseClient<Database>): ChatReposito
     return ok(data);
   },
 });
-import type { AppendArgs, ChatRepository } from "./chat.types";

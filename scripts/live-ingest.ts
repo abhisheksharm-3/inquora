@@ -11,7 +11,7 @@ import { createEmbeddingsClient } from "../src/server/platform/embeddings/client
 import { createIngestionRepository } from "../src/server/modules/ingestion/ingestion.repository";
 import { createIngestionWorker } from "../src/server/modules/ingestion/ingestion.worker";
 import { extractDocument } from "../src/server/modules/ingestion/extract.source";
-import { contentHash } from "../src/core/content-hash";
+import { contentHash } from "../src/core/documents/content-hash";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;

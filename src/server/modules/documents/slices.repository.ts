@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { FileSlice, SliceRepository, TranscriptSegment } from "./documents.types";
 
@@ -24,10 +24,11 @@ export const createSliceRepository = (db: SupabaseClient<Database>): SliceReposi
 
     return ok(
       (data ?? []).map((row): FileSlice => ({
-        chunkIndex: row.chunk_index,
-        content: row.content,
+        path: row.path,
+        content: row.content ?? "",
         fromLine: row.from_line,
         toLine: row.to_line,
+        lineCount: row.line_count,
       })),
     );
   },

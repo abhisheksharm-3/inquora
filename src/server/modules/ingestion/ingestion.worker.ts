@@ -1,6 +1,7 @@
-import type { Chunk } from "@/core/chunking";
+import type { Chunk } from "@/core/chunking/chunking.types";
 import type { AppError } from "@/core/errors";
-import { ok, type Result } from "@/core/result";
+import { ok } from "@/core/result";
+import type { IngestionWorker, WorkerDependencies } from "./ingestion.types";
 
 /**
  * One pass over the queue: claim a job, extract, embed in batches, write each
@@ -34,7 +35,7 @@ export const createIngestionWorker = ({
     const extracted = await extract(job);
     if (!extracted.ok) return failJob(extracted.error.detail ?? extracted.error.type);
 
-    const { chunks, expectedChunks, tables, outline, text } = extracted.value;
+    const { chunks, expectedChunks, tables, files, outline, text } = extracted.value;
 
     // Written before embedding starts, so the interface can show a true fraction
     // instead of one of four words.
@@ -47,6 +48,14 @@ export const createIngestionWorker = ({
     if (outline) {
       const described = await store.setOutline(job.documentId, outline, text);
       if (!described.ok) return failJob(described.error.detail ?? described.error.type);
+    }
+
+    // Files before embeddings: once they are stored, grep and read_file already
+    // answer every exact question about a repository, so a run that fails halfway
+    // has still delivered most of the value.
+    if (files && files.length > 0) {
+      const stored = await store.insertFiles(job.documentId, files);
+      if (!stored.ok) return failJob(stored.error.detail ?? stored.error.type);
     }
 
     const mark = await queue.highWaterMark(job.documentId);
@@ -87,6 +96,3 @@ export const createIngestionWorker = ({
     return ok("processed");
   },
 });
-import type { ClaimedJob, IngestionWorker, WorkerDependencies } from "./ingestion.types";
-
-export type { ClaimedJob } from "./ingestion.types";

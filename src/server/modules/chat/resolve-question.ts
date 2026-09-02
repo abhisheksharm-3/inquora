@@ -1,7 +1,8 @@
 import { z } from "zod";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
-import { needsFollowUpResolution } from "@/core/follow-up";
+import { needsFollowUpResolution } from "@/core/retrieval/follow-up";
 import type { ChatContext } from "./chat.schema";
+import { HISTORY_TURNS } from "@/core/retrieval/retrieval.constants";
 
 /**
  * Rewrites a message that only makes sense in context into one that can be
@@ -23,9 +24,6 @@ const resolved = z.object({
       "The question, rewritten so it stands alone. Keep the user's own words where possible.",
     ),
 });
-
-/** How many recent turns the rewrite is allowed to look at. */
-const HISTORY_TURNS = 6;
 
 export const resolveQuestion = async (
   message: string,

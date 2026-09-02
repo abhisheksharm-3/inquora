@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/server/platform/env";
-import { isProtectedRoute, isAuthOnlyRoute, AUTH_ROUTES, DASHBOARD_ROUTES } from "@/config/routes";
+import { isProtectedRoute, isAuthOnlyRoute, AUTH_ROUTES, DASHBOARD_ROUTES } from "@/core/routes";
 
 /**
  * Next.js middleware to refresh the user's session and handle route protection.

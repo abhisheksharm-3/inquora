@@ -1,7 +1,10 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
+import type { ModelConfig } from "./llm.types";
+import { DEFAULT_MODEL, DEFAULT_TEMPERATURE, MAX_RETRIES } from "./llm.constants";
 
 /**
  * The model layer, per ADR 0002: a provider string names the model, and nothing
@@ -24,27 +27,14 @@ const PROVIDERS = {
       model,
       apiKey,
       temperature,
-      // Three attempts, because the shared Gemini capacity answers 503 "this
-      // model is currently experiencing high demand" often enough that one
-      // attempt loses a whole answer to it.
-      maxRetries: 3,
+      maxRetries: MAX_RETRIES,
     }) as unknown as BaseChatModel,
 } as const;
-
-/**
- * Default answering model. A pinned version rather than the -latest alias: the
- * alias points at whatever is newest, which is also what everyone else is
- * pointing at, and it answered 503 on the first deployed run.
- *
- * Overridable through ANSWER_MODEL, so changing model is a variable rather than a
- * deploy.
- */
-const DEFAULT_MODEL = "google-genai:gemini-2.5-flash";
 
 export const createChatModel = async ({
   apiKey,
   model = DEFAULT_MODEL,
-  temperature = 0.2,
+  temperature = DEFAULT_TEMPERATURE,
 }: ModelConfig): Promise<Result<BaseChatModel, AppError>> => {
   if (!apiKey) {
     return err(AppError.misconfigured("GEMINI_API_KEY is not set, so no answer can be generated"));
@@ -80,6 +70,3 @@ export const createChatModel = async ({
     );
   }
 };
-import type { ModelConfig } from "./llm.types";
-
-export type { ModelConfig } from "./llm.types";

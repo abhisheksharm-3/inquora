@@ -1,11 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { RetrievedChunk } from "./retrieval.schema";
-
-/** How many consecutive passages one read may return, so a tool call cannot pull a whole book. */
-const MAX_RANGE = 20;
+import type { ChunksRepository } from "./retrieval.types";
+import { MAX_CHUNK_RANGE } from "@/server/modules/chat/chat.constants";
 
 /**
  * Consecutive passages by position, which is what the model needs when a search
@@ -14,7 +13,7 @@ const MAX_RANGE = 20;
  */
 export const createChunksRepository = (db: SupabaseClient<Database>): ChunksRepository => ({
   async range({ documentId, from, to }) {
-    const upper = Math.min(to, from + MAX_RANGE - 1);
+    const upper = Math.min(to, from + MAX_CHUNK_RANGE - 1);
 
     const { data, error } = await db
       .from("document_chunks")
@@ -39,4 +38,3 @@ export const createChunksRepository = (db: SupabaseClient<Database>): ChunksRepo
     );
   },
 });
-import type { ChunksRepository } from "./retrieval.types";

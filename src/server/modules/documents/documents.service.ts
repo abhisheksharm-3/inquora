@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { Database } from "@/core/database.types";
 import type { UploadRequest } from "./documents.schema";
-
-const BUCKET = "documents";
+import type { DocumentsService, UploadTicket } from "./documents.types";
+import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 
 /**
  * Creates the document row and a signed URL to upload its bytes to.
@@ -60,7 +61,7 @@ export const createDocumentsService = (
     }
 
     const { data: signed, error: signError } = await db.storage
-      .from(BUCKET)
+      .from(STORAGE_BUCKET)
       .createSignedUploadUrl(path);
 
     if (signError) {
@@ -75,4 +76,3 @@ export const createDocumentsService = (
     });
   },
 });
-import type { DocumentsService, UploadTicket } from "./documents.types";

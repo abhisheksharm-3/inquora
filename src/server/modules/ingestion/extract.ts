@@ -1,9 +1,15 @@
-import { chunkProse, chunkSheet, chunkSlides, chunkTranscript, type Chunk } from "@/core/chunking";
+import { chunkProse, chunkSheet, chunkSlides, chunkTranscript } from "@/core/chunking/prose";
+import type { Chunk } from "@/core/chunking/chunking.types";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
-
-/** Recursive character splitting at 1000 with 200 of overlap, per the design. */
-const PROSE = { size: 1000, overlap: 200 };
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
+import type { Source } from "./ingestion.types";
+import {
+  PROSE_OVERLAP,
+  PROSE_SIZE,
+  SHEET_ROWS_PER_CHUNK,
+  TRANSCRIPT_WINDOW_SECONDS,
+} from "@/core/chunking/chunking.constants";
 
 /**
  * Turns extracted content into chunks, choosing the strategy by kind.
@@ -22,7 +28,7 @@ export const chunkSource = (source: Source): Result<Chunk[], AppError> => {
       const chunks: Chunk[] = [];
 
       for (const sheet of source.sheets) {
-        for (const chunk of chunkSheet(sheet, { rowsPerChunk: 40 })) {
+        for (const chunk of chunkSheet(sheet, { rowsPerChunk: SHEET_ROWS_PER_CHUNK })) {
           chunks.push({ ...chunk, index: chunks.length });
         }
       }
@@ -43,7 +49,7 @@ export const chunkSource = (source: Source): Result<Chunk[], AppError> => {
         return err(AppError.badRequest("no subtitles or transcript could be read"));
       }
 
-      return ok(chunkTranscript(source.transcript, { windowSeconds: 60 }));
+      return ok(chunkTranscript(source.transcript, { windowSeconds: TRANSCRIPT_WINDOW_SECONDS }));
     }
 
     case "github": {
@@ -60,12 +66,9 @@ export const chunkSource = (source: Source): Result<Chunk[], AppError> => {
       const text = source.text?.trim();
       if (!text) return err(AppError.badRequest("no text could be read from that document"));
 
-      const chunks = chunkProse(text, PROSE);
+      const chunks = chunkProse(text, { size: PROSE_SIZE, overlap: PROSE_OVERLAP });
 
       return chunks.length > 0 ? ok(chunks) : err(AppError.badRequest("that document is empty"));
     }
   }
 };
-import type { Source } from "./ingestion.types";
-
-export type { Source } from "./ingestion.types";

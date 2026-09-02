@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
+import type { MemoryRepository } from "./memory.types";
 
 /**
  * Durable facts about the user. RLS scopes the table to its owner, so the insert
@@ -21,4 +22,3 @@ export const createMemoryRepository = (db: SupabaseClient<Database>): MemoryRepo
     return ok(data.id);
   },
 });
-import type { MemoryRepository } from "./memory.types";

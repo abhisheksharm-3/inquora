@@ -1,7 +1,7 @@
-import { AuthLoginForm } from "@/components/auth/AuthLoginForm";
-import { AuthHeader } from "@/components/auth/AuthHeader";
-import { AuthLink } from "@/components/auth/AuthLink";
-import { AuthSocialLogins } from "@/components/auth/AuthSocialLogins";
+import { AuthLoginForm } from "@/ui/components/auth/AuthLoginForm";
+import { AuthHeader } from "@/ui/components/auth/AuthHeader";
+import { AuthLink } from "@/ui/components/auth/AuthLink";
+import { AuthSocialLogins } from "@/ui/components/auth/AuthSocialLogins";
 import { JSX } from "react";
 
 /**

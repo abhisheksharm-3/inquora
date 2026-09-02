@@ -1,7 +1,7 @@
-import type { Chunk } from "@/core/chunking.types";
+import type { Chunk } from "@/core/chunking/chunking.types";
 import type { AppError } from "@/core/errors";
-import type { Outline } from "@/core/outline.types";
-import type { Result } from "@/core/result";
+import type { Outline } from "@/core/documents/outline.types";
+import type { Result } from "@/core/result.types";
 
 export interface ClaimedJob {
   jobId: number;
@@ -32,10 +32,34 @@ export interface ExtractedDocument {
   chunks: Chunk[];
   expectedChunks: number;
   tables?: ExtractedTable[];
+  /** The files of a repository, stored rather than embedded. */
+  files?: ExtractedFile[];
   /** What the document is made of, so a model can look before it searches. */
   outline?: Outline;
   /** The document as text, kept so grep can match literally. */
   text?: string;
+}
+
+/** A repository, as GitHub names it. */
+export interface Repository {
+  owner: string;
+  name: string;
+  ref?: string;
+}
+
+/** One file of a repository, stored so grep and read_file work on real lines. */
+export interface ExtractedFile {
+  path: string;
+  language: string;
+  content: string;
+  lineCount: number;
+  bytes: number;
+}
+
+export interface ExtractedRepository {
+  files: ExtractedFile[];
+  chunks: Chunk[];
+  outline: Outline;
 }
 
 export interface ChunkStore {
@@ -50,6 +74,7 @@ export interface ChunkStore {
     chunks: { chunk_index: number; content: string; embedding: number[]; metadata: unknown }[],
   ): Promise<Result<number, AppError>>;
   insertTable(documentId: string, table: ExtractedTable): Promise<Result<string, AppError>>;
+  insertFiles(documentId: string, files: ExtractedFile[]): Promise<Result<number, AppError>>;
 }
 
 export interface WorkerDependencies {
@@ -82,5 +107,7 @@ export interface Source {
   slides?: { number: number; text: string }[];
   /** Pre-chunked content, for kinds whose chunking depends on how they were read. */
   chunks?: Chunk[];
+  /** The files of a repository, stored rather than embedded. */
+  files?: ExtractedFile[];
   outline?: Outline;
 }

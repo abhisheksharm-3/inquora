@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { JSX } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui/components/ui/button";
 import { AlertCircle } from "lucide-react";
 
 /**

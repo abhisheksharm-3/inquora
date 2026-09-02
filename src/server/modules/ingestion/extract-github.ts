@@ -1,74 +1,31 @@
 import JSZip from "jszip";
-import { chunkCode, languageOf } from "@/core/chunk-code";
+import { chunkCodeFile, languageOf } from "@/core/chunking/code";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
-import type { Chunk } from "@/core/chunking.types";
-import type { Outline } from "@/core/outline.types";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
+import {
+  GITHUB_TIMEOUT_MS,
+  INDEXABLE_EXTENSIONS,
+  MAX_FILE_BYTES,
+  MAX_FILES,
+  SKIPPED_PATHS,
+} from "./github.constants";
+import type { ExtractedFile, ExtractedRepository, Repository } from "./ingestion.types";
 
 /**
  * A repository, read as one zipball rather than one request per file.
  *
- * GitHub's contents API needs a call per file, which for a repository of any size
- * is hundreds of requests against a rate limit of sixty an hour unauthenticated.
- * The zipball is one request, and jszip is already a dependency.
+ * The contents API needs a call per file, which against a rate limit of sixty an
+ * hour rules out any repository worth reading. The zipball is one request, and
+ * jszip was already a dependency.
+ *
+ * What comes back is files, not chunks. Files answer the exact questions — where
+ * is this called, what raises this error — through grep and read_file, with no
+ * vector involved. Chunks are spent only on what describes the code: its
+ * documentation, and the declarations that say what each file contains.
  */
 
-/** Files worth indexing. Everything else is noise a search would return instead of an answer. */
-const INDEXABLE = new Set([
-  "ts",
-  "tsx",
-  "js",
-  "jsx",
-  "mjs",
-  "cjs",
-  "py",
-  "rb",
-  "go",
-  "rs",
-  "java",
-  "kt",
-  "swift",
-  "c",
-  "h",
-  "cpp",
-  "hpp",
-  "cs",
-  "php",
-  "sql",
-  "sh",
-  "md",
-  "mdx",
-  "yml",
-  "yaml",
-  "toml",
-  "json",
-]);
-
-/** Directories that are build output or vendored code. */
-const SKIP =
-  /(^|\/)(node_modules|\.git|dist|build|out|target|vendor|\.next|coverage|__pycache__)\//;
-
-/** A file above this is generated, minified or a lockfile. */
-const MAX_FILE_BYTES = 200_000;
-
-/** A repository above this many files is truncated, so one document cannot cost a whole budget. */
-const MAX_FILES = 400;
-
-/**
- * A cap on the text kept for grep. Measured on supabase/supabase-js: 399 files
- * came to 3.1MB, which is more than one column should carry and more than a regex
- * should scan on every call. Grep covers the first megabyte; search covers all of
- * it, because every file is chunked and embedded either way.
- */
-const MAX_RETAINED_TEXT = 1_000_000;
-
-export interface Repository {
-  owner: string;
-  name: string;
-  ref?: string;
-}
-
-/** github.com/owner/name, with or without a ref, and tolerant of a .git suffix. */
+/** github.com/owner/name, with or without a ref, tolerant of a .git suffix. */
 export const parseRepositoryUrl = (raw: string): Result<Repository, AppError> => {
   let url: URL;
 
@@ -96,7 +53,7 @@ export const parseRepositoryUrl = (raw: string): Result<Repository, AppError> =>
 export const extractRepository = async (
   repository: Repository,
   token?: string,
-): Promise<Result<{ chunks: Chunk[]; outline: Outline; text: string }, AppError>> => {
+): Promise<Result<ExtractedRepository, AppError>> => {
   const ref = repository.ref ?? "HEAD";
   const url = `https://api.github.com/repos/${repository.owner}/${repository.name}/zipball/${ref}`;
 
@@ -109,7 +66,7 @@ export const extractRepository = async (
         "user-agent": "inquora",
         ...(token ? { authorization: `Bearer ${token}` } : {}),
       },
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
   } catch (cause) {
     return err(
@@ -136,10 +93,6 @@ export const extractRepository = async (
 
   const zip = await JSZip.loadAsync(await response.arrayBuffer());
 
-  const chunks: Chunk[] = [];
-  const files: { path: string; lines: number }[] = [];
-  const parts: string[] = [];
-
   // The zipball nests everything under `owner-name-sha/`, which is noise in every
   // path a citation would show.
   const strip = (path: string) => path.slice(path.indexOf("/") + 1);
@@ -147,8 +100,10 @@ export const extractRepository = async (
   const entries = Object.values(zip.files)
     .filter((entry) => !entry.dir)
     .map((entry) => ({ entry, path: strip(entry.name) }))
-    .filter(({ path }) => !SKIP.test(path))
-    .filter(({ path }) => INDEXABLE.has(path.slice(path.lastIndexOf(".") + 1).toLowerCase()))
+    .filter(({ path }) => !SKIPPED_PATHS.test(path))
+    .filter(({ path }) =>
+      INDEXABLE_EXTENSIONS.has(path.slice(path.lastIndexOf(".") + 1).toLowerCase()),
+    )
     .sort((a, b) => a.path.localeCompare(b.path))
     .slice(0, MAX_FILES);
 
@@ -156,29 +111,31 @@ export const extractRepository = async (
     return err(AppError.badRequest("that repository holds no files this can index"));
   }
 
+  const files: ExtractedFile[] = [];
+  const chunks = [];
+
   for (const { entry, path } of entries) {
     const content = await entry.async("string");
 
-    if (content.length > MAX_FILE_BYTES) continue;
+    if (content.length > MAX_FILE_BYTES || content.trim().length === 0) continue;
 
     const language = languageOf(path);
-    const fileChunks = chunkCode({ path, language, content }, chunks.length);
+    const lineCount = content.split("\n").length;
 
-    chunks.push(...fileChunks);
-    files.push({ path, lines: content.split("\n").length });
-    // The retained text keeps its path headers, so grep_document reports which
-    // file a match came from.
-    parts.push(`=== ${path} ===\n${content}`);
+    files.push({ path, language, content, lineCount, bytes: content.length });
+    chunks.push(...chunkCodeFile({ path, language, content }, chunks.length));
   }
 
-  const text = parts.join("\n\n");
+  if (files.length === 0) {
+    return err(AppError.badRequest("every file in that repository was too large or empty"));
+  }
 
   return ok({
+    files,
     chunks,
-    outline: { files, characters: text.length },
-    text:
-      text.length > MAX_RETAINED_TEXT
-        ? `${text.slice(0, MAX_RETAINED_TEXT)}\n\n=== truncated: ${files.length} files, ${text.length} characters, grep covers the first ${MAX_RETAINED_TEXT} ===`
-        : text,
+    outline: {
+      files: files.map((file) => ({ path: file.path, lines: file.lineCount })),
+      characters: files.reduce((total, file) => total + file.bytes, 0),
+    },
   });
 };

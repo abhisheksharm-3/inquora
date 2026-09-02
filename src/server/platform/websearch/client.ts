@@ -1,5 +1,5 @@
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { WebResult, WebSearchClient } from "./websearch.types";
 
 /**

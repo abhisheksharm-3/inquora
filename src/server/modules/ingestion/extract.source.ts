@@ -1,15 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { Database } from "@/core/database.types";
 import { fetchExternal } from "@/server/platform/http/fetch-external";
-import { outlineFromSheets, outlineFromText } from "@/core/outline";
+import { outlineFromSheets, outlineFromText } from "@/core/documents/outline";
 import { chunkSource } from "./extract";
 import { extractRepository, parseRepositoryUrl } from "./extract-github";
 import { extractSlides } from "./extract-slides";
 import type { ClaimedJob, ExtractedDocument, Source } from "./ingestion.types";
-
-const BUCKET = "documents";
+import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 
 /**
  * Reads one document's bytes and turns them into chunks.
@@ -63,7 +63,8 @@ export const extractDocument = async (
     outline,
     // Only prose keeps its text. A workbook's rows are the queryable form of it,
     // and storing a flattened copy would be the mistake the old extractor made.
-    text: source.value.sheets ? undefined : source.value.text,
+    text: source.value.sheets || source.value.files ? undefined : source.value.text,
+    files: source.value.files,
   });
 };
 
@@ -96,11 +97,13 @@ const readSource = async (
     const read = await extractRepository(repository.value, env().GITHUB_TOKEN);
     if (!read.ok) return err(read.error);
 
+    // No retained text: the files are the text now, each greppable on its own
+    // and readable by real line number rather than by the chunk that overlapped.
     return ok({
       kind: "github",
       chunks: read.value.chunks,
       outline: read.value.outline,
-      text: read.value.text,
+      files: read.value.files,
     });
   }
 
@@ -118,7 +121,7 @@ const readSource = async (
     return err(AppError.badRequest("the document has neither a file nor a URL"));
   }
 
-  const { data, error } = await db.storage.from(BUCKET).download(document.storage_path);
+  const { data, error } = await db.storage.from(STORAGE_BUCKET).download(document.storage_path);
 
   if (error) return err(AppError.badGateway(`could not download the file: ${error.message}`));
 

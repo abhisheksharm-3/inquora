@@ -1,5 +1,6 @@
 import { STATUS_CODES } from "node:http";
 import type { AppError } from "@/core/errors";
+import type { ProblemDetails } from "./http.types";
 
 /**
  * Renders an error as a problem document. The title comes from Node's own
@@ -24,6 +25,3 @@ export const problemResponse = (error: AppError, instance: string): Response =>
         : { "retry-after": String(error.retryAfterSeconds) }),
     },
   });
-import type { ProblemDetails } from "./http.types";
-
-export type { ProblemDetails } from "./http.types";

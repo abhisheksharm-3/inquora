@@ -1,21 +1,15 @@
 import { createAgent, toolCallLimitMiddleware } from "langchain";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
-import type { StreamEvent } from "@/server/platform/http/sse";
+import type { StreamEvent } from "@/server/platform/http/http.types";
 import type { ChatContext } from "./chat.schema";
 import { createTools } from "./tools";
 import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
-
-/**
- * The cap on tool calls in one run. A model can call the same tool forever
- * without converging, and the bill is the only place that would show up
- * otherwise. The limit comes from LangChain's own middleware rather than a
- * hand-written counter around the loop: runLimit is per message, which is the
- * boundary that matters, rather than per thread.
- */
-const MAX_TOOL_CALLS = 8;
+import type { DocumentKind } from "@/server/modules/documents/documents.schema";
+import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
+import { MAX_TOOL_CALLS } from "./chat.constants";
 
 const buildSystemPrompt = (context: ChatContext): string => {
   if (context.documents.length === 0) {
@@ -225,7 +219,3 @@ export const createAnsweringAgent = ({
     systemPrompt: () => systemPrompt,
   };
 };
-import type { DocumentKind } from "@/server/modules/documents/documents.schema";
-import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
-
-export type { AnsweringAgent, TurnUsage } from "./chat.types";

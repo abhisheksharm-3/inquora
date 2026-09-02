@@ -1,12 +1,13 @@
 import { AppError } from "@/core/errors";
-import { mmr, type Candidate } from "@/core/mmr";
-import { err, ok, type Result } from "@/core/result";
-import { EMBEDDING_TTL_SECONDS, embeddingKey } from "@/server/platform/cache/cache";
+import { mmr } from "@/core/retrieval/mmr";
+import type { Candidate } from "@/core/retrieval/mmr.types";
+import { err, ok } from "@/core/result";
+import { embeddingKey } from "@/server/platform/cache/cache";
+import { EMBEDDING_TTL_SECONDS } from "@/server/platform/embeddings/embeddings.constants";
+import { MMR_LAMBDA } from "@/core/retrieval/retrieval.constants";
 import { withSpan } from "@/server/platform/telemetry/span";
-import type { RetrievalRequest, RetrievedChunk } from "./retrieval.schema";
-
-/** Relevance-dominant, per the design. */
-const MMR_LAMBDA = 0.3;
+import type { RetrievalRequest } from "./retrieval.schema";
+import type { RetrievalDependencies, RetrievalService } from "./retrieval.types";
 
 /**
  * One embedding call, one search call, then ranking in process.
@@ -62,4 +63,3 @@ export const createRetrievalService = ({
     });
   },
 });
-import type { RetrievalDependencies, RetrievalService } from "./retrieval.types";

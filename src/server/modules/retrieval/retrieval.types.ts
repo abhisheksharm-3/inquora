@@ -1,5 +1,5 @@
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { Cache } from "@/server/platform/cache/cache.types";
 
 export type { RetrievalRequest, RetrievedChunk } from "./retrieval.schema";

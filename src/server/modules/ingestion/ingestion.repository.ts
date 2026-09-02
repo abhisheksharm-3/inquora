@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { Database } from "@/core/database.types";
-import type { ClaimedJob } from "./ingestion.worker";
+import { FILE_BATCH } from "./github.constants";
+import type { ClaimedJob } from "./ingestion.types";
 
 /**
  * The queue and the chunk store, as the worker sees them.
@@ -83,6 +85,32 @@ export const createIngestionRepository = (db: SupabaseClient<Database>) => ({
     if (error) return err(AppError.badGateway(`could not record the outline: ${error.message}`));
 
     return ok(undefined);
+  },
+
+  async insertFiles(
+    documentId: string,
+    files: { path: string; language: string; content: string; lineCount: number; bytes: number }[],
+  ): Promise<Result<number, AppError>> {
+    let written = 0;
+
+    // Batched, because a repository is up to two thousand files and one statement
+    // per file would be two thousand round trips.
+    for (let start = 0; start < files.length; start += FILE_BATCH) {
+      const batch = files.slice(start, start + FILE_BATCH);
+
+      const { data, error } = await db.rpc("insert_document_files", {
+        p_document_id: documentId,
+        p_files: batch as never,
+      });
+
+      if (error) {
+        return err(AppError.badGateway(`insert_document_files failed: ${error.message}`));
+      }
+
+      written += typeof data === "number" ? data : batch.length;
+    }
+
+    return ok(written);
   },
 
   async insertTable(

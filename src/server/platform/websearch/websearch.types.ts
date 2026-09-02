@@ -1,5 +1,5 @@
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
+import type { Result } from "@/core/result.types";
 
 /** One web result, already extracted, so nothing has to fetch the page. */
 export interface WebResult {

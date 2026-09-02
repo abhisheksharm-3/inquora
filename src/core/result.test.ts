@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { err, isOk, ok, unwrapOr, type Result } from "./result";
+import { err, isOk, ok, unwrapOr } from "./result";
+import type { Result } from "./result.types";
 
 describe("Result", () => {
   it("wraps a success value", () => {

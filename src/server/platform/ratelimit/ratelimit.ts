@@ -1,5 +1,7 @@
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import { LIMITS } from "./ratelimit.constants";
+import type { RateLimiter, RateLimitRedis } from "./ratelimit.types";
 
 /**
  * One rate limiter, with a bucket per kind of work. The old code had two
@@ -10,17 +12,6 @@ import { err, ok, type Result } from "@/core/result";
  * precision buys nothing here, and the simplest correct thing is the one that
  * stays correct.
  */
-
-/** Requests allowed per window, per user, per bucket. */
-const LIMITS: Record<Bucket, { limit: number; windowSeconds: number }> = {
-  // Each message costs at least one model turn, so this is the expensive one.
-  messages: { limit: 30, windowSeconds: 60 },
-  ingestion: { limit: 20, windowSeconds: 60 },
-  uploads: { limit: 20, windowSeconds: 60 },
-  // Tighter and over a longer window, because this one is guarding a password
-  // against being guessed rather than a budget against being spent.
-  auth: { limit: 10, windowSeconds: 300 },
-};
 
 /**
  * INCR then EXPIRE on first write, as one script so the two cannot be separated
@@ -62,6 +53,3 @@ export const createRateLimiter = ({ redis }: { redis?: RateLimitRedis }): RateLi
     return ok(undefined);
   },
 });
-import type { Bucket, RateLimiter, RateLimitRedis } from "./ratelimit.types";
-
-export type { Bucket, RateLimiter } from "./ratelimit.types";

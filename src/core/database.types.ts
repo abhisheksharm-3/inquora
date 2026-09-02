@@ -157,6 +157,47 @@ export type Database = {
           },
         ]
       }
+      document_files: {
+        Row: {
+          bytes: number
+          content: string
+          created_at: string
+          document_id: string
+          id: string
+          language: string
+          line_count: number
+          path: string
+        }
+        Insert: {
+          bytes: number
+          content: string
+          created_at?: string
+          document_id: string
+          id?: string
+          language: string
+          line_count: number
+          path: string
+        }
+        Update: {
+          bytes?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          language?: string
+          line_count?: number
+          path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_files_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_rows: {
         Row: {
           data: Json
@@ -564,10 +605,15 @@ export type Database = {
         Returns: {
           line: string
           line_number: number
+          path: string
         }[]
       }
       insert_document_chunks: {
         Args: { p_chunks: Json; p_document_id: string }
+        Returns: number
+      }
+      insert_document_files: {
+        Args: { p_document_id: string; p_files: Json }
         Returns: number
       }
       insert_document_table: {
@@ -597,9 +643,10 @@ export type Database = {
           p_to_line?: number
         }
         Returns: {
-          chunk_index: number
           content: string
           from_line: number
+          line_count: number
+          path: string
           to_line: number
         }[]
       }

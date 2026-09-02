@@ -1,8 +1,8 @@
 "use client";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui/components/ui/button";
 import Link from "next/link";
-import { TypeErrorProps } from "@/types/ui";
+import { TypeErrorProps } from "@/ui/lib/ui.types";
 
 /**
  * A custom error boundary component for the application.

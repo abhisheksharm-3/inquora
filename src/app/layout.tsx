@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Literata, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import QueryProvider from "@/providers/QueryProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { SupabaseProvider } from "@/providers/SupabaseProvider";
+import QueryProvider from "@/ui/providers/QueryProvider";
+import { ThemeProvider } from "@/ui/providers/ThemeProvider";
+import { SupabaseProvider } from "@/ui/providers/SupabaseProvider";
 
 const literata = Literata({
   variable: "--font-serif",

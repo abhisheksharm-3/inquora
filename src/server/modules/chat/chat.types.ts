@@ -1,6 +1,6 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AppError } from "@/core/errors";
-import type { Result } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.types";
 import type { StreamEvent } from "@/server/platform/http/http.types";
 import type { ChatContext, SendMessageRequest } from "./chat.schema";
@@ -75,7 +75,7 @@ export interface OutlinePort {
     documentId: string;
     pattern: string;
     limit?: number;
-  }): Promise<Result<{ lineNumber: number; line: string }[], AppError>>;
+  }): Promise<Result<{ path: string | null; lineNumber: number; line: string }[], AppError>>;
 }
 
 /** The by-position surface read_file and get_transcript depend on. */
@@ -85,7 +85,12 @@ export interface SlicePort {
     path: string;
     fromLine?: number;
     toLine?: number;
-  }): Promise<Result<{ content: string; fromLine: number; toLine: number }[], AppError>>;
+  }): Promise<
+    Result<
+      { path: string; content: string; fromLine: number; toLine: number; lineCount: number }[],
+      AppError
+    >
+  >;
   transcript(args: {
     documentId: string;
     startSeconds?: number;

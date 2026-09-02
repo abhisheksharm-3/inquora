@@ -1,15 +1,11 @@
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
-
-/** Every embedding in this system has 1024 dimensions. See CLAUDE.md. */
-export const EMBEDDING_DIMENSIONS = 1024;
-
-/**
- * The longest this client will hold a request open waiting out a 429. Anything
- * longer is handed back, because the ingestion worker has a queue with its own
- * backoff and a query path has a user waiting.
- */
-const MAX_INLINE_WAIT_SECONDS = 2;
+import { err, ok } from "@/core/result";
+import type { EmbeddingsClient, EmbeddingsConfig, EmbeddingsResponse } from "./embeddings.types";
+import {
+  EMBEDDING_DIMENSIONS,
+  MAX_INLINE_WAIT_SECONDS,
+  QUERY_TIMEOUT_MS,
+} from "./embeddings.constants";
 
 const retryAfterSeconds = (response: Response): number => {
   const header = response.headers.get("retry-after");
@@ -30,7 +26,7 @@ const retryAfterSeconds = (response: Response): number => {
  */
 export const createEmbeddingsClient = (config: EmbeddingsConfig): EmbeddingsClient => {
   const doFetch = config.fetch ?? globalThis.fetch;
-  const timeoutMs = config.timeoutMs ?? 60_000;
+  const timeoutMs = config.timeoutMs ?? QUERY_TIMEOUT_MS;
 
   const request = async (texts: string[]): Promise<Response> =>
     doFetch(`${config.baseUrl}/api/v1/embeddings/generate`, {
@@ -110,6 +106,3 @@ export const createEmbeddingsClient = (config: EmbeddingsConfig): EmbeddingsClie
     },
   };
 };
-import type { EmbeddingsClient, EmbeddingsConfig, EmbeddingsResponse } from "./embeddings.types";
-
-export type { EmbeddingsClient, EmbeddingsConfig, FetchLike } from "./embeddings.types";

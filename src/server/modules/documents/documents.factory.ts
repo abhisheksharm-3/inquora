@@ -1,5 +1,6 @@
 import { AppError } from "@/core/errors";
-import { err, type Result } from "@/core/result";
+import { err } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import { createServerDbClient } from "@/server/platform/db/client";
 import { rateLimiter } from "@/server/platform/ratelimit/redis";
 import { createDocumentsService } from "./documents.service";

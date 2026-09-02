@@ -2,10 +2,11 @@ import { tool } from "langchain";
 import { withSpan } from "@/server/platform/telemetry/span";
 import { z } from "zod";
 import type { AppError } from "@/core/errors";
-import { evaluateArithmetic } from "@/core/arithmetic";
-import type { Result } from "@/core/result";
-import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
+import { evaluateArithmetic } from "@/core/untrusted/arithmetic";
+import type { Result } from "@/core/result.types";
+import type { RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import type { ChatContext } from "./chat.schema";
+import type { ToolDependencies } from "./chat.types";
 
 /** A passage as the model reads it: numbered, attributed, quotable. */
 const renderChunks = (chunks: RetrievedChunk[], context: ChatContext): string =>
@@ -243,7 +244,15 @@ export const createTools = ({
       if (!found.ok) return `That pattern was refused: ${found.error.detail ?? found.error.type}`;
       if (found.value.length === 0) return `Nothing in that document matches ${pattern}.`;
 
-      return found.value.map((match) => `${match.lineNumber}: ${match.line}`).join("\n");
+      // The path is what makes a match in a repository actionable: a line number
+      // alone does not say which of two thousand files it is in.
+      return found.value
+        .map((match) =>
+          match.path
+            ? `${match.path}:${match.lineNumber}: ${match.line}`
+            : `${match.lineNumber}: ${match.line}`,
+        )
+        .join("\n");
     },
     {
       name: "grep_document",
@@ -284,7 +293,10 @@ export const createTools = ({
       }
 
       return found.value
-        .map((slice) => `${path}:${slice.fromLine}-${slice.toLine}\n${slice.content}`)
+        .map(
+          (slice) =>
+            `${slice.path}:${slice.fromLine}-${slice.toLine} of ${slice.lineCount} lines\n${slice.content}`,
+        )
         .join("\n\n");
     },
     {
@@ -402,4 +414,3 @@ export const createTools = ({
     ...(web.configured && context.chat.webSearch ? [webSearch] : []),
   ].map((definition) => traced(definition as never));
 };
-import type { ToolDependencies } from "./chat.types";

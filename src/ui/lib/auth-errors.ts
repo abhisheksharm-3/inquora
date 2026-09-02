@@ -1,6 +1,6 @@
-import { ErrorMessages, HttpStatusErrorMap } from "@/constants/auth-error-messages";
-import { EnumAuthErrorType } from "@/types/auth";
-import { TypeAuthError, TypeUnknownError } from "@/types/auth";
+import { ErrorMessages, HttpStatusErrorMap } from "@/ui/lib/auth-error-messages";
+import { EnumAuthErrorType } from "@/ui/lib/auth.types";
+import { TypeAuthError, TypeUnknownError } from "@/ui/lib/auth.types";
 
 /**
  * Normalizes an unknown error into a structured object with a message, code, and status.

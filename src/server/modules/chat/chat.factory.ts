@@ -1,6 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import { createChunksRepository } from "@/server/modules/retrieval/chunks.repository";
 import { createRetrievalRepository } from "@/server/modules/retrieval/retrieval.repository";
 import { createRetrievalService } from "@/server/modules/retrieval/retrieval.service";

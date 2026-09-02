@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 
 /**
  * A .pptx is a zip of XML, one part per slide, and the text lives in <a:t>

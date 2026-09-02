@@ -1,8 +1,10 @@
 import { lookup } from "node:dns/promises";
 import { AppError } from "@/core/errors";
-import { isPrivateAddress } from "@/core/ip-range";
-import { err, ok, type Result } from "@/core/result";
+import { isPrivateAddress } from "@/core/untrusted/ip-range";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import type { CheckedUrl } from "./http.types";
+import { FETCH_TIMEOUT_MS, MAX_FETCH_BYTES, MAX_REDIRECTS } from "./http.constants";
 
 /**
  * Fetches a URL that somebody else chose.
@@ -23,9 +25,6 @@ import type { CheckedUrl } from "./http.types";
  * to return anything else, while the URL keeps its hostname so TLS and the
  * certificate still verify against the real name.
  */
-
-const MAX_REDIRECTS = 3;
-const MAX_BYTES = 10 * 1024 * 1024;
 
 const assertPublic = async (raw: string): Promise<Result<CheckedUrl, AppError>> => {
   let url: URL;
@@ -81,7 +80,7 @@ const pinnedDispatcher = async (checked: CheckedUrl) => {
 
 export const fetchExternal = async (
   raw: string,
-  timeoutMs = 30_000,
+  timeoutMs = FETCH_TIMEOUT_MS,
 ): Promise<Result<{ text: string; url: string }, AppError>> => {
   let target = raw;
 
@@ -120,13 +119,13 @@ export const fetchExternal = async (
     if (!response.ok) return err(AppError.badGateway(`that URL returned ${response.status}`));
 
     const declared = Number(response.headers.get("content-length") ?? 0);
-    if (declared > MAX_BYTES) {
+    if (declared > MAX_FETCH_BYTES) {
       return err(AppError.badRequest("that page is larger than 10MB"));
     }
 
     const text = await response.text();
 
-    if (text.length > MAX_BYTES) {
+    if (text.length > MAX_FETCH_BYTES) {
       return err(AppError.badRequest("that page is larger than 10MB"));
     }
 

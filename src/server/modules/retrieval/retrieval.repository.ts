@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import type { RetrievedChunk } from "./retrieval.schema";
+import type { RetrievalRepository } from "./retrieval.types";
+import { CANDIDATE_MULTIPLIER } from "@/core/retrieval/retrieval.constants";
 
 /**
  * Postgres renders a vector as `[0.1,0.2,...]` text over the wire, so it arrives
@@ -20,12 +22,6 @@ const parseVector = (value: unknown): number[] => {
     return [];
   }
 };
-
-/**
- * MMR can only remove candidates, so the database is asked for a wider set than
- * the caller wants and the pruning happens after.
- */
-const CANDIDATE_MULTIPLIER = 3;
 
 /**
  * The only thing in this system that reads chunks for retrieval, and it makes
@@ -59,4 +55,3 @@ export const createRetrievalRepository = (db: SupabaseClient<Database>): Retriev
     );
   },
 });
-import type { RetrievalRepository, SearchArgs } from "./retrieval.types";

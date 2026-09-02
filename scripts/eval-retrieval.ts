@@ -12,7 +12,7 @@
  */
 import { readFileSync } from "node:fs";
 import { SQL } from "bun";
-import { mmr } from "../src/core/mmr";
+import { mmr } from "../src/core/retrieval/mmr";
 import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
 
 interface Corpus {

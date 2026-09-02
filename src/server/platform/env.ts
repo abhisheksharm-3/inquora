@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 
 /**
  * Every environment variable this application reads, in one schema, validated

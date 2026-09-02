@@ -1,6 +1,5 @@
 import type { Cache, RedisLike } from "./cache.types";
 
-export type { Cache, RedisLike } from "./cache.types";
 /**
  * The cache is a convenience, never a dependency. Absent Redis means uncached,
  * and a Redis that is down means a miss: the query still gets answered, one
@@ -8,9 +7,6 @@ export type { Cache, RedisLike } from "./cache.types";
  * "fallback", which on serverless scoped to a single lambda and so cached almost
  * nothing while reading as though it cached everything.
  */
-
-/** Thirty days, per the design. A query embedding does not go stale. */
-export const EMBEDDING_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 /**
  * A cache key for one query embedding. crypto.subtle.digest rather than a hash

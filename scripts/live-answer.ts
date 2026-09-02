@@ -12,7 +12,8 @@ import { createRetrievalService } from "../src/server/modules/retrieval/retrieva
 import { createCache } from "../src/server/platform/cache/cache";
 import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
 import { createChatModel } from "../src/server/platform/llm/model";
-import { ok, type Result } from "../src/core/result";
+import { ok } from "../src/core/result";
+import type { Result } from "../src/core/result.types";
 import type { AppError } from "../src/core/errors";
 import type {
   RetrievalRequest,

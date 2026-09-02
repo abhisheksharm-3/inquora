@@ -1,6 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { env } from "@/server/platform/env";
-import { createRateLimiter, type RateLimiter } from "./ratelimit";
+import { createRateLimiter } from "./ratelimit";
+import type { RateLimiter } from "./ratelimit.types";
 
 /**
  * The limiter wired to the configured Redis, or a permissive one when none is

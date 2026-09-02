@@ -1,11 +1,13 @@
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import { createServiceDbClient } from "@/server/platform/db/service";
 import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
 import { env } from "@/server/platform/env";
 import { createIngestionRepository } from "./ingestion.repository";
 import { createIngestionWorker } from "./ingestion.worker";
 import { extractDocument } from "./extract.source";
+import type { DrainSummary } from "./ingestion.types";
 
 /**
  * Drains up to `limit` jobs, then returns a summary. The worker itself is pure
@@ -58,4 +60,3 @@ export const drainIngestionQueue = async (
 
   return ok(summary);
 };
-import type { DrainSummary } from "./ingestion.types";

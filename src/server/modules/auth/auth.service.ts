@@ -1,5 +1,6 @@
 import { AppError } from "@/core/errors";
-import { err, ok, type Result } from "@/core/result";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
 import { createServerDbClient } from "@/server/platform/db/client";
 import { siteUrl } from "@/server/platform/env";
 import { rateLimiter } from "@/server/platform/ratelimit/redis";

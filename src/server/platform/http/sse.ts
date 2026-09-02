@@ -1,6 +1,5 @@
 import type { FinishReason, SseOptions, StreamEvent } from "./http.types";
 
-export type { FinishReason, SseOptions, StreamEvent } from "./http.types";
 /**
  * Server-sent events, in the shape LangGraph's own stream uses: a named event
  * and a JSON payload.
