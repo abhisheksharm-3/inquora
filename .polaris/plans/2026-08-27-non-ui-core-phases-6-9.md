@@ -145,3 +145,47 @@ restructure: types to `.types.ts`, dials to `.constants.ts`, `core/` grouped by
 concern, `ui/` holding the interface, thirty-nine unreachable files deleted.
 
 **Cut.** The Space keep-alive ping, by the user: the cold start is acceptable.
+
+---
+
+## After the reviews
+
+Seven reviews ran over the finished backend on 2026-09-02: correctness, security,
+performance, database, transport, maintainability and over-engineering. Acting on
+them was not a tidy-up.
+
+**A live authorization hole.** The queue's four `security definer` functions had no
+`revoke`, and Postgres grants EXECUTE to PUBLIC while Supabase exposes the public
+schema through PostgREST. Verified against the deployment before fixing: a caller
+holding only the publishable key got 200 from `claim_ingestion_job`. Verified
+after: 42501.
+
+**A browser could forge derived state.** One PATCH set a document to `ready` with
+`chunk_count: 9999` and it stuck. A policy chooses rows; a grant chooses columns,
+and only the first was right. Every row-level test passed throughout, which is why
+the suite now proves isolation by running as `authenticated` with a real claim.
+
+**The persisted answer was one character.** `streamMode: "messages"` yields
+deltas and the code assigned where it had to append — reproduced at 44 chunks
+storing ".". Every deployed test had passed because those answers arrived in one
+chunk.
+
+**A document was ready when it started.** Status flipped on the first chunk, which
+deleted the queue row, so a worker dying on batch two left a document reporting
+ready with a fifth of its content and nothing to retry it. The 213-of-241 failure,
+through a different door.
+
+**MMR was selecting for diversity.** The fused score is bounded by 0.033 and the
+redundancy term is a cosine in 0..1, so relevance was swamped. Normalizing moved
+recall@4 from 87.5% to 93.8% and MRR from 0.933 to 0.967 — the one review finding
+that improved the product rather than only its correctness.
+
+Also: `remember()` failed on every call, a cancelled stream lost its answer, a
+cited document could never be deleted, two versions of `append_message` were live
+at once, a spreadsheet with an "Updated" column was unqueryable forever, thirty
+dependencies were installed and imported nowhere, and `undici` was imported and
+never declared — resolving only through packages that were about to be removed.
+
+Five of these were found by running the thing rather than reading it, and three
+only after deploy. That is the argument for the rule about a live end-to-end run,
+written down where the next person will read it.

@@ -78,6 +78,45 @@ const pinnedDispatcher = async (checked: CheckedUrl) => {
   });
 };
 
+/** Reads a body, giving up the moment it exceeds what the caller will accept. */
+const readWithinBudget = async (
+  response: Response,
+  budget: number,
+): Promise<Result<string, AppError>> => {
+  if (!response.body) return ok("");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const parts: string[] = [];
+  let read = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      read += value.byteLength;
+
+      if (read > budget) {
+        await reader.cancel().catch(() => {});
+        return err(AppError.badRequest("that page is larger than 10MB"));
+      }
+
+      parts.push(decoder.decode(value, { stream: true }));
+    }
+  } catch (cause) {
+    return err(
+      AppError.badGateway(
+        `that URL stopped sending: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+
+  parts.push(decoder.decode());
+
+  return ok(parts.join(""));
+};
+
 export const fetchExternal = async (
   raw: string,
   timeoutMs = FETCH_TIMEOUT_MS,
@@ -89,6 +128,7 @@ export const fetchExternal = async (
     if (!checked.ok) return err(checked.error);
 
     let response: Response;
+    const dispatcher = await pinnedDispatcher(checked.value);
 
     try {
       response = await fetch(checked.value.url, {
@@ -96,11 +136,13 @@ export const fetchExternal = async (
         redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
         headers: { accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8" },
-        dispatcher: await pinnedDispatcher(checked.value),
+        dispatcher,
         // `dispatcher` is undici's, which is what Node's fetch is built on. It is
         // not in the DOM RequestInit type.
       } as RequestInit & { dispatcher: unknown });
     } catch (cause) {
+      await dispatcher.close().catch(() => {});
+
       return err(
         AppError.badGateway(
           `could not fetch that URL: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -108,28 +150,45 @@ export const fetchExternal = async (
       );
     }
 
+    // Each hop opens its own pinned connection pool. Without this a drain over
+    // five URL documents leaked a pool per hop inside one warm function.
+    const done = async <T>(result: T): Promise<T> => {
+      await dispatcher.close().catch(() => {});
+      return result;
+    };
+
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
-      if (!location) return err(AppError.badGateway("that URL redirected to nowhere"));
+      if (!location) return done(err(AppError.badGateway("that URL redirected to nowhere")));
 
       target = new URL(location, checked.value.url).toString();
+      await dispatcher.close().catch(() => {});
       continue;
     }
 
-    if (!response.ok) return err(AppError.badGateway(`that URL returned ${response.status}`));
+    if (!response.ok) {
+      return done(err(AppError.badGateway(`that URL returned ${response.status}`)));
+    }
 
     const declared = Number(response.headers.get("content-length") ?? 0);
     if (declared > MAX_FETCH_BYTES) {
-      return err(AppError.badRequest("that page is larger than 10MB"));
+      return done(err(AppError.badRequest("that page is larger than 10MB")));
     }
 
-    const text = await response.text();
+    /*
+     * Read with a running budget rather than buffering and then measuring.
+     *
+     * A declared content-length is only present when the server volunteers one:
+     * omit it, or use chunked encoding, and `Number(null ?? 0)` is zero, the check
+     * above passes, and `response.text()` used to buffer the whole body before
+     * anything measured it. A user-supplied URL that streams gigabytes was an
+     * out-of-memory kill on the worker, followed by a retry.
+     */
+    const read = await readWithinBudget(response, MAX_FETCH_BYTES);
 
-    if (text.length > MAX_FETCH_BYTES) {
-      return err(AppError.badRequest("that page is larger than 10MB"));
-    }
+    if (!read.ok) return done(err(read.error));
 
-    return ok({ text, url: checked.value.url.toString() });
+    return done(ok({ text: read.value, url: checked.value.url.toString() }));
   }
 
   return err(AppError.badGateway("that URL redirected too many times"));

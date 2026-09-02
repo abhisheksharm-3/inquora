@@ -103,6 +103,8 @@ export interface DrainSummary {
   processed: number;
   failed: number;
   idle: boolean;
+  /** Why the drain stopped early, when it did. */
+  lastError?: string;
 }
 
 /** What extraction produces, before chunking chooses a strategy for it. */

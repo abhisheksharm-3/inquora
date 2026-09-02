@@ -7,24 +7,28 @@ points at.
 
 Inquora is being rebuilt in two slices.
 
-- **Slice one, the non-UI core: landed on 2026-08-27.** Eleven migrations, 55 pgTAP assertions,
-  retrieval, the streaming answer route, ingestion, and the sweep that deleted `src/utils`,
-  `src/data` and `src/services`.
+- **Slice one, the non-UI core: complete on 2026-09-02.** Thirty-three migrations, 143 pgTAP
+  assertions, twelve tools, per-kind specialists, realtime, telemetry, and seven reviews acted on.
+  What exists is `.polaris/specs/2026-09-02-non-ui-core-as-built.md`, which supersedes the design
+  where they disagree.
   Design: `.polaris/specs/2026-08-25-non-ui-core-design.md`
   Plans: `.polaris/plans/2026-08-25-non-ui-core.md` (phases 0 and 1),
-  `.polaris/plans/2026-08-27-non-ui-core-phases-2-5.md` (phases 2 to 5)
+  `.polaris/plans/2026-08-27-non-ui-core-phases-2-5.md`,
+  `.polaris/plans/2026-08-27-non-ui-core-phases-6-9.md`
 - **Slice two, the UI. Not started.** What survives of the old interface is the landing page,
   sign-in and sign-up. Everything else was deleted rather than reworked.
   Scope: `.polaris/specs/2026-08-25-ui-scope.md`
   Brief: `.polaris/specs/2026-08-25-ui-shape-brief.md`
   Mockups: `docs/design/`
 
-**Measured on 2026-08-27, live rather than mocked:**
+**Measured on 2026-09-02, live rather than mocked:**
 
-- Retrieval scores recall@4 87.5% and MRR 0.933 over the fixture corpus. `bun run eval`
+- Retrieval scores recall@4 93.8% and MRR 0.967 over the fixture corpus. `bun run eval`
 - A real PDF ingests end to end in about three seconds. `bun run scripts/live-ingest.ts <file>`
+- A 516-file repository is read and chunked in 1.3 seconds, into 711 chunks.
+- A real spreadsheet answers a filter, a sum and a group-by exactly, from SQL over its rows.
 - The deployed endpoint answers a real question from a real document through Gemini: 200
-  text/event-stream, first event in 3.8 seconds, 6.5 seconds total, and the assistant message
+  text/event-stream, first event in 3.6 seconds, 6.3 seconds total, and the assistant message
   persisted with three source parts. `bun run live:deployed`
 
 The development network blocks POST to generativelanguage.googleapis.com — GET returns in 0.36s,
@@ -107,6 +111,11 @@ The layout law, on every surface: **substance left, apparatus right.**
 - `bun run typecheck && bunx eslint src && bun run test && bun run build`
 - `bun run db:test` for anything touching SQL. It needs `SUPABASE_DB_URL` and runs pgTAP through
   bun's Postgres client, so it needs no Docker — `supabase test db` pulls a pg_prove container.
+- **A policy chooses rows; a grant chooses columns.** RLS alone let a browser forge a document's
+  status while every RLS test passed. Assert privileges with `has_column_privilege`, and assert
+  isolation by running as `authenticated` with a real claim, not by checking `relrowsecurity`.
+- **`create or replace` cannot change a signature.** Adding a defaulted parameter creates an
+  overload, and the old function stays live without whatever the new one added. Drop it by name.
 - A green suite is not evidence for an AI pipeline. One live end-to-end run against the real
   provider, or it is not working.
 - State what you actually ran and what it printed. If a step was skipped, say so.

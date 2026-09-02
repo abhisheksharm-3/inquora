@@ -18,18 +18,9 @@ const signupSchema = z.object({
   password: z.string().min(6),
 });
 
-/** Reads the named fields out of a form and validates them together. */
-function extractFormData<T extends z.ZodObject<z.ZodRawShape>>(
-  formData: FormData,
-  schema: T,
-): z.infer<T> {
-  const data: Record<string, unknown> = {};
-
-  for (const key of Object.keys(schema.shape)) {
-    data[key] = formData.get(key);
-  }
-
-  return schema.parse(data);
+/** The named fields of a form, as an object the schema can parse. */
+function fields(formData: FormData, schema: z.ZodObject<z.ZodRawShape>): Record<string, unknown> {
+  return Object.fromEntries(Object.keys(schema.shape).map((key) => [key, formData.get(key)]));
 }
 
 /**
@@ -38,25 +29,33 @@ function extractFormData<T extends z.ZodObject<z.ZodRawShape>>(
  * module, so this file stays about reading a form.
  */
 export const signIn = async (formData: FormData) => {
-  try {
-    const { email, password } = extractFormData(formData, loginSchema);
-    const result = await signInWithPassword(email, password);
+  // Parsed outside the try, so only a validation failure produces a validation
+  // message. Wrapping the service call in the same catch reported a provider
+  // outage as "enter an email address", with nothing logged and nothing to
+  // distinguish it from an empty field.
+  const parsed = loginSchema.safeParse(fields(formData, loginSchema));
 
-    if (!result.ok) return result.error.detail ?? "Could not sign you in.";
-  } catch {
-    return "Enter an email address and a password.";
-  }
+  if (!parsed.success) return "Enter an email address and a password.";
+
+  const result = await signInWithPassword(parsed.data.email, parsed.data.password);
+
+  return result.ok ? undefined : (result.error.detail ?? "Could not sign you in.");
 };
 
 export const signUp = async (formData: FormData) => {
-  try {
-    const data = extractFormData(formData, signupSchema);
-    const result = await signUpWithPassword(data.email, data.password, data["full-name"]);
+  const parsed = signupSchema.safeParse(fields(formData, signupSchema));
 
-    if (!result.ok) return result.error.detail ?? "Could not create your account.";
-  } catch {
+  if (!parsed.success) {
     return "Enter your name, an email address, and a password of at least six characters.";
   }
+
+  const result = await signUpWithPassword(
+    parsed.data.email,
+    parsed.data.password,
+    parsed.data["full-name"],
+  );
+
+  return result.ok ? undefined : (result.error.detail ?? "Could not create your account.");
 };
 
 export const signInWithGoogle = async (nextUrl?: string | null) => {

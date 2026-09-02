@@ -8,11 +8,53 @@ import { env } from "@/server/platform/env";
 import { createIngestionRepository } from "./ingestion.repository";
 import { createIngestionWorker } from "./ingestion.worker";
 import { extractDocument } from "./extract.source";
-import type { DrainSummary } from "./ingestion.types";
+import type { DrainSummary, IngestionWorker } from "./ingestion.types";
 
 /**
  * Drains up to `limit` jobs, then returns a summary. The worker itself is pure
  * orchestration over injected pieces; this is where the real ones are chosen.
+ */
+
+/**
+ * One pass over the queue, given a worker.
+ *
+ * Separate from the wiring below so the accounting can be tested: a queue
+ * worker's normal case is partial success, and what it reports about a partial
+ * run is the contract the caller retries against.
+ */
+export const drainOnce = async (
+  worker: IngestionWorker,
+  limit: number,
+): Promise<Result<DrainSummary, AppError>> => {
+  const summary: DrainSummary = { processed: 0, failed: 0, idle: false };
+
+  for (let i = 0; i < limit; i += 1) {
+    const outcome = await worker.runOnce();
+
+    // A job that could not even be failed properly is counted and reported, not
+    // thrown away: returning an error here discarded the fact that earlier
+    // documents advanced, so the caller could not tell progress from a dead
+    // drain, and its retry started blind.
+    if (!outcome.ok) {
+      summary.failed += 1;
+      summary.lastError = outcome.error.detail ?? outcome.error.type;
+      break;
+    }
+
+    if (outcome.value === "idle") {
+      summary.idle = true;
+      break;
+    }
+
+    if (outcome.value === "processed") summary.processed += 1;
+    else summary.failed += 1;
+  }
+
+  return ok(summary);
+};
+
+/**
+ * The same pass, wired to the real queue, storage, parsers and embeddings.
  */
 export const drainIngestionQueue = async (
   limit: number,
@@ -43,21 +85,5 @@ export const drainIngestionQueue = async (
     }),
   });
 
-  const summary: DrainSummary = { processed: 0, failed: 0, idle: false };
-
-  for (let i = 0; i < limit; i += 1) {
-    const outcome = await worker.runOnce();
-
-    if (!outcome.ok) return err(outcome.error);
-
-    if (outcome.value === "idle") {
-      summary.idle = true;
-      break;
-    }
-
-    if (outcome.value === "processed") summary.processed += 1;
-    else summary.failed += 1;
-  }
-
-  return ok(summary);
+  return drainOnce(worker, limit);
 };

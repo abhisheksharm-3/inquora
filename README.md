@@ -9,20 +9,34 @@ passage takes one action. An answer with no traceable source is a worse outcome 
 
 ---
 
-## Status: mid-rebuild
+## Status: the backend is built, the interface is not
 
-The application running at that link is version 3. Version 4 is designed and planned but **not
-implemented**, and it replaces almost everything below the interface. If you are reading the code
-in `src/`, you are reading the system being replaced.
+The link above serves one page saying the product is offline, because it is. Everything below the
+interface has been rebuilt and runs; nothing above it exists yet.
 
-Two slices, in order:
+| Slice                                                   | State                       | Documents                                                                                                                       |
+| ------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Non-UI core** — data, retrieval, transport, ingestion | **built and verified live** | [as built](.polaris/specs/2026-09-02-non-ui-core-as-built.md) · [design](.polaris/specs/2026-08-25-non-ui-core-design.md)       |
+| **UI** — every surface, rebuilt from nothing            | scoped, shaped, not started | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
 
-| Slice                                                   | State                          | Documents                                                                                                                       |
-| ------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Non-UI core** — data, retrieval, transport, ingestion | designed, planned, not started | [design](.polaris/specs/2026-08-25-non-ui-core-design.md) · [plan](.polaris/plans/2026-08-25-non-ui-core.md)                    |
-| **UI** — every surface, rebuilt from nothing            | scoped, shaped, not started    | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
+Decisions that are expensive to reverse live in [`docs/adr/`](docs/adr/). What was actually built,
+including the places building it proved the design wrong, is in
+[the as-built spec](.polaris/specs/2026-09-02-non-ui-core-as-built.md).
 
-Decisions that are expensive to reverse live in [`docs/adr/`](docs/adr/).
+### Measured, live rather than mocked
+
+|                        |                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| Retrieval quality      | **recall@4 93.8%, MRR 0.967** over the fixture corpus — `bun run eval`                   |
+| A deployed answer      | **200 SSE, first event 3.6s, 6.3s total**, citations persisted — `bun run live:deployed` |
+| A real PDF, end to end | **3 seconds** — `bun run scripts/live-ingest.ts <file>`                                  |
+| A 516-file repository  | **1.3 seconds** to read and chunk                                                        |
+| A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
+| Database               | 33 migrations, **143 pgTAP assertions**                                                  |
+| Suite                  | 247 tests, typecheck clean, zero lint errors                                             |
+
+The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
+generation is checked against the deployment rather than locally.
 
 ### Why
 
@@ -59,7 +73,21 @@ incidental. Measured on 2026-08-25 against the live project:
   ([ADR 0005](docs/adr/0005-tool-calling-with-a-speculative-first-search.md))
 
 Target for a single message: **one embedding call, one vector query, two Supabase roundtrips before
-generation, and a streamed first token.**
+generation, and a streamed first token.** Reality, honestly: one search when the speculative
+dispatch is reused and two when the model rewords the question far enough that serving the warmed
+passages would answer from the wrong ones. Both outcomes are recorded on the trace, so the hit rate
+is a number rather than a hope.
+
+### What seven reviews found
+
+The backend was reviewed across correctness, security, performance, database, transport,
+maintainability and over-engineering. It was worth doing: they found a live authorization hole
+(four `security definer` queue functions callable by anyone holding the publishable key), an answer
+persisted as its last stream delta rather than the whole thing, a document marked `ready` after its
+first chunk of five hundred, and a browser able to forge a document's status because a policy chooses
+rows while a **grant** chooses columns. Every RLS test passed throughout that last one, which is why
+the suite now proves cross-tenant isolation behaviourally rather than asserting that RLS is switched
+on.
 
 ---
 
@@ -89,6 +117,18 @@ pages. Several of them in one conversation, each switchable in and out of retrie
 Spreadsheets are queried as tables rather than embedded as prose about tables, which is why figures
 come from cells instead of from a paragraph describing them.
 
+**Each kind is answered by a specialist.** A repository starts at its file tree, greps for
+identifiers because that is exactly what a dense vector flattens, reads around a match to see the
+whole function, and cites `path:line`. A video is told it has the transcript and not the picture,
+and to carry a timestamp with every claim. A spreadsheet is told to query rather than read, and to
+cast before it compares. Each also states what it cannot see, so the model can be honest about the
+gap rather than discovering it mid-answer.
+
+A repository is indexed by what answers questions about it: files are stored and greppable, and
+embeddings are spent on documentation and on a per-file summary of its declarations. Measured on
+`supabase/supabase-js`, that is 516 files and 711 chunks, against 2,664 for a first version that
+embedded every function body.
+
 ---
 
 ## Stack
@@ -103,11 +143,14 @@ come from cells instead of from a paragraph describing them.
 | Chat interface   | `@assistant-ui/react` primitives, styled from scratch |
 | Client state     | TanStack Query                                        |
 | Styling          | Tailwind CSS 4, Radix primitives                      |
+| Document parsers | `unpdf`, `exceljs`, `mammoth`, `fflate`               |
 | Observability    | OpenTelemetry, Sentry, Langfuse                       |
 | Tests            | Vitest, pgTAP                                         |
 
-Pinecone is on its way out. tRPC was evaluated and rejected: Server Actions, generated database
-types and a shared Zod schema already solve the contract problem it exists for.
+Pinecone is gone, along with thirty other dependencies that nothing imported — including six
+packages for two YouTube operations, which a running service does instead. tRPC was evaluated and
+rejected: route handlers, generated database types and a shared Zod schema already solve the
+contract problem it exists for.
 
 ---
 
@@ -126,14 +169,19 @@ bun dev
 Environment variables are documented in [`.env.example`](.env.example) and validated by a Zod
 schema at boot, so a missing or malformed value fails immediately rather than at first use.
 
-Once the database rebuild lands, schema work runs through the Supabase CLI:
+Schema work runs through the Supabase CLI, and the checks through bun:
 
 ```bash
-bunx supabase start        # local stack
-bunx supabase db reset     # replay migrations
-bunx supabase test db      # pgTAP
+bun run db:push            # apply migrations to the linked project
+bun run db:test            # 143 pgTAP assertions, no Docker required
 bun run db:types           # regenerate src/core/database.types.ts
+bun run eval               # recall@k and MRR against real embeddings
+bun run live:deployed      # one real question through the deployment
 ```
+
+`bun run db:test` runs the pgTAP files through bun's own Postgres client rather than pulling a
+`pg_prove` container, which is what lets CI run the SQL suite beside the TypeScript one. It needs
+`SUPABASE_DB_URL`.
 
 Never hand-edit the generated types file. Drift between it and the database is how the current
 system ended up reading a `full_text` column that does not exist.
@@ -148,3 +196,9 @@ naming standard, and where logic belongs. Read it before changing anything.
 Two that catch people out: commits carry no `Co-Authored-By` trailer, and a green test suite is not
 evidence that an AI pipeline works. One live end-to-end run against the real provider, or it is not
 working.
+
+That second rule earned itself here. Three failures in this rebuild passed every local test and
+only appeared after deploy — a provider package a bundler could not trace, an externalised copy of a
+library beside a bundled one, and a model alias answering 503 under load. Two more appeared only
+when the thing was run rather than read: a cited document could never be deleted, and two versions
+of one database function were live at once.

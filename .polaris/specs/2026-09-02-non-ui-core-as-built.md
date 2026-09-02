@@ -1,6 +1,6 @@
 # Inquora non-UI core: as built
 
-Date: 2026-09-02
+Date: 2026-09-02, revised the same day after seven reviews
 Status: the backend is complete. This document is what exists, measured, and it
 supersedes the design where the two disagree.
 Supersedes in part: `.polaris/specs/2026-08-25-non-ui-core-design.md`
@@ -40,8 +40,14 @@ Zod contract in a `.schema.ts`. Grammars stay next to the parser that uses them.
 
 ## The database
 
-Nineteen migrations. Twelve tables, twenty-five functions, two views, 91 pgTAP
-assertions.
+Thirty-three migrations. Twelve tables, twenty-six functions, two views, 143
+pgTAP assertions.
+
+Privileges are part of the schema, not an afterthought on top of it. A policy
+chooses rows and a grant chooses columns, and getting only the first right let a
+browser PATCH a document to `ready` while every row-level test passed: the
+derived columns are revoked from client roles, the queue's `security definer`
+functions are revoked from everything but the service role, and both are asserted.
 
 | Table                              | Holds                                                                   |
 | ---------------------------------- | ----------------------------------------------------------------------- |
@@ -75,10 +81,19 @@ One embedding call, one `search_chunks` call, ranked in process.
 `search_chunks` runs pgvector and Postgres full-text search as one query and fuses
 them by reciprocal rank, returning the chunk vector so MMR can rank on meaning
 rather than on vocabulary. The distance expression matches the HNSW index exactly,
-including the halfvec cast, or the index would never be used.
+including the halfvec cast, or the index would never be used — and matching the
+expression is necessary rather than sufficient, because the document filter and
+the policy are applied after the scan, so iterative scanning is on or a growing
+corpus starves the dense arm with nothing failing.
 
-**Measured, live, 2026-09-02: recall@4 87.5%, MRR 0.933** over fifteen questions
-and a three-document corpus. `bun run eval`, with floors that fail a regression.
+MMR normalizes the fused score before weighing it against the diversity term.
+Raw, the score is bounded by about 0.033 while a cosine spans 0 to 1, so a five
+percent similarity difference outweighed the entire range of relevance and lambda
+0.3 behaved as almost pure diversity — the opposite of what it claims.
+
+**Measured, live, 2026-09-02: recall@4 93.8%, MRR 0.967** over fifteen questions
+and a three-document corpus, up from 87.5% and 0.933 before the normalization.
+`bun run eval`, with floors that fail a regression.
 
 ## Answering
 
@@ -99,8 +114,14 @@ are not "documents": each carries its own guidance, its own tool order and its o
 stated limits, composed into the system prompt from what is actually attached. A
 model told only "documents" greps a spreadsheet and searches a repository.
 
-**Measured, live, on the deployment: 200 text/event-stream, first event 3.8s,
-6.5s total, three source parts persisted.** `bun run live:deployed`
+A send carries the client's own message id, so a double-click, a stalled retry or
+a retrying proxy resolves to the first attempt rather than buying a second agent
+run. The answer is the concatenation of the stream's deltas, not its last one; a
+cancelled stream still persists what it produced; and a failed generation is not
+stored as a finished answer for the next turn to reason from.
+
+**Measured, live, on the deployment: 200 text/event-stream, first event 3.6s,
+6.3s total, three source parts persisted.** `bun run live:deployed`
 
 ## Ingestion
 
@@ -128,12 +149,23 @@ answered a filter, a sum and a group-by exactly.
 ## Where the design was wrong
 
 1. **MMR needed the vectors returned.** `search_chunks` had to grow a column.
-2. **A statement-level trigger has no NEW or OLD.** Transition tables instead.
+2. **A statement-level trigger has no NEW or OLD.** Transition tables instead —
+   and it needs an UPDATE trigger too, or an upsert recomputes nothing.
 3. **`initChatModel` cannot be bundled.** Its dynamic import is untraceable, so
    providers are a static map keyed by the same provider string.
 4. **`gemini-flash-latest` answers 503 under load.** The default is pinned.
-5. **Embedding a whole repository is the wrong index.** See above.
+5. **Embedding a whole repository is the wrong index.** Files are stored and
+   greppable; embeddings go on documentation and per-file declarations.
 6. **The Space keep-alive was cut** by the user: the cold start is acceptable.
+7. **A deny list against a model writing SQL cannot be finished.** It refused
+   legitimate column names — `Updated`, `Created`, `Comments` — while missing a
+   verb hidden inside a function name. Literals are blanked before checking, and
+   no function may be called but arithmetic, aggregates and string functions.
+8. **RLS is not the whole boundary.** A grant decides columns, and every
+   row-level test passed while a browser could forge derived state.
+9. **"One embedding call, one search call" was not true.** The speculative
+   dispatch is a full retrieval, reusable only when the model's query is close
+   enough that the same passages come back. Both outcomes are on the span now.
 
 ## What is not built, deliberately
 
@@ -142,3 +174,19 @@ answered a filter, a sum and a group-by exactly.
 - **Deep mode.** Query decomposition behind an explicit flag, from the design's
   retrieval section. Not built, and the eval harness is what should justify it.
 - **Anything visual.** That is slice two.
+
+## Decisions taken against a review's advice
+
+Recorded because they were argued, not overlooked.
+
+- **The rate limiter is hand-written** and `@upstash/ratelimit` was removed rather
+  than adopted. Fifty-five lines, one Redis round trip, a fixed window, tested. The
+  library would also have brought multi-region and analytics, which nothing here
+  needs.
+- **`calculate` keeps its arithmetic parser.** A review argued the product does not
+  need it, since a spreadsheet goes to SQL. It stays for figures that appear in
+  prose, and it is a parser rather than `eval` because the input comes from a
+  model.
+- **The seven `*Port` interfaces in `chat.types.ts` remain.** They restate what the
+  repositories export, which is duplication, and they are also the seam every test
+  in that module injects through.
