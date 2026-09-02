@@ -78,9 +78,19 @@ export const sourceKindForUrl = (raw: string): { kind: DocumentKind; url: string
     return null;
   }
 
-  // http and https only. A `file:` or `data:` URL would be asking the server to
-  // read something on its own side.
-  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  // https only, which is what `fetchExternal` accepts. This used to allow http
+  // as well, so an http link was accepted at the door and then failed in the
+  // worker: the answer to "can this be fetched" has to be the same in both
+  // places.
+  //
+  // This function decides which handler a link gets and nothing else. It does
+  // no DNS and no address checking, because it is in `core`, which performs no
+  // I/O — and because that check belongs where the request is made, not where
+  // the string is classified. `fetchExternal` resolves every address, rejects
+  // the private ranges including 169.254.169.254, re-validates each redirect
+  // hop, and pins the connection to the addresses it validated so a rebinding
+  // answer cannot be used.
+  if (url.protocol !== "https:") return null;
 
   const host = url.hostname.replace(/^www\./, "");
 
