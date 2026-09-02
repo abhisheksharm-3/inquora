@@ -1,0 +1,108 @@
+# Inquora non-UI core: implementation plan, phases 6 to 9
+
+**Goal:** Finish the backend. Nothing about the interface starts until every item here is either
+built or explicitly cut, because a frontend built against a half-built backend encodes the gaps.
+
+**Prerequisite:** phases 0 to 5, landed 2026-08-27. The answer path is proven end to end on the
+deployment: 200 text/event-stream, first event 3.8s, three source parts persisted.
+
+**Spec:** `.polaris/specs/2026-08-25-non-ui-core-design.md`. These phases build what that document
+described and the first five phases did not reach.
+
+## What is missing, and the order it gets built in
+
+Measurement first, because the product's claim is cost and latency and neither is currently
+observable. Then the differentiator. Then breadth.
+
+---
+
+# Phase 6: measurement, and the parts of the answer path that were left dangling
+
+### Task 6.1: Write the metrics the schema already has columns for
+
+`messages` carries `tokens_in`, `tokens_out`, `model` and `retrieval_ms`, and only `latency_ms` is
+ever written. Cost per conversation and p95 time to first token are supposed to be plain SQL; today
+they are unanswerable.
+
+The agent reports usage per turn, so the service reads it off the stream and passes it to
+`append_message`.
+
+### Task 6.2: Wire follow-up resolution, which is built and called by nothing
+
+`needsFollowUpResolution` is tested and unused. "What about the second one?" is embedded as written,
+so retrieval runs on grammar rather than on subject.
+
+The heuristic gates one cheap structured call that rewrites the message against the last few turns.
+A self-contained question skips it, which is the whole point of the gate.
+
+### Task 6.3: Instrument once, against OpenTelemetry
+
+`instrumentation.ts`, exporting to Sentry for exceptions and Langfuse for LLM and retrieval traces,
+per ADR 0004. Every tool call records its latency, so a runaway loop shows up in a trace rather than
+only on the bill.
+
+**Cut on 2026-08-27:** the Space keep-alive ping the design proposed for the 18-second cold start.
+The user decided the cold start is acceptable. Revisit only if first-query latency becomes a
+complaint.
+
+---
+
+# Phase 7: tabular documents, the differentiator
+
+The design calls `query_table` "the expensive one and the differentiating one". Sheet chunking
+exists, so a spreadsheet is searchable as prose; the numbers in it are still not queryable.
+
+### Task 7.1: Land sheets as rows
+
+`document_tables` and `document_rows`, written during ingestion alongside the chunks, so a workbook
+keeps its sheets, its header and its row identity.
+
+### Task 7.2: `query_table`, read-only and fenced
+
+A single `select` over one document's rows, with the sheet's own column names, a statement timeout, a
+row cap, and a rejection of anything that is not a select. The SQL comes from a language model, so
+the fence is the feature.
+
+---
+
+# Phase 8: the tools that need columns
+
+### Task 8.1: `documents.outline` and `get_outline`
+
+Headings for prose, sheet names for a workbook, the file tree for a repository. Consulting an outline
+before searching is cheaper than searching twice.
+
+### Task 8.2: Retained text and `grep_document`
+
+Literal and regex matching beats embeddings for error codes and identifiers, and needs the extracted
+text kept rather than thrown away after chunking.
+
+### Task 8.3: `get_transcript`, with real timestamps
+
+Video citations point at a passage rather than a second, because the transcript is stored with
+positions rather than times.
+
+### Task 8.4: `read_file` for repositories, and `web_search`
+
+`read_file` needs file paths in chunk metadata, which phase 9 lands. `web_search` is off by default,
+per-chat, with citations marked differently.
+
+---
+
+# Phase 9: the content kinds that fail on extraction
+
+`github`, `slides` and `image` are values in the `document_kind` enum with no extractor, so a
+document of those kinds is created and then fails with a reason. Each needs its own extraction and
+its own chunking rule: code splits on function and class boundaries with file path and line range,
+slides split per slide, and an image is described rather than read.
+
+---
+
+## Exit criteria
+
+- [ ] `bun run typecheck && bunx eslint src && bun run test && bun run build`
+- [ ] `bun run db:test`
+- [ ] `bun run eval` at or above its floors
+- [ ] `bun run live:deployed` answers, with token counts and a model recorded on the message
+- [ ] A spreadsheet question answered from a `query_table` call rather than from embedded prose
+- [ ] Every value of `document_kind` has an extractor, or is removed from the enum
