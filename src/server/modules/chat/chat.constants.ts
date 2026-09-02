@@ -18,6 +18,3 @@ export const MAX_FILE_LINES = 400;
 
 /** Seconds of transcript one get_transcript call may return. */
 export const MAX_TRANSCRIPT_SECONDS = 600;
-
-/** Web results per search. */
-export const MAX_WEB_RESULTS = 5;

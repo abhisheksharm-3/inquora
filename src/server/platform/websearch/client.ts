@@ -1,6 +1,6 @@
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import { MAX_WEB_RESULTS } from "@/server/modules/chat/chat.constants";
+import { MAX_WEB_RESULTS, MAX_WEB_RESULTS_REQUESTED, WEB_TIMEOUT_MS } from "./websearch.constants";
 import type { WebResult, WebSearchClient } from "./websearch.types";
 
 /**
@@ -17,7 +17,7 @@ import type { WebResult, WebSearchClient } from "./websearch.types";
  */
 export const createWebSearchClient = ({
   apiKey,
-  timeoutMs = 20_000,
+  timeoutMs = WEB_TIMEOUT_MS,
 }: {
   apiKey?: string;
   timeoutMs?: number;
@@ -37,7 +37,7 @@ export const createWebSearchClient = ({
         headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           query,
-          max_results: Math.min(Math.max(limit, 1), 10),
+          max_results: Math.min(Math.max(limit, 1), MAX_WEB_RESULTS_REQUESTED),
           include_answer: false,
           include_raw_content: false,
         }),
