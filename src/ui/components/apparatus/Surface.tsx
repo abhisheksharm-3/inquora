@@ -25,6 +25,7 @@ export const Surface = ({
   apparatus,
   chrome,
   apparatusLabel,
+  className,
   /**
    * Locks the surface to the viewport height and lets the columns scroll
    * inside it. The conversation wants this, because its composer sits at the
@@ -38,13 +39,16 @@ export const Surface = ({
   chrome?: React.ReactNode;
   apparatusLabel?: string;
   fill?: boolean;
+  /** Lets a caller that stacks a header and a footer above and below set the height. */
+  className?: string;
 }) => (
-  <div className="min-h-dvh bg-ground">
+  <div className="bg-ground">
     <div
       className={cn(
-        "mx-auto grid max-w-[1280px] grid-cols-1 border-rule wide:grid-cols-[minmax(0,1fr)_var(--apparatus)] wide:border-x",
+        "grid grid-cols-1 border-rule wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]",
         chrome ? "grid-rows-[auto_minmax(0,1fr)]" : "grid-rows-[minmax(0,1fr)]",
         fill ? "h-dvh wide:overflow-hidden" : "min-h-dvh",
+        className,
       )}
     >
       {chrome}

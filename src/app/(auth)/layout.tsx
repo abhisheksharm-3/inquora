@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
-import type { Entry } from "@/ui/components/apparatus/apparatus.types";
-import { Surface } from "@/ui/components/apparatus/Surface";
-import { ThemeToggle } from "@/ui/components/shared/ThemeToggle";
+import { SiteFooter } from "@/ui/components/marketing/SiteFooter";
+import { SiteHeader } from "@/ui/components/marketing/SiteHeader";
+import { WorkedExample } from "@/ui/components/marketing/WorkedExample";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -11,52 +9,59 @@ export const metadata: Metadata = {
 };
 
 /**
- * The right-hand column on an authentication screen carries the one thing it
- * owes you: what happens to your documents. Stated here rather than linked to a
- * policy page nobody opens.
+ * Substance on the left, apparatus on the right, as on every surface. On this
+ * one the substance is the form, and the apparatus is the product: one real
+ * answer with the passages behind it.
  *
- * It used to be headed "Apparatus · 2 notes". Apparatus is what this design
- * system calls its right-hand column; it is not a word a person signing in
- * should have to read.
+ * The previous version put two lines of privacy note in a 330px strip beside a
+ * 42ch form, which left most of a 1500px screen empty. The notes were the right
+ * content for the column and there was not enough of them to be a column. What
+ * somebody about to hand over a document wants to see is what they get, so that
+ * is what the column carries now, with the promises about their files under it
+ * where they matter rather than above it where they were decoration.
  */
-const notes: Entry[] = [
+const promises = [
   {
-    kind: "operation",
-    tick: "01",
-    title: "Your documents stay yours.",
-    detail: "Indexed to your account, readable by nobody else, deleted with it.",
+    heading: "Your documents stay yours",
+    body: "Indexed to your account, readable by nobody else, and deleted with it.",
   },
   {
-    kind: "operation",
-    tick: "02",
-    title: "Nothing trains on your files.",
-    detail: "Content is read to answer your question and is not retained for anything else.",
+    heading: "Nothing trains on your files",
+    body: "Content is read to answer your question and is not retained for anything else.",
   },
 ];
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => (
-  <Surface
-    apparatusLabel="What happens to your documents"
-    apparatus={<ApparatusColumn entries={notes} label="What happens to your documents" />}
-  >
-    {/* A form is narrow, so the column it sits in is narrow too. Left at
-        `1fr` the reading column was 900px wide holding a 34ch form, which is
-        how a sign-in screen ends up looking like an empty page with a field
-        in the corner. */}
-    <main className="flex min-w-0 flex-col px-7 py-9 wide:px-12 wide:py-10">
-      <div className="mb-12 flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="font-reading text-[1.15rem] text-ink tracking-[0.01em] hover:text-mark"
-        >
-          Inquora
-        </Link>
-        <ThemeToggle />
-      </div>
+  <div className="min-h-dvh bg-ground">
+    <SiteHeader variant="auth" />
 
-      <div className="flex max-w-[42ch] flex-1 flex-col justify-center pb-16">{children}</div>
-    </main>
-  </Surface>
+    <div className="grid min-h-[calc(100svh-4rem)] grid-cols-1 wide:grid-cols-[minmax(0,46ch)_minmax(0,1fr)]">
+      <main className="flex min-w-0 flex-col justify-center px-7 py-14 wide:px-10">{children}</main>
+
+      <aside className="border-rule border-t px-7 py-10 wide:border-t-0 wide:border-l wide:bg-panel wide:px-10">
+        <p className="mb-8 font-record text-label text-faint uppercase tracking-[0.14em]">
+          What you are signing in to
+        </p>
+
+        <WorkedExample stacked />
+
+        <dl className="mt-10 grid grid-cols-1 gap-6 border-rule border-t pt-7 sm:grid-cols-2">
+          {promises.map((promise) => (
+            <div key={promise.heading}>
+              <dt className="mb-1.5 font-medium font-record text-label text-ink">
+                {promise.heading}
+              </dt>
+              <dd className="m-0 max-w-[34ch] font-light font-reading text-[0.95rem] text-soft leading-relaxed">
+                {promise.body}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </aside>
+    </div>
+
+    <SiteFooter />
+  </div>
 );
 
 export default AuthLayout;

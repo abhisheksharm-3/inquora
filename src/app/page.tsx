@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/ui/components/marketing/SiteFooter";
 import { SiteHeader } from "@/ui/components/marketing/SiteHeader";
+import { WorkedExample } from "@/ui/components/marketing/WorkedExample";
 import { Underlined } from "@/ui/components/shared/Underlined";
 
 export const metadata: Metadata = {
@@ -175,49 +176,8 @@ const Home = () => (
           A quarterly report and a forecast spreadsheet, in one conversation.
         </p>
 
-        <div className="grid grid-cols-1 border border-rule wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
-          <div className="px-7 py-8 wide:px-8">
-            <p className="mb-6 max-w-[25ch] font-normal font-reading text-[1.4rem] text-ink leading-snug after:mt-4 after:block after:h-px after:w-[30px] after:bg-mark">
-              Why did Q3 revenue miss the forecast?
-            </p>
-
-            <div className="max-w-[58ch] font-light font-reading text-[1.08rem] text-ink leading-[1.75]">
-              <p className="mb-4">
-                Revenue closed at 4.12 million against a forecast of 4.68 million, a miss of twelve
-                per cent
-                <Mark number={1} />
-              </p>
-              <p className="mb-0">
-                Most of the gap is average contract value, which fell from 48,000 to 41,500
-                <Mark number={2} />. Three deals slipped past the quarter end in the northern
-                region, and two of those closed in the first week of October
-                <Mark number={1} />.
-              </p>
-            </div>
-          </div>
-
-          <aside
-            aria-label="Sources for this answer"
-            className="border-rule border-t px-7 py-7 wide:border-t-0 wide:border-l wide:bg-panel"
-          >
-            <h3 className="mb-5 flex items-baseline justify-between border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.14em]">
-              <span>Sources</span>
-              <span>2</span>
-            </h3>
-
-            <Source
-              number={1}
-              document="revenue-review-q3.pdf"
-              where="page 4"
-              quote="Q3 revenue of $4.12M fell 12% short of the $4.68M forecast, with the shortfall concentrated in the northern region."
-            />
-            <Source
-              number={2}
-              document="q3-forecast.xlsx"
-              where="Deals, rows 12 to 48"
-              quote="Average contract value: 41,500 actual against 48,000 forecast."
-            />
-          </aside>
+        <div className="border border-rule">
+          <WorkedExample />
         </div>
 
         <p className="mt-5 max-w-[52ch] font-record text-record text-faint leading-relaxed">
@@ -253,40 +213,6 @@ const Home = () => (
       </section>
 
       <SiteFooter />
-    </div>
-  </div>
-);
-
-/** The superscript number in the answer, exactly as the product renders it. */
-const Mark = ({ number }: { number: number }) => (
-  <sup className="ml-0.5 align-[0.42em] font-medium font-record text-[0.58rem] text-mark">
-    {number}
-  </sup>
-);
-
-const Source = ({
-  number,
-  document,
-  where,
-  quote,
-}: {
-  number: number;
-  document: string;
-  where: string;
-  quote: string;
-}) => (
-  <div className="mb-5 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
-    <span className="grid size-[22px] place-items-center rounded-hair border border-mark font-semibold font-record text-label text-mark tabular">
-      {number}
-    </span>
-    <div>
-      <p className="mb-1.5 flex flex-wrap gap-2 font-record text-label text-faint">
-        <span className="font-medium text-soft">{document}</span>
-        <span>{where}</span>
-      </p>
-      <p className="m-0 font-light font-reading text-[0.92rem] text-ink italic leading-relaxed">
-        {quote}
-      </p>
     </div>
   </div>
 );
