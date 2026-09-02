@@ -38,10 +38,11 @@ const admin = createClient<Database>(supabaseUrl, serviceKey, {
 const sql = new SQL(dbUrl, { max: 1 });
 
 // 1. A confirmed user, so sign-in works without an email round trip.
-const existing = await admin.auth.admin.listUsers();
-for (const user of existing.data.users) {
-  if (user.email === EMAIL) await admin.auth.admin.deleteUser(user.id);
-}
+//
+// Deleted by email over SQL rather than by listing users: a run that failed
+// before its cleanup leaves the account behind, and listUsers is paginated, so
+// "find it in the first page" is not the same as "it is gone".
+await sql`delete from auth.users where email = ${EMAIL}`;
 
 const created = await admin.auth.admin.createUser({
   email: EMAIL,
