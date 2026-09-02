@@ -88,3 +88,16 @@ export const completeOAuthSignIn = async (code: string): Promise<Result<void, Ap
 
   return ok(undefined);
 };
+
+/**
+ * Where to send somebody after the OAuth round trip.
+ *
+ * Built against `siteUrl()`, never against a request header. The callback used to
+ * read `x-forwarded-host`, which the caller supplies, so a request carrying
+ * `x-forwarded-host: evil.example` redirected a just-signed-in user there.
+ */
+export const signedInDestination = async (path: string): Promise<string> => {
+  const safe = path.startsWith("/") && !path.startsWith("//") ? path : "/choose";
+
+  return new URL(safe, siteUrl()).toString();
+};

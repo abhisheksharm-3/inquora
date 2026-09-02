@@ -25,11 +25,34 @@ end
 return current
 `;
 
-export const createRateLimiter = ({ redis }: { redis?: RateLimitRedis }): RateLimiter => ({
+export const createRateLimiter = ({
+  redis,
+  required = false,
+}: {
+  redis?: RateLimitRedis;
+  /**
+   * Whether an unconfigured limiter is an error rather than a no-op. True in
+   * production: failing open on a Redis outage is a considered tradeoff, failing
+   * open because nobody set the variables is a limiter that was never there.
+   * Those two were indistinguishable at runtime, and this is the one endpoint
+   * whose only guard is this.
+   */
+  required?: boolean;
+}): RateLimiter => ({
   configured: Boolean(redis),
 
   async check(bucket, userId) {
-    if (!redis) return ok(undefined);
+    if (!redis) {
+      if (required) {
+        return err(
+          AppError.misconfigured(
+            "no rate limiter is configured: set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN",
+          ),
+        );
+      }
+
+      return ok(undefined);
+    }
 
     const { limit, windowSeconds } = LIMITS[bucket];
     const window = Math.floor(Date.now() / 1000 / windowSeconds);
@@ -47,7 +70,12 @@ export const createRateLimiter = ({ redis }: { redis?: RateLimitRedis }): RateLi
 
     if (current > limit) {
       const retryAfter = windowSeconds - (Math.floor(Date.now() / 1000) % windowSeconds);
-      return err(AppError.rateLimited(retryAfter, `at most ${limit} ${bucket} requests a minute`));
+      // The window is stated rather than assumed: the auth bucket is five
+      // minutes, and a 429 that says "a minute" beside Retry-After: 287 is a lie.
+      const window =
+        windowSeconds === 60 ? "a minute" : `${Math.round(windowSeconds / 60)} minutes`;
+
+      return err(AppError.rateLimited(retryAfter, `at most ${limit} ${bucket} requests ${window}`));
     }
 
     return ok(undefined);

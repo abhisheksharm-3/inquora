@@ -27,6 +27,8 @@ export class AppError extends Error {
   static unauthorized = (detail?: string) => new AppError(401, "/errors/unauthorized", detail);
   static notFound = (detail?: string) => new AppError(404, "/errors/not-found", detail);
   static conflict = (detail?: string) => new AppError(409, "/errors/conflict", detail);
+  /** Well-formed, and asks for something that cannot be done. */
+  static unprocessable = (detail?: string) => new AppError(422, "/errors/unprocessable", detail);
   static rateLimited = (retryAfterSeconds: number, detail?: string) =>
     new AppError(429, "/errors/rate-limited", detail, retryAfterSeconds);
   static badGateway = (detail?: string) => new AppError(502, "/errors/bad-gateway", detail);

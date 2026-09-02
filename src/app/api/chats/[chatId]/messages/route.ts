@@ -59,6 +59,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cha
     chatId,
     content: parsed.data.content,
     parentId: parsed.data.parentId,
+    clientMessageId: parsed.data.clientMessageId,
     // The handler watches the client going away, so an abandoned generation
     // stops costing money and still stores what it produced.
     signal: request.signal,

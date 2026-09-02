@@ -34,6 +34,21 @@ export const createChatRepository = (db: SupabaseClient<Database>): ChatReposito
     return ok(parsed.data);
   },
 
+  async alreadySent(chatId, clientMessageId) {
+    const { data, error } = await db
+      .from("messages")
+      .select("id")
+      .eq("chat_id", chatId)
+      .eq("client_message_id", clientMessageId)
+      .maybeSingle();
+
+    if (error) {
+      return err(AppError.badGateway(`could not check for a repeat: ${error.message}`));
+    }
+
+    return ok(data?.id ?? null);
+  },
+
   async append(args) {
     const { data, error } = await db.rpc("append_message", {
       p_chat_id: args.chatId,
@@ -46,8 +61,12 @@ export const createChatRepository = (db: SupabaseClient<Database>): ChatReposito
       p_latency_ms: args.latencyMs,
       p_retrieval_ms: args.retrievalMs,
       p_model: args.model,
+      p_client_message_id: args.clientMessageId,
     });
 
+    // A parent from another conversation is refused by the function, which is the
+    // caller's mistake rather than a fault on our side.
+    if (error?.code === "23503") return err(AppError.unprocessable(error.message));
     if (error) return err(AppError.badGateway(`append_message failed: ${error.message}`));
     if (!data) return err(AppError.badGateway("append_message returned no id"));
 

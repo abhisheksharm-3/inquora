@@ -425,6 +425,7 @@ export type Database = {
       messages: {
         Row: {
           chat_id: string
+          client_message_id: string | null
           created_at: string
           id: string
           latency_ms: number | null
@@ -437,6 +438,7 @@ export type Database = {
         }
         Insert: {
           chat_id: string
+          client_message_id?: string | null
           created_at?: string
           id?: string
           latency_ms?: number | null
@@ -449,6 +451,7 @@ export type Database = {
         }
         Update: {
           chat_id?: string
+          client_message_id?: string | null
           created_at?: string
           id?: string
           latency_ms?: number | null
@@ -564,21 +567,38 @@ export type Database = {
       }
     }
     Functions: {
-      append_message: {
-        Args: {
-          p_chat_id: string
-          p_citation_chunk_ids?: string[]
-          p_content: string
-          p_latency_ms?: number
-          p_model?: string
-          p_parent_id?: string
-          p_retrieval_ms?: number
-          p_role: Database["public"]["Enums"]["message_role"]
-          p_tokens_in?: number
-          p_tokens_out?: number
-        }
-        Returns: string
-      }
+      append_message:
+        | {
+            Args: {
+              p_chat_id: string
+              p_citation_chunk_ids?: string[]
+              p_content: string
+              p_latency_ms?: number
+              p_model?: string
+              p_parent_id?: string
+              p_retrieval_ms?: number
+              p_role: Database["public"]["Enums"]["message_role"]
+              p_tokens_in?: number
+              p_tokens_out?: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_chat_id: string
+              p_citation_chunk_ids?: string[]
+              p_client_message_id?: string
+              p_content: string
+              p_latency_ms?: number
+              p_model?: string
+              p_parent_id?: string
+              p_retrieval_ms?: number
+              p_role: Database["public"]["Enums"]["message_role"]
+              p_tokens_in?: number
+              p_tokens_out?: number
+            }
+            Returns: string
+          }
       claim_ingestion_job: {
         Args: never
         Returns: {
@@ -678,6 +698,7 @@ export type Database = {
         }[]
       }
       topic_owner_matches: { Args: { p_topic: string }; Returns: boolean }
+      worker_secret: { Args: { p_name: string }; Returns: string }
     }
     Enums: {
       document_kind:

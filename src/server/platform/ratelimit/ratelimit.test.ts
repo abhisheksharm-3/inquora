@@ -75,3 +75,36 @@ describe("createRateLimiter", () => {
     expect((await limiter.check("messages", "user-1")).ok).toBe(true);
   });
 });
+
+describe("createRateLimiter, when it is required", () => {
+  it("refuses the request rather than allowing everything", async () => {
+    // Failing open on an outage is deliberate. Failing open because nobody set
+    // the variables is a limiter that was never there, and the two used to be
+    // indistinguishable at runtime.
+    const limiter = createRateLimiter({ required: true });
+
+    const result = await limiter.check("messages", "user-1");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.status).toBe(500);
+      expect(result.error.detail).toContain("UPSTASH_REDIS_REST_URL");
+    }
+  });
+
+  it("still allows everything when it is not required, so local work needs no Redis", async () => {
+    expect((await createRateLimiter({}).check("messages", "user-1")).ok).toBe(true);
+  });
+
+  it("states the real window in a 429, not always a minute", async () => {
+    const redis = { eval: vi.fn(async () => [11]) };
+    const limiter = createRateLimiter({ redis: redis as never });
+
+    const result = await limiter.check("auth", "someone@example.com");
+
+    expect(result.ok).toBe(false);
+    // The auth bucket is five minutes; saying "a minute" beside Retry-After: 287
+    // was a lie.
+    if (!result.ok) expect(result.error.detail).toContain("5 minutes");
+  });
+});

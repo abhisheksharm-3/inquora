@@ -138,7 +138,9 @@ const response = await fetch(`${site}/api/chats/${chat.data.id}/messages`, {
     "content-type": "application/json",
     cookie: cookies.join("; "),
   },
-  body: JSON.stringify({ content: QUESTION }),
+  // The sender names its own message, so a retry resolves to this attempt rather
+  // than buying a second answer.
+  body: JSON.stringify({ content: QUESTION, clientMessageId: crypto.randomUUID() }),
 });
 
 console.log(`   ${response.status} ${response.headers.get("content-type")}`);

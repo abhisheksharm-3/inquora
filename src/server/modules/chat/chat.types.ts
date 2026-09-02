@@ -122,6 +122,8 @@ export interface ToolDependencies {
 
 export interface AppendArgs {
   chatId: string;
+  /** The sender's own id, for the user message only. */
+  clientMessageId?: string;
   role: "user" | "assistant";
   content: string;
   parentId?: string | null;
@@ -136,6 +138,8 @@ export interface AppendArgs {
 export interface ChatRepository {
   context(chatId: string): Promise<Result<ChatContext, AppError>>;
   append(args: AppendArgs): Promise<Result<string, AppError>>;
+  /** The id of an earlier message with this sender id, if the send is a repeat. */
+  alreadySent(chatId: string, clientMessageId: string): Promise<Result<string | null, AppError>>;
 }
 
 export interface SendArgs extends SendMessageRequest {

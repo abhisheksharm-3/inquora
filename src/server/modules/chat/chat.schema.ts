@@ -20,6 +20,14 @@ export const sendMessageRequest = z.object({
   content: z.string().min(1).max(8000),
   /** The message this one replies to. Null starts a new branch at the root. */
   parentId: z.guid().nullable().default(null),
+  /**
+   * The sender's own id for this message, required.
+   *
+   * Only the client knows that its second request is a retry of its first rather
+   * than a new question, so only the client can supply this. Without it a
+   * double-click or a retrying proxy bought a second full agent run.
+   */
+  clientMessageId: z.guid(),
 });
 
 export type SendMessageRequest = z.infer<typeof sendMessageRequest>;

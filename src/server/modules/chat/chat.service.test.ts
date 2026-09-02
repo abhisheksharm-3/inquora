@@ -40,6 +40,7 @@ const drain = async (stream: ReadableStream<Uint8Array>) => {
 
 interface AppendCall {
   role: string;
+  clientMessageId?: string;
   citationChunkIds: string[];
   latencyMs?: number;
   retrievalMs?: number;
@@ -52,6 +53,7 @@ const deps = (overrides: Record<string, unknown> = {}) => ({
   repository: {
     context: async () => ok(context),
     append: vi.fn(async (_args: AppendCall) => ok("44444444-4444-4444-4444-444444444444")),
+    alreadySent: async () => ok(null),
   },
   retrieval: { retrieve: async () => ok([chunk]) },
   chunks: { range: async () => ok([]) },
@@ -71,6 +73,7 @@ describe("chat service", () => {
       chatId: "22222222-2222-2222-2222-222222222222",
       content: "why did revenue miss?",
       parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
     });
 
     expect(result.ok).toBe(true);
@@ -84,6 +87,7 @@ describe("chat service", () => {
       chatId: "22222222-2222-2222-2222-222222222222",
       content: "why did revenue miss?",
       parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
     });
 
     expect(result.ok).toBe(true);
@@ -107,6 +111,7 @@ describe("chat service", () => {
       chatId: "22222222-2222-2222-2222-222222222222",
       content: "why did revenue miss?",
       parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
     });
 
     if (result.ok) await drain(result.value);
@@ -124,6 +129,7 @@ describe("chat service", () => {
       chatId: "22222222-2222-2222-2222-222222222222",
       content: "why did revenue miss?",
       parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
     });
 
     if (result.ok) await drain(result.value);
@@ -136,15 +142,87 @@ describe("chat service", () => {
     expect(assistant?.retrievalMs).toBeGreaterThanOrEqual(0);
   });
 
+  it("refuses a repeated send instead of answering it twice", async () => {
+    const dependencies = deps({
+      repository: {
+        context: async () => ok(context),
+        append: vi.fn(async (_args: AppendCall) => ok("id")),
+        // The same client message id has already been stored.
+        alreadySent: async () => ok("44444444-4444-4444-4444-444444444444"),
+      },
+    });
+
+    const result = await createChatService(dependencies as never).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "why did revenue miss?",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.status).toBe(409);
+    // Nothing written, and no model turn spent.
+    expect(dependencies.repository.append).not.toHaveBeenCalled();
+  });
+
+  it("checks for a repeat before it reads the conversation or touches a provider", async () => {
+    const order: string[] = [];
+    const dependencies = deps({
+      repository: {
+        context: async () => {
+          order.push("context");
+          return ok(context);
+        },
+        append: vi.fn(async (_args: AppendCall) => ok("id")),
+        alreadySent: async () => {
+          order.push("alreadySent");
+          return ok(null);
+        },
+      },
+    });
+
+    await createChatService(dependencies as never).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "why did revenue miss?",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
+
+    expect(order[0]).toBe("alreadySent");
+  });
+
+  it("passes the sender's id through, so the database can refuse a duplicate too", async () => {
+    const dependencies = deps();
+
+    await createChatService(dependencies as never).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "why did revenue miss?",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
+
+    const user = dependencies.repository.append.mock.calls
+      .map((call) => call[0])
+      .find((args) => args.role === "user");
+
+    expect(user?.clientMessageId).toBe("aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa");
+  });
+
   it("fails before streaming when the chat does not exist", async () => {
     const result = await createChatService(
       deps({
         repository: {
           context: async () => err(AppError.notFound("no such chat")),
           append: vi.fn(async (_args: AppendCall) => ok("id")),
+          alreadySent: async () => ok(null),
         },
       }) as never,
-    ).send({ chatId: "22222222-2222-2222-2222-222222222222", content: "hello", parentId: null });
+    ).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "hello",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.status).toBe(404);
@@ -161,9 +239,15 @@ describe("chat service", () => {
         repository: {
           context: async () => ok(processing),
           append: vi.fn(async (_args: AppendCall) => ok("id")),
+          alreadySent: async () => ok(null),
         },
       }) as never,
-    ).send({ chatId: "22222222-2222-2222-2222-222222222222", content: "hello", parentId: null });
+    ).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "hello",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.status).toBe(409);
@@ -174,7 +258,12 @@ describe("chat service", () => {
       deps({
         model: async () => err(AppError.misconfigured("GEMINI_API_KEY is not set")),
       }) as never,
-    ).send({ chatId: "22222222-2222-2222-2222-222222222222", content: "hello", parentId: null });
+    ).send({
+      chatId: "22222222-2222-2222-2222-222222222222",
+      content: "hello",
+      parentId: null,
+      clientMessageId: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+    });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.status).toBe(500);

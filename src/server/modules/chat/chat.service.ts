@@ -20,7 +20,7 @@ export const createChatService = ({
   web,
   model,
 }: ChatServiceDependencies): ChatService => ({
-  async send({ chatId, content, parentId, signal }) {
+  async send({ chatId, content, parentId, clientMessageId, signal }) {
     const started = Date.now();
     const span = startSpan("answer", { chat: chatId, characters: content.length });
 
@@ -29,6 +29,16 @@ export const createChatService = ({
       span.end();
       return err(error);
     };
+
+    // Before anything is spent: this send may already have been answered.
+    const repeat = await repository.alreadySent(chatId, clientMessageId);
+    if (!repeat.ok) return fail(repeat.error);
+
+    if (repeat.value) {
+      return fail(
+        AppError.conflict("that message was already sent, and its answer is in the conversation"),
+      );
+    }
 
     const context = await repository.context(chatId);
     if (!context.ok) return fail(context.error);
@@ -61,6 +71,7 @@ export const createChatService = ({
       role: "user",
       content,
       parentId,
+      clientMessageId,
       citationChunkIds: [],
     });
     if (!user.ok) return fail(user.error);

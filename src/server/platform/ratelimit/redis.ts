@@ -12,6 +12,9 @@ export const rateLimiter = (): RateLimiter => {
   const configuration = env();
 
   return createRateLimiter({
+    // Unconfigured is an error in production and a no-op in development, so local
+    // work needs no Redis and a deployment cannot quietly run without one.
+    required: configuration.NODE_ENV === "production",
     redis:
       configuration.UPSTASH_REDIS_REST_URL && configuration.UPSTASH_REDIS_REST_TOKEN
         ? new Redis({
