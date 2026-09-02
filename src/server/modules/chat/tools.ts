@@ -9,11 +9,23 @@ import type { ChatContext } from "./chat.schema";
 import type { ToolDependencies } from "./chat.types";
 
 /** A passage as the model reads it: numbered, attributed, quotable. */
-const renderChunks = (chunks: RetrievedChunk[], context: ChatContext): string =>
+/**
+ * The passages, each headed by the specimen number it was given for this turn.
+ *
+ * The number used to be `chunk.chunkIndex`, the passage's position inside its
+ * own document, which collides across documents: two passages could both be
+ * `[3]`. The reader sees these numbers as superscript marks, so they have to be
+ * unique within a turn and stable once assigned.
+ */
+const renderChunks = (
+  chunks: RetrievedChunk[],
+  specimens: number[],
+  context: ChatContext,
+): string =>
   chunks
-    .map((chunk) => {
+    .map((chunk, index) => {
       const document = context.documents.find((d) => d.id === chunk.documentId);
-      return `[${chunk.chunkIndex}] ${document?.title ?? chunk.documentId}\n${chunk.content}`;
+      return `[${specimens[index]}] ${document?.title ?? chunk.documentId}, passage ${chunk.chunkIndex}\n${chunk.content}`;
     })
     .join("\n\n");
 
@@ -58,9 +70,9 @@ export const createTools = ({
           : `The search failed: ${found.error.detail ?? found.error.type}`;
       }
 
-      onCitations(found.value.map((chunk) => chunk.chunkId));
+      const specimens = onCitations(found.value);
 
-      return renderChunks(found.value, context);
+      return renderChunks(found.value, specimens, context);
     },
     {
       name: "search_documents",
@@ -89,9 +101,9 @@ export const createTools = ({
         return `Could not read those passages: ${found.error.detail ?? found.error.type}`;
       if (found.value.length === 0) return "There are no passages in that range.";
 
-      onCitations(found.value.map((chunk) => chunk.chunkId));
+      const specimens = onCitations(found.value);
 
-      return renderChunks(found.value, context);
+      return renderChunks(found.value, specimens, context);
     },
     {
       name: "read_chunks",

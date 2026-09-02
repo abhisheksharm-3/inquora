@@ -6,7 +6,7 @@ import type { DocumentKind } from "@/server/modules/documents/documents.schema";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import { MAX_TOOL_CALLS } from "./chat.constants";
 import type { ChatContext } from "./chat.schema";
-import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
+import type { AgentDependencies, AnsweringAgent, Specimen, TurnUsage } from "./chat.types";
 import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
 import { createTools } from "./tools";
 
@@ -86,9 +86,15 @@ How to work with what is attached:
 
 ${specialists}
 
-Always: search before answering anything about document content, cite the passage
-a claim came from, and when the answer is not in these documents say so plainly
-rather than answering from general knowledge.${
+Always: search before answering anything about document content, and when the
+answer is not in these documents say so plainly rather than answering from
+general knowledge.
+
+Cite by writing the passage's number in square brackets, like [1], immediately
+after the claim it supports. Every passage a search returns is headed by its
+number. Use those numbers exactly as given, never renumber them, and never cite
+a number you have not been shown. A claim about document content with no number
+after it reads to the user as unsupported.${
     context.chat.webSearch
       ? `
 
@@ -111,6 +117,7 @@ export const createAnsweringAgent = ({
   web,
 }: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
+  const specimenQueue: Specimen[] = [];
   let answer = "";
   let retrievalMs = 0;
   const usage: TurnUsage = { retrievalMs: 0, warmHits: 0, warmMisses: 0 };
@@ -163,9 +170,33 @@ export const createAnsweringAgent = ({
     structure,
     slices,
     web,
-    onCitations: (ids: string[]) => {
-      for (const id of ids) if (!citations.includes(id)) citations.push(id);
-    },
+    onCitations: (chunks): number[] =>
+      // A specimen number is the passage's position in the turn's citation
+      // order, one-based, and it never moves once assigned: a passage the model
+      // searches for twice keeps the number the reader already saw.
+      chunks.map((chunk) => {
+        const seen = citations.indexOf(chunk.chunkId);
+        if (seen !== -1) return seen + 1;
+
+        citations.push(chunk.chunkId);
+
+        // Queued rather than yielded, because a tool runs inside the model
+        // loop and has no access to the generator. The loop drains this on its
+        // next turn, which is why a specimen reaches the reader before the
+        // sentence citing it finishes.
+        specimenQueue.push({
+          number: citations.length,
+          chunkId: chunk.chunkId,
+          documentId: chunk.documentId,
+          documentTitle:
+            context.documents.find((document) => document.id === chunk.documentId)?.title ??
+            "Untitled",
+          chunkIndex: chunk.chunkIndex,
+          content: chunk.content,
+        });
+
+        return citations.length;
+      }),
   });
 
   const systemPrompt = buildSystemPrompt(context);
@@ -209,6 +240,12 @@ export const createAnsweringAgent = ({
       );
 
       for await (const chunk of stream) {
+        // Drained first, so a passage the model has just read is in the
+        // apparatus before the text quoting it arrives.
+        for (const specimen of specimenQueue.splice(0)) {
+          yield { event: "specimen", data: specimen };
+        }
+
         const [message, metadata] = chunk as [
           {
             content?: unknown;
@@ -250,6 +287,10 @@ export const createAnsweringAgent = ({
             },
           ],
         };
+      }
+
+      for (const specimen of specimenQueue.splice(0)) {
+        yield { event: "specimen", data: specimen };
       }
 
       yield { event: "messages/complete", data: [{ type: "ai", content: answer }] };

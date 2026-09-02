@@ -6,40 +6,40 @@ import { cn } from "@/ui/lib/cn";
  * that supports, explains or records it occupies the right column.
  *
  * Below 1150px the apparatus becomes footnotes, which is what an apparatus has
- * always done on a narrow page: it moves below the substance, loses its panel
- * and its border, and keeps only a rule above it.
+ * always done on a narrow page: it moves below the substance in document order,
+ * loses its panel and its left border, and keeps a rule above it.
  *
- * A server component. It holds no state, so nothing here needs to ship.
+ * A server component. It holds no state, so nothing here ships to the browser.
  */
 export const Surface = ({
   children,
   apparatus,
+  chrome,
   className,
 }: {
   children: React.ReactNode;
   apparatus: React.ReactNode;
+  /** Optional top bar, spanning both columns. */
+  chrome?: React.ReactNode;
   className?: string;
 }) => (
   <div
     className={cn(
-      "grid min-h-dvh grid-cols-1 wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]",
+      "grid min-h-dvh grid-cols-1 content-start wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]",
       className,
     )}
   >
+    {chrome}
     {children}
-    <aside
-      // `order` rather than a second render: one apparatus in the tree, placed
-      // by the grid at wide widths and by document order below the fold.
-      className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel wide:px-6 wide:py-7"
-    >
+    <aside className="border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
       {apparatus}
     </aside>
   </div>
 );
 
 /**
- * The reading column. Its measure is capped because a 90-character line is
- * unreadable however good the type is.
+ * The reading column. Its measure is capped inside it rather than here, because
+ * a document viewer and a form want different widths on the same rule.
  */
 export const Reading = ({
   children,

@@ -1,6 +1,7 @@
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result.types";
+import type { Specimen } from "@/core/workspace/workspace.types";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.types";
 import type { StreamEvent } from "@/server/platform/http/http.types";
 import type { ChatContext, SendMessageRequest } from "./chat.schema";
@@ -16,6 +17,8 @@ export interface TurnUsage {
   warmHits: number;
   warmMisses: number;
 }
+
+export type { Specimen };
 
 export interface AnsweringAgent {
   /** Dispatch the first search without waiting to be asked. See ADR 0005. */
@@ -119,8 +122,16 @@ export interface ToolDependencies {
   structure: OutlinePort;
   slices: SlicePort;
   web: WebSearchPort;
-  /** Called with the chunk ids a search returned, so the answer can cite them. */
-  onCitations: (chunkIds: string[]) => void;
+  /**
+   * Called with the passages a search returned, in order. Answers with the
+   * specimen number each one was given for this turn, so the passages handed to
+   * the model carry the same numbers the reader will see in the apparatus.
+   *
+   * The whole chunk rather than its id, because the agent turns each new one
+   * into a specimen event the reader sees while the answer is still being
+   * written, and a second read to fetch content it already had would be waste.
+   */
+  onCitations: (chunks: RetrievedChunk[]) => number[];
 }
 
 export interface AppendArgs {

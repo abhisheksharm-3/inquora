@@ -48,7 +48,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     expect((tools as InvokableTool[]).map((t) => t.name).sort()).toEqual([
@@ -79,7 +79,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     await byName(tools, "search_documents").invoke({ query: "revenue" });
@@ -103,7 +103,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: (ids) => seen.push(ids),
+      onCitations: (chunks) => (seen.push(chunks.map((chunk) => chunk.chunkId)), []),
     });
 
     await byName(tools, "search_documents").invoke({ query: "revenue" });
@@ -121,7 +121,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = await byName(tools, "search_documents").invoke({ query: "revenue" });
@@ -139,7 +139,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(await byName(tools, "list_documents").invoke({}));
@@ -159,7 +159,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -187,7 +187,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -212,7 +212,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -240,7 +240,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -267,7 +267,7 @@ describe("createTools", () => {
       },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -294,7 +294,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -318,7 +318,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -343,7 +343,7 @@ describe("createTools", () => {
       },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -377,7 +377,7 @@ describe("createTools", () => {
         transcript: async () => ok([]),
       },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -403,7 +403,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -430,7 +430,7 @@ describe("createTools", () => {
           ok([{ content: "Revenue came in under forecast.", startSeconds: 30, endSeconds: 75 }]),
       },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -454,7 +454,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     expect((tools as InvokableTool[]).map((t) => t.name)).not.toContain("web_search");
@@ -470,7 +470,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: true, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     // Both gates are required, and neither implies the other.
@@ -497,7 +497,7 @@ describe("createTools", () => {
             },
           ]),
       },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
@@ -518,7 +518,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     expect(
@@ -536,7 +536,7 @@ describe("createTools", () => {
       structure: { outline: async () => ok(null), grep: async () => ok([]) },
       slices: { file: async () => ok([]), transcript: async () => ok([]) },
       web: { configured: false, search: async () => ok([]) },
-      onCitations: () => {},
+      onCitations: () => [],
     });
 
     const answer = String(
