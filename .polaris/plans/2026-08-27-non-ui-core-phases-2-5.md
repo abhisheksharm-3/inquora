@@ -1,6 +1,8 @@
 # Inquora non-UI core: implementation plan, phases 2 to 5
 
-**Status: executed on 2026-08-27.** What was built differs from this plan in the places noted under
+**Status: executed on 2026-08-27**, then extended by phases 6 to 9 and partly
+rebuilt. Read `.polaris/specs/2026-09-02-non-ui-core-as-built.md` for what exists
+now; several decisions here were replaced rather than kept. What was built differs from this plan in the places noted under
 "What actually happened", at the end.
 
 **Goal:** Build retrieval, transport and ingestion on the Phase 1 schema, then delete the trees

@@ -1,5 +1,9 @@
 # Inquora non-UI core: implementation plan, phases 6 to 9
 
+**Status: executed on 2026-09-02.** Phases 6 to 9 are built. What exists is
+recorded in `.polaris/specs/2026-09-02-non-ui-core-as-built.md`, which supersedes
+the original design where the two disagree.
+
 **Goal:** Finish the backend. Nothing about the interface starts until every item here is either
 built or explicitly cut, because a frontend built against a half-built backend encodes the gaps.
 
@@ -106,3 +110,38 @@ slides split per slide, and an image is described rather than read.
 - [ ] `bun run live:deployed` answers, with token counts and a model recorded on the message
 - [ ] A spreadsheet question answered from a `query_table` call rather than from embedded prose
 - [ ] Every value of `document_kind` has an extractor, or is removed from the enum
+
+---
+
+## What actually happened
+
+**Phase 6, measurement.** The metric columns are written — tokens in and out
+accumulated across a tool-calling turn, the model that answered, and retrieval
+time measured around the tool whether the search was served speculatively or not.
+The follow-up heuristic is wired, which it was not: it had been built, tested and
+called by nothing. OpenTelemetry runs through `instrumentation.ts` with Sentry and
+Langfuse as exporters, and spans cover the answer, the rewrite, retrieval, each
+embedding call and every tool call.
+
+**Phase 7, tabular.** `document_tables` and `document_rows`, written during
+ingestion, and `query_document_table` running one fenced select over a view of one
+sheet. Verified live against a real two-sheet workbook: a filter, a sum and a
+group-by, all exact.
+
+**Phase 8, the tools that needed columns.** `documents.outline` and
+`extracted_text`, `get_outline`, `grep_document`, `read_file`, `get_transcript`
+and `web_search`. Eleven tools, which closes the design's list.
+
+**Phase 9, the remaining kinds.** Repositories, presentations and images all
+read. Then rebuilt: the first repository version embedded 2,664 chunks for 399
+files, and the second stores files and embeds only what describes them — 516
+files, 3.6MB greppable, 711 chunks.
+
+**Not in the plan, added because the user asked.** A specialist per document kind,
+so a repository, a spreadsheet and a video are answered differently rather than
+all being "documents". Realtime as broadcast from the database. The message rate
+limit, which was built and never applied to the answer route. And the directory
+restructure: types to `.types.ts`, dials to `.constants.ts`, `core/` grouped by
+concern, `ui/` holding the interface, thirty-nine unreachable files deleted.
+
+**Cut.** The Space keep-alive ping, by the user: the cold start is acceptable.

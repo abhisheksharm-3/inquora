@@ -43,17 +43,17 @@ Zod contract in a `.schema.ts`. Grammars stay next to the parser that uses them.
 Nineteen migrations. Twelve tables, twenty-five functions, two views, 91 pgTAP
 assertions.
 
-| Table | Holds |
-|---|---|
-| `profiles` | one row per auth user, created by a trigger |
-| `documents` | kind, status, counts, outline, retained text, content hash |
-| `document_chunks` | passages with a 1024-dimension vector and a generated tsvector |
-| `document_files` | the files of a repository, greppable and readable by line |
-| `document_tables`, `document_rows` | a spreadsheet as rows keyed by its header |
-| `chats`, `chat_documents` | conversations, and the documents in scope with order and an enable flag |
-| `messages`, `message_parts` | a message as an ordered list of parts, with cost columns |
-| `user_memories` | durable facts about the user |
-| `ingestion_jobs` | the queue, claimed with `for update skip locked` |
+| Table                              | Holds                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------- |
+| `profiles`                         | one row per auth user, created by a trigger                             |
+| `documents`                        | kind, status, counts, outline, retained text, content hash              |
+| `document_chunks`                  | passages with a 1024-dimension vector and a generated tsvector          |
+| `document_files`                   | the files of a repository, greppable and readable by line               |
+| `document_tables`, `document_rows` | a spreadsheet as rows keyed by its header                               |
+| `chats`, `chat_documents`          | conversations, and the documents in scope with order and an enable flag |
+| `messages`, `message_parts`        | a message as an ordered list of parts, with cost columns                |
+| `user_memories`                    | durable facts about the user                                            |
+| `ingestion_jobs`                   | the queue, claimed with `for update skip locked`                        |
 
 Derived state is maintained by Postgres, never by application code: chunk counts,
 document status, spreadsheet row counts, chat `updated_at`, profile creation,
@@ -108,14 +108,14 @@ A queue in Postgres, drained by `pg_cron` every minute and poked by `pg_net` on
 enqueue. Batches are written as they are embedded, so a retry resumes from the
 high-water chunk index.
 
-| Kind | Read as | Chunked by | Answered with |
-|---|---|---|---|
-| pdf, doc, web | text | recursive character, 1000/200 | search, read around a hit |
-| sheet | rows per sheet | row groups, header repeated | SQL over the rows |
-| slides | one part per slide | one chunk per slide | search, by slide number |
-| video | subtitles from the Space | time windows | transcript by the second |
-| github | one zipball | file summaries and documentation | grep and read_file over stored files |
-| image | described by the model | one chunk | search over the description |
+| Kind          | Read as                  | Chunked by                       | Answered with                        |
+| ------------- | ------------------------ | -------------------------------- | ------------------------------------ |
+| pdf, doc, web | text                     | recursive character, 1000/200    | search, read around a hit            |
+| sheet         | rows per sheet           | row groups, header repeated      | SQL over the rows                    |
+| slides        | one part per slide       | one chunk per slide              | search, by slide number              |
+| video         | subtitles from the Space | time windows                     | transcript by the second             |
+| github        | one zipball              | file summaries and documentation | grep and read_file over stored files |
+| image         | described by the model   | one chunk                        | search over the description          |
 
 **A repository is indexed by what answers questions about it.** Files are stored
 and greppable; embeddings are spent on documentation and on a per-file summary of
