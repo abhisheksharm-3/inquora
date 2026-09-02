@@ -3,6 +3,12 @@ import { drainIngestionQueue } from "@/server/modules/ingestion/ingestion.factor
 import { problemResponse } from "@/server/platform/http/problem";
 
 /**
+ * Extraction reads a file and embeds it in batches, which is slower than a
+ * request that only reads the database.
+ */
+export const maxDuration = 300;
+
+/**
  * The endpoint the queue pokes and the schedule calls.
  *
  * It drains up to a handful of jobs and returns. Long-running work in a request

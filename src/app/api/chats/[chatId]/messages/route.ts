@@ -5,6 +5,16 @@ import { problemResponse } from "@/server/platform/http/problem";
 import { sseHeaders } from "@/server/platform/http/sse";
 
 /**
+ * No `runtime` export: cacheComponents rejects the segment config, and Node is
+ * already the default for a route handler, which is what the model client and the
+ * document parsers need.
+ *
+ * A tool-calling answer is at least two model turns, and the measured happy path
+ * is 6.5 seconds. The platform default would cut a slow one mid-stream.
+ */
+export const maxDuration = 60;
+
+/**
  * The one endpoint that answers a question.
  *
  * A route handler rather than a server action: actions cannot stream partial
@@ -38,7 +48,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ cha
 
   const service = await chatServiceForRequest();
 
-  const result = await service.send({
+  // Unauthenticated, or over the message limit, before any provider is touched.
+  if (!service.ok) return problemResponse(service.error, instance);
+
+  const result = await service.value.send({
     chatId,
     content: parsed.data.content,
     parentId: parsed.data.parentId,

@@ -4,6 +4,7 @@ import { err, ok, type Result } from "@/core/result";
 import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import { streamToSse } from "@/server/platform/http/sse";
 import { createAnsweringAgent } from "./agent";
+import { resolveQuestion } from "./resolve-question";
 import type { SendMessageRequest } from "./chat.schema";
 
 export const createChatService = ({
@@ -51,6 +52,11 @@ export const createChatService = ({
     });
     if (!user.ok) return err(user.error);
 
+    // "What about the second one?" cannot be searched as written: the vector
+    // describes the grammar rather than the subject. The heuristic inside this
+    // decides whether it is worth a call, and a self-contained question skips it.
+    const { question } = await resolveQuestion(content, context.value, chatModel.value);
+
     const agent = createAnsweringAgent({
       context: context.value,
       model: chatModel.value,
@@ -60,11 +66,12 @@ export const createChatService = ({
     });
 
     // Dispatched before the first model call rather than after it, so the common
-    // path does not pay for retrieval twice over. See ADR 0005.
-    agent.warm(content);
+    // path does not pay for retrieval twice over. See ADR 0005. The resolved
+    // question is what gets pre-warmed, because that is what the model will search.
+    agent.warm(question);
 
     return ok(
-      streamToSse(agent.stream(content, signal), {
+      streamToSse(agent.stream(question, signal), {
         signal,
         onFinish: async () => {
           const answer = agent.answerText();

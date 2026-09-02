@@ -19,6 +19,12 @@ select is(
   1,
   'inserting a document enqueues exactly one job');
 
+-- The queue is shared with whatever else is running, and claim takes the oldest
+-- runnable job. Inside this rolled-back transaction the rest are removed, so the
+-- assertion is about the claim rather than about what happened to be queued.
+delete from public.ingestion_jobs
+where document_id <> 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
 select is(
   (select document_id from public.claim_ingestion_job()),
   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid,
