@@ -1,6 +1,6 @@
 import type { Chunk } from "@/core/chunking/chunking.types";
 import type { AppError } from "@/core/errors";
-import { ok } from "@/core/result";
+import { err, ok } from "@/core/result";
 import type { IngestionWorker, WorkerDependencies } from "./ingestion.types";
 
 /**
@@ -28,7 +28,13 @@ export const createIngestionWorker = ({
     const job = claimed.value;
 
     const failJob = async (reason: string) => {
-      await queue.fail(job.jobId, reason);
+      const recorded = await queue.fail(job.jobId, reason);
+
+      // The queue refuses to fail a job that is gone, which is how a partially
+      // ingested document used to go quiet. If the reason could not be recorded,
+      // that is the error worth returning rather than a tidy "failed".
+      if (!recorded.ok) return err(recorded.error);
+
       return ok<"failed">("failed");
     };
 

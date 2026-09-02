@@ -24,6 +24,22 @@ export const streamToSse = (
       let reason: FinishReason = "completed";
       let failure: unknown;
 
+      /**
+       * Once the consumer goes away the controller is closed and every write
+       * throws. A throw here used to escape `start`, which skipped both the
+       * completion hook and the close: the answer was generated, paid for, and
+       * never stored. So a write that fails is the end of the stream, not the end
+       * of the work.
+       */
+      const write = (frame: string): boolean => {
+        try {
+          controller.enqueue(encoder.encode(frame));
+          return true;
+        } catch {
+          return false;
+        }
+      };
+
       try {
         for await (const event of source) {
           if (signal?.aborted) {
@@ -31,30 +47,46 @@ export const streamToSse = (
             break;
           }
 
-          controller.enqueue(encoder.encode(encodeEvent(event.event, event.data)));
+          if (!write(encodeEvent(event.event, event.data))) {
+            reason = "aborted";
+            break;
+          }
         }
       } catch (error) {
-        reason = "failed";
-        failure = error;
+        // A cancelled generation raises here as an AbortError, which is the
+        // client's own decision rather than a failure to report as one.
+        const aborted = signal?.aborted || (error instanceof Error && error.name === "AbortError");
 
-        // An error mid-stream cannot become a status code: the headers are long
-        // gone. It goes down the channel as an event, so the client knows the
-        // difference between a failure and a finished answer.
-        controller.enqueue(
-          encoder.encode(
+        reason = aborted ? "aborted" : "failed";
+
+        if (!aborted) {
+          failure = error;
+
+          // An error mid-stream cannot become a status code: the headers are long
+          // gone. It goes down the channel as an event, so the client knows the
+          // difference between a failure and a finished answer.
+          write(
             encodeEvent("error", {
               message: error instanceof Error ? error.message : String(error),
             }),
-          ),
-        );
+          );
+        }
       }
 
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+      write("data: [DONE]\n\n");
 
+      // Whatever happened above, the work that was done is recorded before the
+      // stream closes.
       try {
         await onFinish?.(reason, failure);
+      } catch {
+        // A persistence failure must not replace the reason the stream ended.
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          // Already closed by the cancel that brought us here.
+        }
       }
     },
   });

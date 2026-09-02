@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { FakeToolCallingModel } from "langchain";
+import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
+import { AIMessage } from "@langchain/core/messages";
 import { ok } from "@/core/result";
 import { createAnsweringAgent } from "./agent";
 
@@ -168,6 +170,21 @@ describe("createAnsweringAgent", () => {
     const usage = agent.usage();
     expect(usage.tokensIn).toBeUndefined();
     expect(usage.tokensOut).toBeUndefined();
+  });
+
+  it("keeps the whole answer, not the last delta", async () => {
+    // streamMode "messages" yields deltas. Assigning rather than appending
+    // persisted the final chunk alone: a 44-chunk answer stored as ".".
+    const sentence = "Revenue missed the forecast by 0.56 million.";
+    const model = new FakeStreamingChatModel({ responses: [new AIMessage(sentence)] });
+
+    const agent = createAnsweringAgent({ ...dependencies(), model: model as never });
+
+    for await (const _ of agent.stream("why did revenue miss?")) {
+      // drain
+    }
+
+    expect(agent.answerText()).toBe(sentence);
   });
 
   it("collects the answer text as it streams, so it can be persisted at the end", async () => {

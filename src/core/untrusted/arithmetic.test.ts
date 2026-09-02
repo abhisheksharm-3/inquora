@@ -44,3 +44,17 @@ describe("evaluateArithmetic", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("evaluateArithmetic, regressions found in review", () => {
+  it("reads a leading decimal point rather than dropping it", () => {
+    // ".5 * 4" tokenized as 5 * 4 and returned 20 — a wrong number from the tool
+    // that exists so numbers are not guessed.
+    expect(value(".5*4")).toBe(2);
+    expect(value(".25+.25")).toBe(0.5);
+    expect(value("-.5")).toBe(-0.5);
+  });
+
+  it("still agrees with the explicit form", () => {
+    expect(value(".5*4")).toBe(value("0.5*4"));
+  });
+});

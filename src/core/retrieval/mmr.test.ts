@@ -65,3 +65,45 @@ describe("mmr", () => {
     expect(picked.map((c) => c.id)).toEqual(["zero", "unit"]);
   });
 });
+
+describe("mmr, with the score scales made comparable", () => {
+  const rrf = (id: string, embedding: number[], score: number): Candidate => ({
+    id,
+    embedding,
+    score,
+  });
+
+  it("keeps a much more relevant passage over a slightly more diverse one", () => {
+    // Real fused scores from search_chunks are reciprocal rank sums bounded by
+    // about 0.033, while cosine is 0..1. Mixed raw, the 0.016 relevance gap here
+    // lost to a 0.5 cosine gap and MMR picked the less relevant chunk first.
+    const picked = mmr([rrf("relevant", [1, 0, 0], 0.032), rrf("marginal", [0, 1, 0], 0.016)], {
+      lambda: 0.3,
+      limit: 1,
+    });
+
+    expect(picked[0].id).toBe("relevant");
+  });
+
+  it("still prunes a near-duplicate at realistic score magnitudes", () => {
+    const picked = mmr(
+      [
+        rrf("first", [1, 0, 0], 0.033),
+        rrf("duplicate", [1, 0, 0], 0.032),
+        rrf("different", [0, 1, 0], 0.02),
+      ],
+      { lambda: 0.3, limit: 2 },
+    );
+
+    expect(picked.map((c) => c.id)).toEqual(["first", "different"]);
+  });
+
+  it("falls back to diversity when every candidate is equally relevant", () => {
+    const picked = mmr(
+      [rrf("a", [1, 0, 0], 0.02), rrf("b", [1, 0, 0], 0.02), rrf("c", [0, 1, 0], 0.02)],
+      { lambda: 0.3, limit: 2 },
+    );
+
+    expect(picked.map((c) => c.id)).toEqual(["a", "c"]);
+  });
+});

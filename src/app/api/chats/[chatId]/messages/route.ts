@@ -1,6 +1,6 @@
 import { AppError } from "@/core/errors";
 import { chatServiceForRequest } from "@/server/modules/chat/chat.factory";
-import { sendMessageRequest } from "@/server/modules/chat/chat.schema";
+import { chatIdParam, sendMessageRequest } from "@/server/modules/chat/chat.schema";
 import { problemResponse } from "@/server/platform/http/problem";
 import { sseHeaders } from "@/server/platform/http/sse";
 
@@ -28,6 +28,10 @@ export const maxDuration = 60;
 export async function POST(request: Request, { params }: { params: Promise<{ chatId: string }> }) {
   const { chatId } = await params;
   const instance = `/api/chats/${chatId}/messages`;
+
+  if (!chatIdParam.safeParse(chatId).success) {
+    return problemResponse(AppError.badRequest("that is not a chat id"), instance);
+  }
 
   let body: unknown;
 

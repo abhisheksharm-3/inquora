@@ -184,7 +184,11 @@ export const createAnsweringAgent = ({
         const text = typeof message?.content === "string" ? message.content : "";
         const isFromModel = metadata?.langgraph_node !== "tools";
 
-        if (text && isFromModel) answer = text;
+        // Appended, not assigned. streamMode "messages" yields deltas, so a
+        // real provider sends an answer as tens of chunks and assigning kept only
+        // the last one: a 44-chunk answer persisted as ".". The client is sent the
+        // same deltas below, so the stored text is exactly what was displayed.
+        if (text && isFromModel) answer += text;
 
         // Usage arrives on the final chunk of each model turn, and a tool-calling
         // turn produces several, so they accumulate rather than overwrite.

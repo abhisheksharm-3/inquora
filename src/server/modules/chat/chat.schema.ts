@@ -7,6 +7,14 @@ import { z } from "zod";
  * database considers valid, including every id in the pgTAP fixtures.
  */
 
+/**
+ * The chat id from the path. A path parameter is input like any other: without
+ * this an unparseable segment reached Postgres, came back as `invalid input
+ * syntax for type uuid`, and was reported as 502 — telling the client to retry
+ * something that can never succeed.
+ */
+export const chatIdParam = z.guid();
+
 /** The request body of POST /api/chats/[chatId]/messages. */
 export const sendMessageRequest = z.object({
   content: z.string().min(1).max(8000),

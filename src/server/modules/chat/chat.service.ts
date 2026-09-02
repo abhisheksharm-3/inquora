@@ -92,17 +92,22 @@ export const createChatService = ({
     return ok(
       streamToSse(agent.stream(question, signal), {
         signal,
-        onFinish: async () => {
+        onFinish: async (outcome) => {
           const answer = agent.answerText();
 
-          // An aborted generation still persists what it produced. Nothing is
-          // written when there is nothing to write, and an error is never stored
-          // as an assistant turn.
-          if (answer.length === 0) return;
+          // An aborted generation still persists what it produced — the user saw
+          // it and it was paid for. A failed one does not: storing half a
+          // sentence as a finished answer means the next turn reasons from it.
+          if (answer.length === 0 || outcome === "failed") {
+            span.set({ outcome });
+            span.end();
+            return;
+          }
 
           const usage = agent.usage();
 
           span.set({
+            outcome,
             tokens_in: usage.tokensIn,
             tokens_out: usage.tokensOut,
             model: usage.model,
@@ -112,7 +117,7 @@ export const createChatService = ({
           });
           span.end();
 
-          await repository.append({
+          const stored = await repository.append({
             chatId,
             role: "assistant",
             content: answer,
@@ -124,6 +129,11 @@ export const createChatService = ({
             tokensOut: usage.tokensOut,
             model: usage.model,
           });
+
+          // The client has already read the answer, so there is no status code
+          // left to return. An unrecorded answer is the worst outcome here, so it
+          // is at least recorded in the trace.
+          if (!stored.ok) span.fail(stored.error);
         },
       }),
     );

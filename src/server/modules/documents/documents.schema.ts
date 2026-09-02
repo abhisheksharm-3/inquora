@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_UPLOAD_BYTES } from "./documents.constants";
 
 /** Kinds the product ingests. Mirrors the document_kind enum. */
 export const documentKind = z.enum([
@@ -18,13 +19,20 @@ export const documentKind = z.enum([
  * what removes the 15MB body limit contradicting a 50MB file limit.
  */
 export const uploadRequest = z.object({
-  filename: z.string().min(1).max(255),
+  /**
+   * A name, not a path. The storage key is `<user id>/<hash>/<filename>`, so a
+   * separator or a `..` segment in here would resolve outside the owner's folder
+   * — and the worker downloads that key with the service-role client, which
+   * bypasses storage policies entirely.
+   */
+  filename: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[^/\\]+$/, "a filename cannot contain a path separator")
+    .refine((name) => name !== "." && name !== "..", "that is not a filename"),
   kind: documentKind,
-  byteSize: z
-    .number()
-    .int()
-    .positive()
-    .max(50 * 1024 * 1024, "files are limited to 50MB"),
+  byteSize: z.number().int().positive().max(MAX_UPLOAD_BYTES, "files are limited to 50MB"),
   /** SHA-256 of the bytes, computed by the client, so a duplicate is caught before it is sent. */
   contentHash: z.string().regex(/^[0-9a-f]{64}$/),
 });

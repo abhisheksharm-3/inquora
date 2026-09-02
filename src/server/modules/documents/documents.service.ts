@@ -24,7 +24,8 @@ export const createDocumentsService = (
     // to embed them again. The unique index enforces it; this reports it.
     const { data: existing, error: lookupError } = await db
       .from("documents")
-      .select("id, status")
+      .select("id, status, storage_path")
+      .eq("user_id", userId)
       .eq("content_hash", request.contentHash)
       .maybeSingle();
 
@@ -32,16 +33,40 @@ export const createDocumentsService = (
       return err(AppError.badGateway(`could not check for a duplicate: ${lookupError.message}`));
     }
 
-    if (existing) {
+    // Only a finished document is a duplicate. The first version short-circuited
+    // on any existing row, so an upload whose PUT never completed came back with
+    // an empty uploadUrl and no way to retry: the hash matched forever and the
+    // document could never be filled in.
+    if (existing?.status === "ready") {
       return ok({
         documentId: existing.id,
         uploadUrl: "",
-        path: "",
-        alreadyIndexed: existing.status === "ready",
+        path: existing.storage_path ?? "",
+        alreadyIndexed: true,
       });
     }
 
     const path = `${userId}/${request.contentHash}/${request.filename}`;
+
+    if (existing) {
+      const resumed = await db.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUploadUrl(existing.storage_path ?? path, { upsert: true });
+
+      if (resumed.error) {
+        return err(AppError.badGateway(`could not sign the upload: ${resumed.error.message}`));
+      }
+
+      // Back to pending, which the requeue trigger turns into a fresh job.
+      await db.from("documents").update({ status: "pending", error: null }).eq("id", existing.id);
+
+      return ok({
+        documentId: existing.id,
+        uploadUrl: resumed.data.signedUrl,
+        path: existing.storage_path ?? path,
+        alreadyIndexed: false,
+      });
+    }
 
     const { data: document, error: insertError } = await db
       .from("documents")

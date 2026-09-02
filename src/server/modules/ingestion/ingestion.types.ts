@@ -3,6 +3,14 @@ import type { AppError } from "@/core/errors";
 import type { Outline } from "@/core/documents/outline.types";
 import type { Result } from "@/core/result.types";
 
+/** The columns extraction reads off a document row. */
+export interface DocumentRow {
+  kind: Source["kind"];
+  storage_path: string | null;
+  source_url: string | null;
+  user_id: string;
+}
+
 export interface ClaimedJob {
   jobId: number;
   documentId: string;

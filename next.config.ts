@@ -6,14 +6,15 @@ const nextConfig: NextConfig = {
 
   /**
    * The document parsers only. They read files and reach for Node built-ins, so
-   * bundling them is pointless work.
+   * bundling them is pointless work. pdf-parse was named here after it had been
+   * replaced by unpdf, which is a setting pointing at nothing.
    *
    * The LangChain packages are deliberately not here. They were, while the model
    * layer used initChatModel's dynamic import; externalising @langchain/core
    * alongside a bundled copy of it then produced a second, stranger failure in
    * the provider constructor. With a static import there is nothing to externalise.
    */
-  serverExternalPackages: ["pdf-parse", "exceljs", "mammoth"],
+  serverExternalPackages: ["unpdf", "exceljs", "mammoth"],
   images: {
     remotePatterns: [
       {

@@ -5,15 +5,23 @@ import type { Database } from "@/core/database.types";
 import type { MemoryRepository } from "./memory.types";
 
 /**
- * Durable facts about the user. RLS scopes the table to its owner, so the insert
- * carries no user id: the old `user_memories.user_id` had no foreign key at all,
- * and nothing stopped a row naming a user who did not exist.
+ * Durable facts about the user.
+ *
+ * The user id is read from the session and passed explicitly. The first version
+ * passed `undefined` on the theory that row-level security would supply it, which
+ * is a misreading of what RLS does: it filters and it checks, it does not fill in
+ * a value. `user_memories.user_id` is not null with no default, so every call to
+ * the `remember` tool failed.
  */
 export const createMemoryRepository = (db: SupabaseClient<Database>): MemoryRepository => ({
   async remember(content) {
+    const { data: identity } = await db.auth.getUser();
+
+    if (!identity.user) return err(AppError.unauthorized("no session to remember against"));
+
     const { data, error } = await db
       .from("user_memories")
-      .insert({ content, user_id: undefined as unknown as string })
+      .insert({ content, user_id: identity.user.id })
       .select("id")
       .single();
 

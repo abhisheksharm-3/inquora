@@ -17,7 +17,10 @@ const ALLOWED = /^[\d\s.+\-*/^()]+$/;
 export const evaluateArithmetic = (expression: string): Result<number, string> => {
   if (!ALLOWED.test(expression)) return { ok: false, error: NOT_ARITHMETIC };
 
-  const tokens = expression.match(/\d+\.?\d*|[+\-*/^()]/g);
+  // `\d*\.?\d+` rather than `\d+\.?\d*`: the second cannot start a token with a
+  // dot, so ".5 * 4" tokenized as 5 * 4 and returned 20. A dropped character that
+  // changes the number is worse than a rejection.
+  const tokens = expression.match(/\d*\.?\d+|[+\-*/^()]/g);
   if (!tokens) return { ok: false, error: NOT_ARITHMETIC };
 
   let position = 0;

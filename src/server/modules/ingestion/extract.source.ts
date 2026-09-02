@@ -8,7 +8,7 @@ import { outlineFromSheets, outlineFromText } from "@/core/documents/outline";
 import { chunkSource } from "./extract";
 import { extractRepository, parseRepositoryUrl } from "./extract-github";
 import { extractSlides } from "./extract-slides";
-import type { ClaimedJob, ExtractedDocument, Source } from "./ingestion.types";
+import type { ClaimedJob, DocumentRow, ExtractedDocument, Source } from "./ingestion.types";
 import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 
 /**
@@ -27,7 +27,7 @@ export const extractDocument = async (
 ): Promise<Result<ExtractedDocument, AppError>> => {
   const { data: document, error } = await db
     .from("documents")
-    .select("kind, title, storage_path, source_url")
+    .select("kind, title, storage_path, source_url, user_id")
     .eq("id", job.documentId)
     .single();
 
@@ -66,12 +66,6 @@ export const extractDocument = async (
     text: source.value.sheets || source.value.files ? undefined : source.value.text,
     files: source.value.files,
   });
-};
-
-type DocumentRow = {
-  kind: Source["kind"];
-  storage_path: string | null;
-  source_url: string | null;
 };
 
 const readSource = async (
@@ -119,6 +113,15 @@ const readSource = async (
 
   if (!document.storage_path) {
     return err(AppError.badRequest("the document has neither a file nor a URL"));
+  }
+
+  // This client is the service role, so storage policies do not apply. The path
+  // is checked against the row's owner here instead: a `documents` row can be
+  // inserted through the API with any storage_path its owner likes, and without
+  // this the worker would fetch somebody else's object and index it under the
+  // caller's document.
+  if (!document.storage_path.startsWith(`${document.user_id}/`)) {
+    return err(AppError.badRequest("that file does not belong to the document's owner"));
   }
 
   const { data, error } = await db.storage.from(STORAGE_BUCKET).download(document.storage_path);
@@ -187,11 +190,23 @@ const readSheet = async (bytes: Uint8Array): Promise<Result<Source, AppError>> =
       const rows: string[][] = [];
       let header: string[] = [];
 
-      worksheet.eachRow((row, index) => {
+      // eachRow skips blank rows and reports the real row number, so a workbook
+      // with an empty first row never saw index 1 and lost its header entirely —
+      // which then failed the not-empty constraint, and per the queue's own bug
+      // failed silently. The first row that has content is the header.
+      worksheet.eachRow((row) => {
         const values = (row.values as unknown[]).slice(1).map((cell) => cellToText(cell));
 
-        if (index === 1) header = values;
-        else rows.push(values);
+        if (header.length === 0) {
+          header = values;
+          return;
+        }
+
+        // A row wider than the header would lose its extra cells in the jsonb
+        // keyed by header, so the header is widened rather than the row truncated.
+        while (header.length < values.length) header.push(`Column ${header.length + 1}`);
+
+        rows.push(values);
       });
 
       return { name: worksheet.name, header, rows };
