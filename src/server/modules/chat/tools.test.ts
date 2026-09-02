@@ -44,12 +44,15 @@ describe("createTools", () => {
       retrieval: { retrieve: async () => ok([]) },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 
     expect((tools as InvokableTool[]).map((t) => t.name).sort()).toEqual([
       "calculate",
       "list_documents",
+      "list_tables",
+      "query_table",
       "read_chunks",
       "remember",
       "search_documents",
@@ -65,6 +68,7 @@ describe("createTools", () => {
       retrieval: { retrieve },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -85,6 +89,7 @@ describe("createTools", () => {
       },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: (ids) => seen.push(ids),
     });
 
@@ -99,6 +104,7 @@ describe("createTools", () => {
       retrieval: { retrieve: async () => err(AppError.notFound("nothing matched")) },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -113,6 +119,7 @@ describe("createTools", () => {
       retrieval: { retrieve: async () => ok([]) },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -122,12 +129,106 @@ describe("createTools", () => {
     expect(answer).toContain("ready");
   });
 
+  it("queries a spreadsheet rather than searching it", async () => {
+    const query = vi.fn(async (_q: Record<string, unknown>) => ok([{ total: 101000 }]));
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "query_table").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        table_name: "Pipeline",
+        sql: 'select sum("Value"::numeric) as total from t',
+      }),
+    );
+
+    expect(answer).toContain("101000");
+    expect(query.mock.calls[0][0]).toMatchObject({ tableName: "Pipeline" });
+  });
+
+  it("hands a refused query back verbatim, so the model can correct it", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: {
+        list: async () => ok([]),
+        query: async () => err(AppError.badRequest("the query may not use delete")),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "query_table").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+        table_name: "Pipeline",
+        sql: "delete from t",
+      }),
+    );
+
+    expect(answer).toContain("may not use delete");
+  });
+
+  it("refuses to query a document that is not in this conversation", async () => {
+    const query = vi.fn(async (_q: Record<string, unknown>) => ok([]));
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "query_table").invoke({
+        document_id: "99999999-9999-4999-8999-999999999999",
+        table_name: "Pipeline",
+        sql: "select * from t",
+      }),
+    );
+
+    expect(answer).toContain("not attached");
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("shows the real column names before a query is written", async () => {
+    const tools = createTools({
+      context,
+      retrieval: { retrieve: async () => ok([]) },
+      chunks: { range: async () => ok([]) },
+      memories: { remember: async () => ok("id") },
+      tables: {
+        list: async () => ok([{ name: "Pipeline", header: ["Account", "Value"], rowCount: 3 }]),
+        query: async () => ok([]),
+      },
+      onCitations: () => {},
+    });
+
+    const answer = String(
+      await byName(tools, "list_tables").invoke({
+        document_id: "11111111-1111-1111-1111-111111111111",
+      }),
+    );
+
+    expect(answer).toContain("Pipeline");
+    expect(answer).toContain("Account, Value");
+  });
+
   it("calculates arithmetic without reaching a language model for it", async () => {
     const tools = createTools({
       context,
       retrieval: { retrieve: async () => ok([]) },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 
@@ -142,6 +243,7 @@ describe("createTools", () => {
       retrieval: { retrieve: async () => ok([]) },
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
       onCitations: () => {},
     });
 

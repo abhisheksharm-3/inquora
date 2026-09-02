@@ -34,6 +34,7 @@ const dependencies = (overrides: Record<string, unknown> = {}) => ({
   retrieval: { retrieve: async () => ok([chunk]) },
   chunks: { range: async () => ok([]) },
   memories: { remember: async () => ok("id") },
+  tables: { list: async () => ok([]), query: async () => ok([]) },
   ...overrides,
 });
 

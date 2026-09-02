@@ -1,11 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Chunk } from "@/core/chunking";
 import { AppError } from "@/core/errors";
 import { err, ok, type Result } from "@/core/result";
 import type { Database } from "@/core/database.types";
 import { fetchExternal } from "@/server/platform/http/fetch-external";
-import { chunkSource, type Source } from "./extract";
-import type { ClaimedJob } from "./ingestion.worker";
+import { chunkSource } from "./extract";
+import type { ClaimedJob, ExtractedDocument, Source } from "./ingestion.types";
 
 const BUCKET = "documents";
 
@@ -22,7 +21,7 @@ const BUCKET = "documents";
 export const extractDocument = async (
   db: SupabaseClient<Database>,
   job: ClaimedJob,
-): Promise<Result<{ chunks: Chunk[]; expectedChunks: number }, AppError>> => {
+): Promise<Result<ExtractedDocument, AppError>> => {
   const { data: document, error } = await db
     .from("documents")
     .select("kind, title, storage_path, source_url")
@@ -37,7 +36,18 @@ export const extractDocument = async (
   const chunks = chunkSource(source.value);
   if (!chunks.ok) return err(chunks.error);
 
-  return ok({ chunks: chunks.value, expectedChunks: chunks.value.length });
+  // A workbook is stored twice on purpose: as chunks, so a question about it can
+  // be found by meaning, and as rows, so a question about its numbers can be
+  // answered by arithmetic.
+  const tables = (source.value.sheets ?? []).map((sheet) => ({
+    name: sheet.name,
+    header: sheet.header,
+    rows: sheet.rows.map((row) =>
+      Object.fromEntries(sheet.header.map((column, index) => [column, row[index] ?? ""])),
+    ),
+  }));
+
+  return ok({ chunks: chunks.value, expectedChunks: chunks.value.length, tables });
 };
 
 type DocumentRow = {

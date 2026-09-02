@@ -14,3 +14,22 @@ export interface UploadTicket {
 export interface DocumentsService {
   requestUpload(request: UploadRequest): Promise<Result<UploadTicket, AppError>>;
 }
+
+/** One sheet of a document, as the model is shown it. */
+export interface DocumentTable {
+  name: string;
+  header: string[];
+  rowCount: number;
+}
+
+export interface TableQuery {
+  documentId: string;
+  tableName: string;
+  sql: string;
+  limit?: number;
+}
+
+export interface TablesRepository {
+  list(documentId: string): Promise<Result<DocumentTable[], AppError>>;
+  query(query: TableQuery): Promise<Result<Record<string, unknown>[], AppError>>;
+}

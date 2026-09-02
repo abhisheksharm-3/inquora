@@ -31,10 +31,12 @@ const db = createClient<Database>(url, serviceKey, {
 });
 const sql = new SQL(dbUrl, { max: 1 });
 
+const isSheet = pdfPath.endsWith(".xlsx");
+const kind = isSheet ? "sheet" : "pdf";
 const bytes = new Uint8Array(await Bun.file(pdfPath).arrayBuffer());
 const hash = await contentHash(bytes);
 const userId = "cccccccc-1111-4111-8111-cccccccccccc";
-const storagePath = `${userId}/${hash}/revenue.pdf`;
+const storagePath = `${userId}/${hash}/${isSheet ? "pipeline.xlsx" : "revenue.pdf"}`;
 
 console.log(`1. ${bytes.length} bytes, sha256 ${hash.slice(0, 16)}...`);
 
@@ -45,7 +47,9 @@ await sql`
   on conflict (id) do nothing`;
 
 const upload = await db.storage.from("documents").upload(storagePath, bytes, {
-  contentType: "application/pdf",
+  contentType: isSheet
+    ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    : "application/pdf",
   upsert: true,
 });
 if (upload.error) throw upload.error;
@@ -55,8 +59,8 @@ const inserted = await db
   .from("documents")
   .insert({
     user_id: userId,
-    kind: "pdf",
-    title: "Revenue review, Q3",
+    kind,
+    title: isSheet ? "Q3 pipeline" : "Revenue review, Q3",
     byte_size: bytes.length,
     content_hash: hash,
     storage_path: storagePath,
@@ -100,7 +104,38 @@ const remaining =
   await sql`select count(*)::int as count from public.ingestion_jobs where document_id = ${documentId}`;
 console.log(`   ${remaining[0].count} job(s) left in the queue`);
 
-if ((after.data?.chunk_count ?? 0) > 0) {
+// A spreadsheet is stored as rows as well as chunks, so the numbers in it can be
+// answered by arithmetic rather than read out of a sentence.
+if (isSheet) {
+  const sheets = await sql`
+    select t.name, t.row_count, t.header
+    from public.document_tables t where t.document_id = ${documentId} order by t.name`;
+
+  console.log(`\n6. ${sheets.length} sheet(s) landed as rows:`);
+  for (const sheet of sheets) {
+    console.log(`   ${sheet.name}: ${sheet.row_count} rows, columns ${sheet.header.join(", ")}`);
+  }
+
+  const answers = [
+    [
+      "which accounts are over 30,000",
+      'select "Account" from t where "Value"::numeric > 30000 order by "Value"::numeric desc',
+    ],
+    ["total pipeline value", 'select sum("Value"::numeric) as total from t'],
+    [
+      "won value by region",
+      'select "Region", sum("Value"::numeric) as won from t where "Stage" = \'Closed won\' group by "Region" order by won desc',
+    ],
+  ];
+
+  for (const [question, statement] of answers) {
+    const [row] = await sql`
+      select public.query_document_table(${documentId}, 'Pipeline', ${statement}) as result`;
+    console.log(`\n   "${question}"`);
+    console.log(`   ${statement}`);
+    console.log(`   -> ${JSON.stringify(row.result)}`);
+  }
+} else if ((after.data?.chunk_count ?? 0) > 0) {
   const question = "how far under forecast was Q3 revenue?";
   const embeddings = createEmbeddingsClient({
     baseUrl: "https://abhisheksan-multiutility-server.hf.space",

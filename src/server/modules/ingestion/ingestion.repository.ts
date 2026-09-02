@@ -70,6 +70,24 @@ export const createIngestionRepository = (db: SupabaseClient<Database>) => ({
     return ok(undefined);
   },
 
+  async insertTable(
+    documentId: string,
+    table: { name: string; header: string[]; rows: Record<string, string>[] },
+  ): Promise<Result<string, AppError>> {
+    const { data, error } = await db.rpc("insert_document_table", {
+      p_document_id: documentId,
+      p_name: table.name,
+      p_header: table.header,
+      p_rows: table.rows as never,
+    });
+
+    if (error) {
+      return err(AppError.badGateway(`insert_document_table failed: ${error.message}`));
+    }
+
+    return ok(data ?? "");
+  },
+
   async insertChunks(
     documentId: string,
     chunks: { chunk_index: number; content: string; embedding: number[]; metadata: unknown }[],

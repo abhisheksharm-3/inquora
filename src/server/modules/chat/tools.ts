@@ -32,6 +32,7 @@ export const createTools = ({
   retrieval,
   chunks,
   memories,
+  tables,
   onCitations,
 }: ToolDependencies) => {
   const documentIds = context.documents.map((d) => d.id);
@@ -139,6 +140,71 @@ export const createTools = ({
     },
   );
 
-  return [searchDocuments, readChunks, listDocuments, remember, calculate];
+  const listTables = tool(
+    async ({ document_id }: { document_id: string }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const found = await tables.list(document_id);
+
+      if (!found.ok) return `Could not read the sheets: ${found.error.detail ?? found.error.type}`;
+      if (found.value.length === 0) return "That document has no sheets to query.";
+
+      return found.value
+        .map((table) => `${table.name}: ${table.rowCount} rows, columns ${table.header.join(", ")}`)
+        .join("\n");
+    },
+    {
+      name: "list_tables",
+      description:
+        "List the sheets in a spreadsheet document, with their column names and row counts. Call " +
+        "this before query_table so the query uses the real column names.",
+      schema: z.object({ document_id: z.guid() }),
+    },
+  );
+
+  const queryTable = tool(
+    async ({
+      document_id,
+      table_name,
+      sql,
+    }: {
+      document_id: string;
+      table_name: string;
+      sql: string;
+    }) => {
+      if (!documentIds.includes(document_id)) {
+        return "That document is not attached to this conversation.";
+      }
+
+      const rows = await tables.query({ documentId: document_id, tableName: table_name, sql });
+
+      if (!rows.ok) {
+        // The reason comes back verbatim so the model can correct the query
+        // rather than guessing at what a generic failure meant.
+        return `That query was refused: ${rows.error.detail ?? rows.error.type}`;
+      }
+
+      if (rows.value.length === 0) return "The query returned no rows.";
+
+      return JSON.stringify(rows.value);
+    },
+    {
+      name: "query_table",
+      description:
+        "Run one read-only SQL select over a spreadsheet. The sheet is a view named t with the " +
+        'sheet\'s own column names, so quote them: select "Account" from t where "Value"::numeric > 100. ' +
+        "Use this for any question about numbers, counts, totals or comparisons across rows, " +
+        "because searching the text of a spreadsheet cannot answer those exactly.",
+      schema: z.object({
+        document_id: z.guid(),
+        table_name: z.string().min(1),
+        sql: z.string().min(1).max(2000),
+      }),
+    },
+  );
+
+  return [searchDocuments, readChunks, listDocuments, listTables, queryTable, remember, calculate];
 };
 import type { ToolDependencies } from "./chat.types";

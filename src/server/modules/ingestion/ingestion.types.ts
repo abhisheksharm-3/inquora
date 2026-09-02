@@ -16,18 +16,36 @@ export interface IngestionQueue {
   highWaterMark(documentId: string): Promise<Result<number, AppError>>;
 }
 
+/** One sheet of a workbook, as rows keyed by its own header. */
+export interface ExtractedTable {
+  name: string;
+  header: string[];
+  rows: Record<string, string>[];
+}
+
+/**
+ * What extraction hands the worker. A spreadsheet produces both: chunks so it can
+ * be found by meaning, and tables so its numbers can be queried exactly.
+ */
+export interface ExtractedDocument {
+  chunks: Chunk[];
+  expectedChunks: number;
+  tables?: ExtractedTable[];
+}
+
 export interface ChunkStore {
   setExpectedChunks(documentId: string, expected: number): Promise<Result<void, AppError>>;
   insertChunks(
     documentId: string,
     chunks: { chunk_index: number; content: string; embedding: number[]; metadata: unknown }[],
   ): Promise<Result<number, AppError>>;
+  insertTable(documentId: string, table: ExtractedTable): Promise<Result<string, AppError>>;
 }
 
 export interface WorkerDependencies {
   queue: IngestionQueue;
   /** Fetch and chunk one document. Everything provider-shaped lives behind this. */
-  extract(job: ClaimedJob): Promise<Result<{ chunks: Chunk[]; expectedChunks: number }, AppError>>;
+  extract(job: ClaimedJob): Promise<Result<ExtractedDocument, AppError>>;
   embeddings: { embed(texts: string[]): Promise<Result<number[][], AppError>> };
   store: ChunkStore;
   /** Chunks per embedding call. The Space takes an array. */

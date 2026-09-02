@@ -43,7 +43,11 @@ ${documents}
 ${memories}
 Search before answering anything about document content. Cite the passage a claim
 came from by its number. When the answer is not in these documents, say so
-plainly rather than answering from general knowledge.`;
+plainly rather than answering from general knowledge.
+
+For a spreadsheet, query it rather than searching it: list_tables then
+query_table. Searching the text of a sheet can find the right region and cannot
+add up a column.`;
 };
 
 export const createAnsweringAgent = ({
@@ -52,6 +56,7 @@ export const createAnsweringAgent = ({
   retrieval,
   chunks,
   memories,
+  tables,
 }: AgentDependencies): AnsweringAgent => {
   const citations: string[] = [];
   let answer = "";
@@ -92,6 +97,7 @@ export const createAnsweringAgent = ({
     retrieval: cachingRetrieval,
     chunks,
     memories,
+    tables,
     onCitations: (ids: string[]) => {
       for (const id of ids) if (!citations.includes(id)) citations.push(id);
     },

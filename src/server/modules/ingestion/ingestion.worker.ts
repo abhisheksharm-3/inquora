@@ -34,7 +34,7 @@ export const createIngestionWorker = ({
     const extracted = await extract(job);
     if (!extracted.ok) return failJob(extracted.error.detail ?? extracted.error.type);
 
-    const { chunks, expectedChunks } = extracted.value;
+    const { chunks, expectedChunks, tables } = extracted.value;
 
     // Written before embedding starts, so the interface can show a true fraction
     // instead of one of four words.
@@ -62,6 +62,14 @@ export const createIngestionWorker = ({
         })),
       );
 
+      if (!written.ok) return failJob(written.error.detail ?? written.error.type);
+    }
+
+    // Sheets land as rows as well as chunks, so the numbers in a spreadsheet can
+    // be queried exactly rather than read out of a sentence. Written after the
+    // chunks, because a failure here should not cost the embeddings.
+    for (const table of tables ?? []) {
+      const written = await store.insertTable(job.documentId, table);
       if (!written.ok) return failJob(written.error.detail ?? written.error.type);
     }
 

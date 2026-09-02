@@ -150,6 +150,7 @@ try {
       retrieval,
       chunks: { range: async () => ok([]) },
       memories: { remember: async () => ok("id") },
+      tables: { list: async () => ok([]), query: async () => ok([]) },
     });
 
     console.log("4. streaming an answer from the real model");

@@ -154,6 +154,70 @@ export type Database = {
           },
         ]
       }
+      document_rows: {
+        Row: {
+          data: Json
+          id: number
+          row_index: number
+          table_id: string
+        }
+        Insert: {
+          data: Json
+          id?: number
+          row_index: number
+          table_id: string
+        }
+        Update: {
+          data?: Json
+          id?: number
+          row_index?: number
+          table_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_rows_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "document_tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tables: {
+        Row: {
+          created_at: string
+          document_id: string
+          header: string[]
+          id: string
+          name: string
+          row_count: number
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          header: string[]
+          id?: string
+          name: string
+          row_count?: number
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          header?: string[]
+          id?: string
+          name?: string
+          row_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tables_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           byte_size: number | null
@@ -417,7 +481,37 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ingestion_health: {
+        Row: {
+          chunks_stored: number | null
+          failed: number | null
+          pending: number | null
+          processing: number | null
+          ready: number | null
+        }
+        Relationships: []
+      }
+      stuck_ingestion_jobs: {
+        Row: {
+          attempts: number | null
+          document_id: string | null
+          job_id: number | null
+          last_error: string | null
+          overdue_by: string | null
+          run_after: string | null
+          status: Database["public"]["Enums"]["processing_status"] | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       append_message: {
@@ -460,6 +554,25 @@ export type Database = {
         Args: { p_chunks: Json; p_document_id: string }
         Returns: number
       }
+      insert_document_table: {
+        Args: {
+          p_document_id: string
+          p_header: string[]
+          p_name: string
+          p_rows: Json
+        }
+        Returns: string
+      }
+      poke_ingestion_worker: { Args: never; Returns: undefined }
+      query_document_table: {
+        Args: {
+          p_document_id: string
+          p_limit?: number
+          p_sql: string
+          p_table_name: string
+        }
+        Returns: Json
+      }
       search_chunks: {
         Args: {
           p_document_ids: string[]
@@ -478,6 +591,7 @@ export type Database = {
           score: number
         }[]
       }
+      topic_owner_matches: { Args: { p_topic: string }; Returns: boolean }
     }
     Enums: {
       document_kind:
@@ -512,12 +626,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -541,11 +655,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -566,11 +680,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -591,11 +705,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -608,11 +722,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

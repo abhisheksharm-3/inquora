@@ -49,6 +49,20 @@ export interface AgentDependencies {
   retrieval: RetrievalPort;
   chunks: ChunkRangePort;
   memories: MemoryPort;
+  tables: TablesPort;
+}
+
+/** The tabular surface the query_table tool depends on. */
+export interface TablesPort {
+  list(
+    documentId: string,
+  ): Promise<Result<{ name: string; header: string[]; rowCount: number }[], AppError>>;
+  query(query: {
+    documentId: string;
+    tableName: string;
+    sql: string;
+    limit?: number;
+  }): Promise<Result<Record<string, unknown>[], AppError>>;
 }
 
 export interface ToolDependencies {
@@ -56,6 +70,7 @@ export interface ToolDependencies {
   retrieval: RetrievalPort;
   chunks: ChunkRangePort;
   memories: MemoryPort;
+  tables: TablesPort;
   /** Called with the chunk ids a search returned, so the answer can cite them. */
   onCitations: (chunkIds: string[]) => void;
 }
@@ -92,5 +107,6 @@ export interface ChatServiceDependencies {
   retrieval: RetrievalPort;
   chunks: ChunkRangePort;
   memories: MemoryPort;
+  tables: TablesPort;
   model: () => Promise<Result<BaseChatModel, AppError>>;
 }
