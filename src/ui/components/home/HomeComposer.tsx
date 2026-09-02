@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { DocumentEntry } from "@/core/workspace/workspace.types";
 import { Action } from "@/ui/components/form/Action";
 
@@ -23,6 +23,8 @@ export const HomeComposer = ({
   excluded,
   onToggle,
   inScopeCount,
+  value,
+  onChange,
 }: {
   action: (formData: FormData) => void;
   error?: string;
@@ -30,8 +32,10 @@ export const HomeComposer = ({
   excluded: ReadonlySet<string>;
   onToggle: (id: string) => void;
   inScopeCount: number;
+  /** Lifted, so clicking a suggestion fills the box rather than sending blind. */
+  value: string;
+  onChange: (value: string) => void;
 }) => {
-  const [value, setValue] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
   const form = useRef<HTMLFormElement>(null);
 
@@ -60,7 +64,7 @@ export const HomeComposer = ({
           ref={field}
           rows={2}
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
             // Enter sends, shift-Enter is a newline, which is what every
             // writing surface has taught people to expect.

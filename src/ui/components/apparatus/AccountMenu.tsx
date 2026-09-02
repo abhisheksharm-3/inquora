@@ -3,6 +3,7 @@
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { signOutAction } from "@/app/(app)/actions";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/core/routes";
 import type { Account } from "@/core/workspace/account.types";
@@ -21,6 +22,7 @@ import type { Account } from "@/core/workspace/account.types";
  */
 export const AccountMenu = ({ account }: { account: Account }) => {
   const { email, displayName, avatarUrl } = account;
+  const { theme, setTheme } = useTheme();
 
   return (
     <Dropdown.Root>
@@ -67,6 +69,30 @@ export const AccountMenu = ({ account }: { account: Account }) => {
 
           <Dropdown.Separator className="my-2 h-px bg-rule" />
 
+          {/* The theme, where a preference belongs. It spent three versions as a
+              permanent widget beside the navigation — three words, then a
+              bordered segmented control, then a lone icon button — and each one
+              competed for attention with the primary action. */}
+          <Dropdown.Label className="px-3.5 pb-1.5 font-record text-label text-faint uppercase tracking-[0.12em]">
+            Theme
+          </Dropdown.Label>
+          <Dropdown.RadioGroup value={theme ?? "system"} onValueChange={setTheme}>
+            {THEMES.map((choice) => (
+              <Dropdown.RadioItem
+                key={choice.value}
+                value={choice.value}
+                className="flex cursor-pointer items-center justify-between gap-6 px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none data-highlighted:bg-wash data-highlighted:text-ink data-[state=checked]:text-ink"
+              >
+                {choice.label}
+                <Dropdown.ItemIndicator>
+                  <span aria-hidden className="block size-1.5 rounded-full bg-mark" />
+                </Dropdown.ItemIndicator>
+              </Dropdown.RadioItem>
+            ))}
+          </Dropdown.RadioGroup>
+
+          <Dropdown.Separator className="my-2 h-px bg-rule" />
+
           {/* A form, so signing out is a POST rather than a link somebody's
             browser or a link-prefetcher can follow on its own. */}
           <form action={signOutAction}>
@@ -84,6 +110,12 @@ export const AccountMenu = ({ account }: { account: Account }) => {
     </Dropdown.Root>
   );
 };
+
+const THEMES = [
+  { value: "light", label: "Light" },
+  { value: "system", label: "Match my system" },
+  { value: "dark", label: "Dark" },
+] as const;
 
 const Item = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <Dropdown.Item asChild>

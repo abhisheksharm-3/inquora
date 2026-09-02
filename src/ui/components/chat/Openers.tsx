@@ -1,4 +1,5 @@
 import type { DocumentEntry } from "@/core/workspace/workspace.types";
+import { openersFor } from "@/ui/components/documents/openers";
 
 /**
  * Surface 05, where the personality lives. Openers generated from the documents
@@ -57,27 +58,4 @@ export const Openers = ({
       </div>
     </div>
   );
-};
-
-/**
- * Three at most. A list of eight suggestions is a menu, and the point is to
- * show what kind of question this set of documents rewards.
- */
-const openersFor = (documents: DocumentEntry[]): string[] => {
-  const first = documents[0];
-  if (!first) return [];
-
-  const openers: string[] = [];
-  const has = (kind: DocumentEntry["kind"]) => documents.some((entry) => entry.kind === kind);
-
-  if (has("sheet")) openers.push("Which figures moved most, and by how much?");
-  if (has("github")) openers.push("Where is the entry point, and what does it call first?");
-  if (has("video")) openers.push("What was decided, and at what point was it said?");
-  if (has("slides")) openers.push("What is the argument, slide by slide?");
-
-  openers.push(`What is ${first.title} actually claiming?`);
-
-  if (documents.length > 1) openers.push("Where do these documents disagree?");
-
-  return openers.slice(0, 3);
 };

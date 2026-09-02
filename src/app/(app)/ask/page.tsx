@@ -23,7 +23,7 @@ const HomePage = async () => {
 
   return (
     <HomeSurface
-      chrome={<Chrome current="choose" account={account} />}
+      chrome={<Chrome current="ask" account={account} />}
       account={account}
       documents={documents}
       chats={chats}

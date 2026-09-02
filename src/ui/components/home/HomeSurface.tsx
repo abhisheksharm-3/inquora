@@ -7,7 +7,8 @@ import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import type { Account } from "@/core/workspace/account.types";
 import type { ChatEntry, DocumentEntry } from "@/core/workspace/workspace.types";
-import { describeDocument, kindLabel } from "@/ui/components/documents/document.format";
+import { describeDocument, formatWhen, kindLabel } from "@/ui/components/documents/document.format";
+import { openersFor } from "@/ui/components/documents/openers";
 import { useDocumentProgress } from "@/ui/hooks/useDocumentProgress";
 import { useUpload } from "@/ui/hooks/useUpload";
 import { AddSource } from "./AddSource";
@@ -52,6 +53,8 @@ export const HomeSurface = ({
   // Everything ready, in scope, until somebody says otherwise. Defaulting to
   // nothing selected made the first act of every visit a chore.
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
+  const [question, setQuestion] = useState("");
+  const [adding, setAdding] = useState(false);
   const [state, ask] = useActionState<ActionState, FormData>(askFromHome, emptyActionState);
 
   const inScope = ready.filter((document) => !excluded.has(document.id));
@@ -65,13 +68,14 @@ export const HomeSurface = ({
     });
 
   const firstName = (account?.displayName ?? account?.email ?? "").split(/[\s@.]/)[0];
+  const openers = openersFor(inScope, 3);
 
   return (
     <div className="grid min-h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)]">
       {chrome}
 
-      <main className="px-7 py-12 wide:py-16">
-        <div className="mx-auto w-full max-w-[76ch]">
+      <main className="px-7 py-12 wide:px-12 wide:py-16">
+        <div className="mx-auto w-full max-w-[1320px]">
           <h1 className="mb-2.5 font-light font-reading text-[2.1rem] text-ink leading-tight tracking-[-0.02em]">
             {firstName ? (
               <>
@@ -99,72 +103,127 @@ export const HomeSurface = ({
                 excluded={excluded}
                 onToggle={toggle}
                 inScopeCount={inScope.length}
+                value={question}
+                onChange={setQuestion}
               />
 
-              {chats.length > 0 ? (
-                <p className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1.5 font-record text-label text-faint">
-                  <span>Or carry on with</span>
-                  {chats.slice(0, 3).map((chat) => (
-                    <Link
-                      key={chat.id}
-                      href={DASHBOARD_ROUTES.CHAT(chat.id)}
-                      className="max-w-[26ch] truncate border-rule border-b pb-0.5 text-soft hover:text-ink"
-                    >
-                      {chat.title ?? "Untitled"}
-                    </Link>
-                  ))}
-                  {chats.length > 3 ? (
-                    <Link href={DASHBOARD_ROUTES.HISTORY} className="hover:text-ink">
-                      all {chats.length}
-                    </Link>
-                  ) : null}
-                </p>
+              {/* Questions worth asking of these particular documents, across
+                  the width. A stack of three under a wide composer left the
+                  sides empty and the page looking unfinished. */}
+              {openers.length > 0 ? (
+                <div className="mt-6">
+                  <p className="mb-2.5 font-record text-label text-faint uppercase tracking-[0.13em]">
+                    Or try
+                  </p>
+                  <ul className="m-0 grid list-none gap-px border border-rule bg-rule p-0 sm:grid-cols-3">
+                    {openers.map((opener) => (
+                      <li key={opener} className="bg-ground">
+                        <button
+                          type="button"
+                          onClick={() => setQuestion(opener)}
+                          className="h-full w-full px-4 py-4 text-left font-light font-reading text-[1rem] text-soft transition-colors duration-150 ease-out-quart hover:bg-panel hover:text-ink"
+                        >
+                          {opener}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ) : null}
             </>
           ) : null}
 
-          <section className={ready.length > 0 ? "mt-14" : ""}>
-            <h2 className="mb-3 flex items-baseline justify-between font-record text-label text-faint uppercase tracking-[0.13em]">
-              <span>Your documents</span>
-              {working.length > 0 ? <span>{working.length} still being read</span> : null}
-            </h2>
-
-            <AddSource uploads={uploads} onAdd={add} onDismiss={dismiss} />
-
-            {documents.length > 0 ? (
-              <ul className="m-0 list-none p-0">
-                {documents.map((document) => (
-                  <li
-                    key={document.id}
-                    className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-4 border-rule border-b py-3.5"
-                  >
-                    <span className="font-record text-label text-faint uppercase tracking-[0.1em]">
-                      {kindLabel[document.kind]}
-                    </span>
-                    <span className="min-w-0 font-light font-reading text-[1.05rem] text-ink">
-                      <span className="block truncate">{document.title}</span>
-                      <span className="mt-1 block font-record text-label text-faint">
-                        {describeDocument(document)}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-right font-record text-label ${
-                        document.status === "failed" ? "text-danger" : "text-faint"
-                      }`}
+          <div className="mt-14 grid grid-cols-1 gap-x-12 gap-y-10 wide:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <section>
+              <h2 className="mb-3 flex items-baseline justify-between gap-4 border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.13em]">
+                <span>Your documents</span>
+                <span className="flex items-baseline gap-5">
+                  {working.length > 0 ? <span>{working.length} still being read</span> : null}
+                  {ready.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setAdding((open) => !open)}
+                      className="tracking-[0.13em] text-mark uppercase"
                     >
-                      {document.status === "ready"
-                        ? excluded.has(document.id)
-                          ? "not in this question"
-                          : "in this question"
-                        : document.status === "failed"
-                          ? "could not be read"
-                          : "reading it"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                      {adding ? "Close" : "Add one"}
+                    </button>
+                  ) : null}
+                </span>
+              </h2>
+
+              {/* Open on a first visit, because adding is the only thing to do
+                  then, and folded away afterwards, because it is the rarest act
+                  on the page once there is something to ask. */}
+              {ready.length === 0 || adding ? (
+                <div className="mb-7">
+                  <AddSource uploads={uploads} onAdd={add} onDismiss={dismiss} />
+                </div>
+              ) : null}
+
+              {documents.length > 0 ? (
+                <ul className="m-0 list-none p-0">
+                  {documents.map((document) => (
+                    <li
+                      key={document.id}
+                      className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-4 border-rule border-b py-3.5"
+                    >
+                      <span className="font-record text-label text-faint uppercase tracking-[0.1em]">
+                        {kindLabel[document.kind]}
+                      </span>
+                      <span className="min-w-0 font-light font-reading text-[1.05rem] text-ink">
+                        <span className="block truncate">{document.title}</span>
+                        <span className="mt-1 block font-record text-label text-faint">
+                          {describeDocument(document)}
+                        </span>
+                      </span>
+                      <span
+                        className={`text-right font-record text-label ${
+                          document.status === "failed" ? "text-danger" : "text-faint"
+                        }`}
+                      >
+                        {document.status === "ready"
+                          ? excluded.has(document.id)
+                            ? "not in this question"
+                            : "in this question"
+                          : document.status === "failed"
+                            ? "could not be read"
+                            : "reading it"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+
+            {chats.length > 0 ? (
+              <section>
+                <h2 className="mb-3 flex items-baseline justify-between border-rule border-b pb-2 font-record text-label text-faint uppercase tracking-[0.13em]">
+                  <span>Carry on with</span>
+                  <Link
+                    href={DASHBOARD_ROUTES.HISTORY}
+                    className="normal-case tracking-normal hover:text-ink"
+                  >
+                    all {chats.length}
+                  </Link>
+                </h2>
+
+                <ul className="m-0 list-none p-0">
+                  {chats.slice(0, 6).map((chat) => (
+                    <li key={chat.id} className="border-rule border-b">
+                      <Link href={DASHBOARD_ROUTES.CHAT(chat.id)} className="block py-3">
+                        <span className="line-clamp-2 font-light font-reading text-[1rem] text-ink">
+                          {chat.title ?? "Untitled"}
+                        </span>
+                        <span className="mt-1 block font-record text-label text-faint">
+                          <time dateTime={chat.updatedAt}>{formatWhen(chat.updatedAt)}</time>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ) : null}
-          </section>
+          </div>
         </div>
       </main>
     </div>
