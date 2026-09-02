@@ -58,6 +58,61 @@ export const signUpWithPassword = async (
   return ok(undefined);
 };
 
+/**
+ * Send a recovery link.
+ *
+ * Always answers ok, even for an address with no account. The alternative tells
+ * a stranger which email addresses are registered here, and the person who owns
+ * the address learns nothing either way: they either get the mail or they do
+ * not.
+ *
+ * The link points at the same callback as OAuth, which exchanges the code for a
+ * session and then sends them on to set a new password.
+ */
+export const startPasswordReset = async (email: string): Promise<Result<void, AppError>> => {
+  const allowed = await rateLimiter().check("auth", `reset:${email}`);
+  if (!allowed.ok) return err(allowed.error);
+
+  const db = await createServerDbClient();
+
+  const callback = new URL("/api/auth/callback", siteUrl());
+  callback.searchParams.set("next", "/reset-password");
+
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: callback.toString(),
+  });
+
+  // Logged rather than returned. A provider outage should not be reported to
+  // the caller as "that address does not exist".
+  if (error) console.error("Could not send a recovery link:", error.message);
+
+  return ok(undefined);
+};
+
+/**
+ * Set a new password for whoever the current session belongs to.
+ *
+ * There is no "old password" parameter and there does not need to be: reaching
+ * here at all requires the session the recovery link issued, or an already
+ * signed-in session. Supabase checks that; this cannot be called for somebody
+ * else's account.
+ */
+export const setNewPassword = async (password: string): Promise<Result<void, AppError>> => {
+  const db = await createServerDbClient();
+
+  const { data: identity } = await db.auth.getUser();
+
+  if (!identity.user) {
+    return err(AppError.unauthorized("that recovery link has expired. Ask for a new one."));
+  }
+
+  const { error } = await db.auth.updateUser({ password });
+
+  if (error) return err(AppError.badRequest(error.message));
+
+  return ok(undefined);
+};
+
 export const startGoogleSignIn = async (
   nextPath?: string | null,
 ): Promise<Result<{ url: string }, AppError>> => {

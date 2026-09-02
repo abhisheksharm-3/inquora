@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import {
+  setNewPassword,
   signInWithPassword,
   signUpWithPassword,
   startGoogleSignIn,
+  startPasswordReset,
 } from "@/server/modules/auth/auth.service";
 import type { AuthState } from "./auth.types";
 
@@ -92,4 +94,38 @@ export const signInWithGoogle = async (
   if (!result.ok) return { error: result.error.detail ?? "Could not reach Google." };
 
   redirect(result.value.url);
+};
+
+export const requestPasswordReset = async (
+  _previous: AuthState,
+  formData: FormData,
+): Promise<AuthState> => {
+  const parsed = z.string().email().safeParse(formData.get("email"));
+
+  if (!parsed.success) return { error: "Enter the email address on your account.", field: "email" };
+
+  const result = await startPasswordReset(parsed.data);
+
+  if (!result.ok)
+    return { error: result.error.detail ?? "Could not send the link.", field: "email" };
+
+  // The same answer whether or not an account exists, because the alternative
+  // tells a stranger which addresses are registered.
+  return {
+    message: `If an account uses ${parsed.data}, a link to set a new password is on its way.`,
+  };
+};
+
+export const setPassword = async (_previous: AuthState, formData: FormData): Promise<AuthState> => {
+  const parsed = z.string().min(6).safeParse(formData.get("password"));
+
+  if (!parsed.success) {
+    return { error: "Use at least six characters.", field: "password" };
+  }
+
+  const result = await setNewPassword(parsed.data);
+
+  if (!result.ok) return { error: result.error.detail ?? "Could not set it.", field: "password" };
+
+  redirect(DASHBOARD_ROUTES.HOME);
 };

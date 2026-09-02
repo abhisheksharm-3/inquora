@@ -85,7 +85,9 @@ export const ChooseSurface = ({
           ))}
 
           <div className="flex flex-wrap items-center gap-5">
-            <Action pendingLabel="Starting">Start reading</Action>
+            <Action className="mt-1" pendingLabel="Starting">
+              Start reading
+            </Action>
             <p aria-live="polite" className="font-record text-label text-faint">
               {chosen.length === 0
                 ? "Nothing selected"

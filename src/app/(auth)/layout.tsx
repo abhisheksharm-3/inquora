@@ -42,7 +42,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-dvh bg-ground">
     <SiteHeader variant="auth" />
 
-    <div className="grid min-h-[calc(100svh-4rem)] grid-cols-1 wide:grid-cols-[70fr_30fr]">
+    <div className="grid min-h-[calc(100svh-4rem)] grid-cols-1 wide:grid-cols-[60fr_40fr]">
       <aside className="order-2 border-rule border-t px-7 py-10 wide:order-1 wide:border-t-0 wide:border-r wide:bg-panel wide:px-10 wide:py-12">
         {/* The example is hidden on a phone. It is a wide artefact — a question,
             an answer and two quoted passages — and on a 390px screen it pushed
@@ -51,7 +51,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
             actually needs from this column. */}
         <div className="hidden wide:block">
           <p className="mb-8 font-record text-label text-faint uppercase tracking-[0.14em]">
-            What you are signing in to
+            What you get
           </p>
 
           <WorkedExample stacked />
@@ -71,8 +71,8 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => (
         </dl>
       </aside>
 
-      <main className="order-1 flex min-w-0 flex-col justify-center px-7 py-14 wide:order-2 wide:px-10">
-        {children}
+      <main className="order-1 flex min-w-0 flex-col justify-center px-7 py-14 wide:order-2 wide:px-12">
+        <div className="w-full max-w-[36ch]">{children}</div>
       </main>
     </div>
 

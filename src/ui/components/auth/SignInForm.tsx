@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { signIn, signInWithGoogle } from "@/app/(auth)/actions";
+import { signIn } from "@/app/(auth)/actions";
 import { type AuthState, emptyAuthState } from "@/app/(auth)/auth.types";
 import { Action } from "@/ui/components/form/Action";
 import { Field } from "@/ui/components/form/Field";
 import { Underlined } from "@/ui/components/shared/Underlined";
+import { GoogleForm } from "./GoogleForm";
 
 /**
  * Sign in. Two forms rather than one, because the password path and the Google
@@ -19,10 +20,6 @@ import { Underlined } from "@/ui/components/shared/Underlined";
  */
 export const SignInForm = ({ next }: { next?: string }) => {
   const [state, submit] = useActionState<AuthState, FormData>(signIn, emptyAuthState);
-  const [googleState, submitGoogle] = useActionState<AuthState, FormData>(
-    signInWithGoogle,
-    emptyAuthState,
-  );
 
   return (
     <div>
@@ -48,27 +45,22 @@ export const SignInForm = ({ next }: { next?: string }) => {
           autoComplete="current-password"
           error={state.field === "password" ? state.error : undefined}
         />
-        <Action pendingLabel="Signing in">Continue</Action>
+        {/* Beside the field it concerns, not beside the submit button, where it
+            competed with the primary action for the same line. */}
+        <p className="-mt-3 mb-7 text-right font-record text-label text-faint">
+          <Underlined href="/forgot-password">Forgotten your password?</Underlined>
+        </p>
+
+        <Action className="w-full justify-center" pendingLabel="Signing in">
+          Continue
+        </Action>
       </form>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3.5 font-record text-label text-faint">
-        <form action={submitGoogle}>
-          {next ? <input type="hidden" name="next" value={next} /> : null}
-          <button
-            type="submit"
-            className="inline-flex min-h-11 items-center text-faint hover:text-ink"
-          >
-            <span className="border-rule border-b pb-1">Use Google instead</span>
-          </button>
-        </form>
-        <Underlined href="/signup">Create an account</Underlined>
-      </div>
+      <GoogleForm next={next} label="Continue with Google" />
 
-      {googleState.error ? (
-        <p role="alert" className="mt-3 font-record text-label text-danger">
-          {googleState.error}
-        </p>
-      ) : null}
+      <p className="mt-7 font-record text-label text-faint">
+        <Underlined href="/signup">Create an account</Underlined>
+      </p>
     </div>
   );
 };

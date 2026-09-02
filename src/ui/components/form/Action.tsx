@@ -30,7 +30,7 @@ export const Action = ({
       // seeing it.
       aria-live="polite"
       className={cn(
-        "mt-5 inline-flex min-h-11 items-center gap-2.5 rounded-hair border border-mark px-4 py-2 font-record text-label text-mark uppercase tracking-[0.13em]",
+        "inline-flex min-h-11 items-center gap-2.5 rounded-hair border border-mark px-4 py-2 font-record text-label text-mark uppercase tracking-[0.13em]",
         "transition-colors duration-150 ease-out-quart hover:bg-wash",
         "disabled:cursor-progress disabled:text-faint disabled:border-rule",
         className,

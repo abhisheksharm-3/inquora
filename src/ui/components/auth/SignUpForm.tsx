@@ -6,6 +6,7 @@ import { type AuthState, emptyAuthState } from "@/app/(auth)/auth.types";
 import { Action } from "@/ui/components/form/Action";
 import { Field } from "@/ui/components/form/Field";
 import { Underlined } from "@/ui/components/shared/Underlined";
+import { GoogleForm } from "./GoogleForm";
 
 /**
  * Create an account. On success the action returns a message rather than
@@ -66,10 +67,14 @@ export const SignUpForm = () => {
           hint="At least six characters."
           error={state.field === "password" ? state.error : undefined}
         />
-        <Action pendingLabel="Creating">Create account</Action>
+        <Action className="mt-7 w-full justify-center" pendingLabel="Creating">
+          Create account
+        </Action>
       </form>
 
-      <p className="mt-5 font-record text-label text-faint">
+      <GoogleForm label="Continue with Google" />
+
+      <p className="mt-7 font-record text-label text-faint">
         <Underlined href="/login">I already have an account</Underlined>
       </p>
     </div>

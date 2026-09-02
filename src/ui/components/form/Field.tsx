@@ -54,7 +54,7 @@ export const Field = ({
         )}
       />
       {hint ? (
-        <p id={`${name}-hint`} className="mt-1.5 font-record text-label text-faint">
+        <p id={`${name}-hint`} className="mt-2.5 font-record text-label text-faint">
           {hint}
         </p>
       ) : null}
