@@ -1,21 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Newsreader } from "next/font/google";
 import styles from "./page.module.css";
-
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
-  subsets: ["latin"],
-  weight: ["300", "400"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Inquora — down for a rebuild",
@@ -72,7 +56,7 @@ const swaps = [
  * the rebuild happening behind it.
  */
 const Home = () => (
-  <main className={`${styles.page} ${newsreader.variable} ${plexMono.variable}`}>
+  <main className={styles.page}>
     <div className={styles.nav}>
       <span className={styles.wordmark}>Inquora</span>
       <span>Offline · rebuilding</span>

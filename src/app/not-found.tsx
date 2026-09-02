@@ -1,48 +1,27 @@
-import { Home } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/ui/components/ui/button";
 
 /**
- * Renders a custom 404 "Not Found" page for the application.
- *
- * It features the app's signature dithered background and provides a clear
- * message and a link to return to the homepage.
- *
- * @returns {JSX.Element} The rendered 404 page.
+ * Nothing at this address. Two ways out, no illustration, no "404" set at
+ * 120px, because the number is the least useful thing on the page.
  */
-const NotFound = () => {
-  return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
-      <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
-        <h1 className="text-9xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white/50 to-white/10 md:text-[150px]">
-          404
-        </h1>
-
-        <div className="mt-6 space-y-4">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Page Not Found
-          </h2>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            The page you&apos;re looking for doesn&apos;t exist or has been moved. Let&apos;s get
-            you back on track.
-          </p>
-        </div>
-
-        <div className="mt-10">
-          <Button
-            size="lg"
-            className="h-12 w-full bg-primary px-6 text-md font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all duration-300 hover:scale-105 hover:bg-primary/90 active:scale-100 sm:w-auto"
-            asChild
-          >
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Go to Homepage
-            </Link>
-          </Button>
-        </div>
-      </div>
+const NotFound = () => (
+  <main className="flex min-h-dvh flex-col justify-center px-6 py-7 wide:px-9">
+    <div className="max-w-[42ch]">
+      <p className="mb-8 font-record text-label text-faint uppercase tracking-[0.16em]">Inquora</p>
+      <h1 className="mb-3 font-light font-reading text-[2rem] leading-tight">
+        There is nothing at this address.
+      </h1>
+      <p className="mb-6 font-record text-[0.82rem] text-soft">
+        The link may have been shortened, or the conversation it pointed at may have been deleted.
+      </p>
+      <Link
+        href="/"
+        className="inline-flex min-h-11 items-center rounded-hair border border-mark px-4 py-2 font-record text-label text-mark uppercase tracking-[0.13em] transition-colors duration-150 ease-out-quart hover:bg-wash"
+      >
+        Back to the start
+      </Link>
     </div>
-  );
-};
+  </main>
+);
 
 export default NotFound;

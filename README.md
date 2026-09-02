@@ -34,7 +34,7 @@ including the places building it proved the design wrong, is in
 | A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
 | Database               | 33 migrations, **143 pgTAP assertions**                                                  |
 | Suite                  | 247 tests, typecheck clean, zero lint errors                                             |
-| Typecheck              | **1.0 second** on TypeScript 7's native compiler                                         |
+| Typecheck              | **0.27s** on TypeScript 7, against 1.75s on 5.9 over the same files                       |
 | Lint and format        | **200 milliseconds** over 177 files on Biome                                             |
 
 The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching

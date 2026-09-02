@@ -1,52 +1,69 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { z } from "zod";
+import { DASHBOARD_ROUTES } from "@/core/routes";
 import {
   signInWithPassword,
   signUpWithPassword,
   startGoogleSignIn,
 } from "@/server/modules/auth/auth.service";
+import type { AuthState } from "./auth.types";
 
-const loginSchema = z.object({
+/**
+ * The transport edge for authentication. It reads a form, hands the values to
+ * the auth module, and returns the state a `useActionState` form renders.
+ *
+ * Everything else — how many times a password may be guessed, where a
+ * confirmation link points, what happens to the profile row — belongs to the
+ * module, so this file stays about reading a form.
+ */
+
+const signInFields = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
 
-const signupSchema = z.object({
+const signUpFields = z.object({
   "full-name": z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
 });
 
 /** The named fields of a form, as an object the schema can parse. */
-function fields(formData: FormData, schema: z.ZodObject<z.ZodRawShape>): Record<string, unknown> {
-  return Object.fromEntries(Object.keys(schema.shape).map((key) => [key, formData.get(key)]));
-}
+const fields = (formData: FormData, schema: z.ZodObject<z.ZodRawShape>) =>
+  Object.fromEntries(Object.keys(schema.shape).map((key) => [key, formData.get(key)]));
 
-/**
- * These actions return a message or nothing. Everything else — the rate limit,
- * the provider call, where a confirmation link points — belongs to the auth
- * module, so this file stays about reading a form.
- */
-export const signIn = async (formData: FormData) => {
+export const signIn = async (_previous: AuthState, formData: FormData): Promise<AuthState> => {
   // Parsed outside the try, so only a validation failure produces a validation
-  // message. Wrapping the service call in the same catch reported a provider
-  // outage as "enter an email address", with nothing logged and nothing to
-  // distinguish it from an empty field.
-  const parsed = loginSchema.safeParse(fields(formData, loginSchema));
+  // message. Wrapping the module call in the same catch reported a provider
+  // outage as "enter an email address".
+  const parsed = signInFields.safeParse(fields(formData, signInFields));
 
-  if (!parsed.success) return "Enter an email address and a password.";
+  if (!parsed.success) {
+    return { error: "Enter an email address and a password.", field: "email" };
+  }
 
   const result = await signInWithPassword(parsed.data.email, parsed.data.password);
 
-  return result.ok ? undefined : (result.error.detail ?? "Could not sign you in.");
+  if (!result.ok) {
+    return { error: result.error.detail ?? "Could not sign you in.", field: "password" };
+  }
+
+  // Outside the failure paths because redirect() signals by throwing. The
+  // destination is a constant, never a value read from the form, so a crafted
+  // field cannot choose where a just-signed-in person lands.
+  redirect(DASHBOARD_ROUTES.HOME);
 };
 
-export const signUp = async (formData: FormData) => {
-  const parsed = signupSchema.safeParse(fields(formData, signupSchema));
+export const signUp = async (_previous: AuthState, formData: FormData): Promise<AuthState> => {
+  const parsed = signUpFields.safeParse(fields(formData, signUpFields));
 
   if (!parsed.success) {
-    return "Enter your name, an email address, and a password of at least six characters.";
+    return {
+      error: "Enter your name, an email address, and a password of at least six characters.",
+      field: "password",
+    };
   }
 
   const result = await signUpWithPassword(
@@ -55,11 +72,24 @@ export const signUp = async (formData: FormData) => {
     parsed.data["full-name"],
   );
 
-  return result.ok ? undefined : (result.error.detail ?? "Could not create your account.");
+  if (!result.ok) {
+    return { error: result.error.detail ?? "Could not create your account.", field: "email" };
+  }
+
+  // No redirect: the account exists but the email is unconfirmed, and sending
+  // somebody to a sign-in page that will refuse them is worse than telling them
+  // what to do next.
+  return { message: `Check ${parsed.data.email} for the confirmation link.` };
 };
 
-export const signInWithGoogle = async (nextUrl?: string | null) => {
-  const result = await startGoogleSignIn(nextUrl);
+export const signInWithGoogle = async (
+  _previous: AuthState,
+  formData: FormData,
+): Promise<AuthState> => {
+  const next = formData.get("next");
+  const result = await startGoogleSignIn(typeof next === "string" ? next : null);
 
-  return result.ok ? result.value : (result.error.detail ?? "Could not reach Google.");
+  if (!result.ok) return { error: result.error.detail ?? "Could not reach Google." };
+
+  redirect(result.value.url);
 };

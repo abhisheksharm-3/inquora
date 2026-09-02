@@ -1,25 +1,14 @@
-import { Loader2 } from "lucide-react";
-
 /**
- * A full-screen loading component for the application.
- *
- * Displays a centered spinner and text with the app's signature dithered
- * background, providing a consistent loading state for Next.js routes.
- *
- * @returns {JSX.Element} The rendered loading page.
+ * The shell while a route resolves. A line of record rather than a spinner,
+ * because a spinner says only that something is happening, and reserving the
+ * space the page is about to occupy keeps the layout from shifting under it.
  */
-const Loading = () => {
-  return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden">
-      <div className="relative z-10 flex animate-fade-in flex-col items-center justify-center text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <h1 className="mt-8 text-3xl font-semibold tracking-tight text-foreground">Loading</h1>
-        <p className="mt-2 text-base text-muted-foreground">
-          Please wait while we prepare your experience.
-        </p>
-      </div>
-    </div>
-  );
-};
+const Loading = () => (
+  <main className="flex min-h-dvh flex-col justify-center px-6 py-7 wide:px-9">
+    <p className="font-record text-label text-faint uppercase tracking-[0.16em]">
+      Inquora · loading
+    </p>
+  </main>
+);
 
 export default Loading;

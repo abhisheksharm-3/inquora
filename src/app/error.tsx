@@ -1,61 +1,48 @@
 "use client";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+
 import Link from "next/link";
-import { Button } from "@/ui/components/ui/button";
-import type { TypeErrorProps } from "@/ui/lib/ui.types";
 
 /**
- * A custom error boundary component for the application.
+ * The error boundary. Cause and next action, in the product's voice, with the
+ * digest shown because it is the one thing that makes a report actionable.
  *
- * This page catches runtime errors and displays a user-friendly fallback UI,
- * providing options to retry the action or return to the homepage.
- *
- * @param {TypeErrorProps} props - Props automatically provided by Next.js.
- * @param {Error} props.error - The error that was thrown.
- * @param {() => void} props.reset - A function to re-render the segment.
- * @returns {JSX.Element} The rendered error page.
+ * It replaced a page that led with a 20px warning icon inside a blurred glass
+ * card and told the reader a team had been notified.
  */
-const ErrorPage = ({ error, reset }: TypeErrorProps) => {
-  return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
-      <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
-        <div className="flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-destructive/20 bg-destructive/10">
-            <AlertTriangle className="h-10 w-10 text-destructive" />
-          </div>
-        </div>
+const ErrorPage = ({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) => (
+  <main className="flex min-h-dvh flex-col justify-center px-6 py-7 wide:px-9">
+    <div className="max-w-[42ch]">
+      <p className="mb-8 font-record text-label text-faint uppercase tracking-[0.16em]">Inquora</p>
+      <h1 className="mb-3 font-light font-reading text-[2rem] leading-tight">
+        This page did not finish loading.
+      </h1>
+      <p className="mb-6 font-record text-[0.82rem] text-soft">
+        Nothing you had saved is affected. Trying again reloads only this part of the page.
+      </p>
 
-        <div className="mt-6 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Something went wrong
-          </h1>
-          <p className="text-lg leading-relaxed text-muted-foreground">
-            We encountered an unexpected error. Our team has been notified and is working to fix it.
-          </p>
-        </div>
-
-        {process.env.NODE_ENV === "development" && (
-          <div className="mt-6 w-full rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-left">
-            <h3 className="mb-2 text-sm font-medium text-destructive-foreground">Error Details:</h3>
-            <p className="font-mono text-xs text-muted-foreground break-all">{error.message}</p>
-          </div>
-        )}
-
-        <div className="mt-8 flex w-full flex-col gap-4 sm:flex-row sm:justify-center">
-          <Button size="lg" variant="destructive" onClick={reset}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try Again
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link href="/">
-              <Home className="mr-2 h-4 w-4" />
-              Go Home
-            </Link>
-          </Button>
-        </div>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={reset}
+          className="inline-flex min-h-11 items-center rounded-hair border border-mark px-4 py-2 font-record text-label text-mark uppercase tracking-[0.13em] transition-colors duration-150 ease-out-quart hover:bg-wash"
+        >
+          Try again
+        </button>
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center border-rule border-b pb-0.5 font-record text-label text-faint hover:text-ink"
+        >
+          Back to the start
+        </Link>
       </div>
+
+      {error.digest ? (
+        <p className="mt-8 border-rule border-t pt-4 font-record text-label text-faint">
+          Reference <data value={error.digest}>{error.digest}</data>
+        </p>
+      ) : null}
     </div>
-  );
-};
+  </main>
+);
 
 export default ErrorPage;

@@ -159,11 +159,12 @@ assumed: a probe file in each of `core`, `server/platform`, `app` and `ui`
 importing across its boundary, and all four were rejected with the message the
 override carries. The probes were deleted.
 
-What the change bought, measured:
+What the change bought, measured by running both compilers over the same files,
+three warm runs each, both catching the same planted type error:
 
 | | before | after |
 | --- | --- | --- |
-| Typecheck | seconds | **1.0s** |
+| Typecheck | 1.75s warm, 3.86s cold on 5.9.3 | **0.27s warm, 0.49s cold** |
 | Lint and format | two tools, two passes | **one pass, 200ms over 177 files** |
 | Dev dependencies | eslint, eslint-config-next, @eslint/eslintrc, eslint-plugin-boundaries, prettier, prettier-plugin-tailwindcss, vite-tsconfig-paths | **@biomejs/biome** |
 

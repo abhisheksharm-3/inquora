@@ -1,35 +1,14 @@
-import type { JSX } from "react";
-import { AuthHeader } from "@/ui/components/auth/AuthHeader";
-import { AuthLink } from "@/ui/components/auth/AuthLink";
-import { AuthLoginForm } from "@/ui/components/auth/AuthLoginForm";
-import { AuthSocialLogins } from "@/ui/components/auth/AuthSocialLogins";
+import { SignInForm } from "@/ui/components/auth/SignInForm";
 
 /**
- * Renders the login page for the application.
- * It combines several authentication components into a single, cohesive form,
- * including a header, social logins, an email/password form, and a link to
-- * the sign-up page.
- * @returns {JSX.Element} The rendered login page component.
+ * A server component whose only job is to read the `next` parameter and hand it
+ * to the form, so an OAuth round trip returns to the page that asked for a
+ * sign-in. The value is validated where it is used, in the callback route.
  */
-const LoginPage = (): JSX.Element => {
-  return (
-    <div className="w-full max-w-sm animate-in fade-in slide-in-from-top-4 duration-700">
-      <div className="flex flex-col gap-6 rounded-xl border border-border/50 bg-card/50 p-8 backdrop-blur-lg">
-        <AuthHeader title="Welcome Back" subtitle="Sign in to continue to your dashboard" />
-        <AuthSocialLogins />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border/70" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="px-2 text-muted-foreground">Or with Email</span>
-          </div>
-        </div>
-        <AuthLoginForm />
-        <AuthLink text="Don't have an account?" linkText="Sign up" href="/signup" />
-      </div>
-    </div>
-  );
+const LoginPage = async ({ searchParams }: { searchParams: Promise<{ next?: string }> }) => {
+  const { next } = await searchParams;
+
+  return <SignInForm next={next} />;
 };
 
 export default LoginPage;

@@ -1,34 +1,46 @@
 import type { Metadata } from "next";
-import { AuthBrandingPanel } from "@/ui/components/auth/AuthBrandingPanel";
-import Layout from "@/ui/components/layout/Layout";
+import Link from "next/link";
+import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
+import type { Entry } from "@/ui/components/apparatus/apparatus.types";
+import { Reading, Surface } from "@/ui/components/apparatus/Surface";
 
 export const metadata: Metadata = {
-  title: "Authentication - Inquora",
-  description: "Login or sign up to access your Inquora dashboard.",
+  title: "Sign in",
+  description: "Sign in to Inquora.",
 };
 
 /**
- * @description A definitive, asymmetric layout for authentication. It reserves a
- * fixed-width column for the form, ensuring a consistent, app-like feel, while
- * the branding panel dynamically fills the remaining space.
+ * The apparatus on an authentication screen carries the one thing it owes you:
+ * what happens to your documents. Two notes, stated rather than linked to a
+ * policy page nobody opens.
  */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <Layout showFooter={false} enableNavbarBlur={false} contentClassName="w-full">
-      <div className="absolute inset-0 bg-background/80 dark:bg-background/60" />
+const notes: Entry[] = [
+  {
+    kind: "operation",
+    tick: "01",
+    title: "Your documents stay yours.",
+    detail: "Indexed to your account, readable by nobody else, deleted with it.",
+  },
+  {
+    kind: "operation",
+    tick: "02",
+    title: "Nothing trains on your files.",
+    detail: "Content is read to answer your question and is not retained for anything else.",
+  },
+];
 
-      {/* Mobile-first approach */}
-      <div className="min-h-screen w-full flex flex-col lg:grid lg:grid-cols-[1fr_480px]">
-        {/* Hide branding panel on mobile, show on desktop */}
-        <div className="hidden lg:block">
-          <AuthBrandingPanel />
-        </div>
+const AuthLayout = ({ children }: { children: React.ReactNode }) => (
+  <Surface apparatus={<ApparatusColumn entries={notes} label="Apparatus" />}>
+    <Reading className="justify-center">
+      <Link
+        href="/"
+        className="mb-10 self-start font-record text-label text-faint uppercase tracking-[0.16em] hover:text-ink"
+      >
+        Inquora
+      </Link>
+      {children}
+    </Reading>
+  </Surface>
+);
 
-        {/* Form container - full height on mobile, centered on desktop */}
-        <div className="relative flex-1 flex items-center justify-center p-4 lg:p-8">
-          <div className="w-full max-w-sm">{children}</div>
-        </div>
-      </div>
-    </Layout>
-  );
-}
+export default AuthLayout;
