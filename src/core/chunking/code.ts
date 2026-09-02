@@ -1,11 +1,10 @@
-import type { Chunk, CodeFile } from "./chunking.types";
-
 import {
   DOC_CHARS,
   LEADING_COMMENT_CHARS,
   LEADING_COMMENT_LINES,
   MAX_DECLARATIONS,
 } from "./chunking.constants";
+import type { Chunk, CodeFile } from "./chunking.types";
 
 /**
  * How a repository becomes searchable.
@@ -31,7 +30,7 @@ const DECLARATION =
 const COMMENT = /^\s*(?:\/\/|\/\*\*?|\*|#|--)\s?(.*)$/;
 
 /** Comment syntax left at the end of a captured line, which is not prose. */
-const COMMENT_TAIL = /[*\/\s]+$/;
+const COMMENT_TAIL = /[*/\s]+$/;
 
 /** Documentation is chunked whole, because prose is what embeddings are good at. */
 const PROSE_LANGUAGES = new Set(["markdown", "mdx", "text"]);

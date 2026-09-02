@@ -1,8 +1,8 @@
 "use client";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
-import { Button } from "@/ui/components/ui/button";
+import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { TypeErrorProps } from "@/ui/lib/ui.types";
+import { Button } from "@/ui/components/ui/button";
+import type { TypeErrorProps } from "@/ui/lib/ui.types";
 
 /**
  * A custom error boundary component for the application.
@@ -15,7 +15,7 @@ import { TypeErrorProps } from "@/ui/lib/ui.types";
  * @param {() => void} props.reset - A function to re-render the segment.
  * @returns {JSX.Element} The rendered error page.
  */
-const Error = ({ error, reset }: TypeErrorProps) => {
+const ErrorPage = ({ error, reset }: TypeErrorProps) => {
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4">
       <div className="relative z-10 flex w-full max-w-lg flex-col items-center justify-center rounded-2xl border border-destructive/20 bg-black/20 p-8 text-center shadow-2xl shadow-black/40 backdrop-blur-lg sm:p-12">
@@ -58,4 +58,4 @@ const Error = ({ error, reset }: TypeErrorProps) => {
   );
 };
 
-export default Error;
+export default ErrorPage;

@@ -1,11 +1,11 @@
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { EmbeddingsClient, EmbeddingsConfig, EmbeddingsResponse } from "./embeddings.types";
 import {
   EMBEDDING_DIMENSIONS,
   MAX_INLINE_WAIT_SECONDS,
   QUERY_TIMEOUT_MS,
 } from "./embeddings.constants";
+import type { EmbeddingsClient, EmbeddingsConfig, EmbeddingsResponse } from "./embeddings.types";
 
 const retryAfterSeconds = (response: Response): number => {
   const header = response.headers.get("retry-after");

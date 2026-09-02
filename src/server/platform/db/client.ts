@@ -21,7 +21,7 @@ export async function createServerDbClient() {
         getAll: () => cookieStore.getAll(),
         setAll: (toSet) => {
           try {
-            toSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+            for (const { name, value, options } of toSet) cookieStore.set(name, value, options);
           } catch {
             // Called from a Server Component, where cookies are read-only. The
             // middleware in src/proxy.ts refreshes the session instead.

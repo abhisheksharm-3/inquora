@@ -6,19 +6,18 @@
  * provider for real and prints what it got, then rolls the fixture back.
  */
 import { SQL } from "bun";
-import { FakeToolCallingModel } from "langchain";
-import { createAnsweringAgent } from "../src/server/modules/chat/agent";
-import { createRetrievalService } from "../src/server/modules/retrieval/retrieval.service";
-import { createCache } from "../src/server/platform/cache/cache";
-import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
-import { createChatModel } from "../src/server/platform/llm/model";
+import type { AppError } from "../src/core/errors";
 import { ok } from "../src/core/result";
 import type { Result } from "../src/core/result.types";
-import type { AppError } from "../src/core/errors";
+import { createAnsweringAgent } from "../src/server/modules/chat/agent";
 import type {
   RetrievalRequest,
   RetrievedChunk,
 } from "../src/server/modules/retrieval/retrieval.schema";
+import { createRetrievalService } from "../src/server/modules/retrieval/retrieval.service";
+import { createCache } from "../src/server/platform/cache/cache";
+import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
+import { createChatModel } from "../src/server/platform/llm/model";
 
 const dbUrl = process.env.SUPABASE_DB_URL!;
 const apiKey = process.env.MULTIUTILITY_API_KEY!;

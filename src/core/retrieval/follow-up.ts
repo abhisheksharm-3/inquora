@@ -1,4 +1,5 @@
 import { OPENING_WORDS, SHORT_MESSAGE_WORDS } from "./retrieval.constants";
+
 /**
  * Pronouns and demonstratives that mean the subject was established earlier in
  * the conversation. Interrogatives are deliberately absent: "why is Q3 revenue

@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { completeOAuthSignIn, signedInDestination } from "@/server/modules/auth/auth.service";
@@ -47,6 +48,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // is how identity came to live in two places.
     return createRedirectResponse(await signedInDestination(next));
   } catch (error) {
+    // Next signals redirect, notFound and prerender bailout by throwing. Swallowing
+    // those turns a framework control flow into a bogus "auth failed" redirect.
+    unstable_rethrow(error);
     console.error("Unexpected error during auth callback:", error);
     return createRedirectResponse(await signedInDestination("/auth/auth-code-error"));
   }

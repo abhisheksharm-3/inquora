@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import { FakeToolCallingModel } from "langchain";
+import { describe, expect, it, vi } from "vitest";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import { createChatService } from "./chat.service";

@@ -1,10 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Database } from "@/core/database.types";
-import type { RetrievedChunk } from "./retrieval.schema";
-import type { ChunksRepository } from "./retrieval.types";
 import { MAX_CHUNK_RANGE } from "@/server/modules/chat/chat.constants";
+import type { ChunksRepository } from "./retrieval.types";
 
 /**
  * Consecutive passages by position, which is what the model needs when a search

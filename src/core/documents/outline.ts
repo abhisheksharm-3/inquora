@@ -1,6 +1,5 @@
-import type { Outline, OutlineHeading } from "./outline.types";
-
 import { OUTLINE_MIN_LENGTH } from "./documents.constants";
+import type { Outline, OutlineHeading } from "./outline.types";
 
 /**
  * What a document is made of.

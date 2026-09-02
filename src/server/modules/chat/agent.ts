@@ -1,16 +1,14 @@
 import { createAgent, toolCallLimitMiddleware } from "langchain";
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result.types";
-import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
-import type { StreamEvent } from "@/server/platform/http/http.types";
-import type { ChatContext } from "./chat.schema";
-import { createTools } from "./tools";
 import { DEFAULT_RETRIEVAL_LIMIT } from "@/core/retrieval/retrieval.constants";
-import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
 import type { DocumentKind } from "@/server/modules/documents/documents.schema";
-import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
+import type { RetrievalRequest, RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import { MAX_TOOL_CALLS } from "./chat.constants";
+import type { ChatContext } from "./chat.schema";
+import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
+import { SPECIALISTS, specialistsFor } from "./kinds/specialists";
+import { createTools } from "./tools";
 
 /**
  * Whether two searches are close enough that the same passages come back.

@@ -5,10 +5,10 @@ import { createServiceDbClient } from "@/server/platform/db/service";
 import { createEmbeddingsClient } from "@/server/platform/embeddings/client";
 import { BATCH_TIMEOUT_MS } from "@/server/platform/embeddings/embeddings.constants";
 import { env } from "@/server/platform/env";
-import { createIngestionRepository } from "./ingestion.repository";
-import { createIngestionWorker } from "./ingestion.worker";
 import { extractDocument } from "./extract.source";
+import { createIngestionRepository } from "./ingestion.repository";
 import type { DrainSummary, IngestionWorker } from "./ingestion.types";
+import { createIngestionWorker } from "./ingestion.worker";
 
 /**
  * Drains up to `limit` jobs, then returns a summary. The worker itself is pure

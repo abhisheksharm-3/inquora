@@ -1,6 +1,6 @@
+import type { Outline } from "@/core/documents/outline.types";
 import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result.types";
-import type { Outline } from "@/core/documents/outline.types";
 import type { UploadRequest } from "./documents.schema";
 
 export interface UploadTicket {

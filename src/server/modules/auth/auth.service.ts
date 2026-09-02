@@ -64,7 +64,7 @@ export const startGoogleSignIn = async (
   const db = await createServerDbClient();
 
   const callback = new URL("/api/auth/callback", siteUrl());
-  if (nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+  if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
     callback.searchParams.set("next", nextPath);
   }
 

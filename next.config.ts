@@ -3,6 +3,23 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   reactCompiler: true,
+  /** Cache Components prefetches the static shell and streams the rest. */
+  partialPrefetching: true,
+
+  experimental: {
+    /**
+     * Next transpiles a TypeScript config through the compiler API, and the
+     * native TypeScript 7 compiler does not expose the internals it reaches for:
+     * `next build` fails with "Cannot read properties of undefined (reading
+     * 'fileExists')". This routes it through the CLI instead.
+     */
+    useTypeScriptCli: true,
+    /**
+     * The React Compiler in Rust, inside Turbopack, which is why
+     * babel-plugin-react-compiler is no longer a dependency.
+     */
+    turbopackRustReactCompiler: true,
+  },
 
   /**
    * The document parsers only. They read files and reach for Node built-ins, so

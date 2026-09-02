@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { FakeToolCallingModel } from "langchain";
-import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
 import { AIMessage } from "@langchain/core/messages";
+import { FakeStreamingChatModel } from "@langchain/core/utils/testing";
+import { FakeToolCallingModel } from "langchain";
+import { describe, expect, it, vi } from "vitest";
 import { ok } from "@/core/result";
 import { createAnsweringAgent } from "./agent";
 

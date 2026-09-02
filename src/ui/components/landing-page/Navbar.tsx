@@ -1,13 +1,13 @@
 "use client";
+import { Laptop, Menu, Moon, Sun, X } from "lucide-react";
 import Link from "next/link";
-import ButtonCta from "./ButtonCta";
-import { Menu, X, Moon, Sun, Laptop } from "lucide-react";
-import { Button } from "@/ui/components/ui/button";
-import { useState, useEffect } from "react";
-import { CtaButtons, PublicNavbarRoutes } from "@/ui/lib/nav-items";
-import { cn } from "@/ui/lib/cn";
-import { ModeToggle } from "@/ui/components/shared/mode-toggle";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+import { ModeToggle } from "@/ui/components/shared/mode-toggle";
+import { Button } from "@/ui/components/ui/button";
+import { cn } from "@/ui/lib/cn";
+import { CtaButtons, PublicNavbarRoutes } from "@/ui/lib/nav-items";
+import ButtonCta from "./ButtonCta";
 
 /**
  * Renders the main responsive navigation bar.
@@ -88,8 +88,8 @@ const Navbar = () => {
     <ul
       className={cn(isMobile ? "space-y-6 text-center" : "flex items-center gap-8 justify-center")}
     >
-      {PublicNavbarRoutes.map((item, index) => (
-        <li key={index}>
+      {PublicNavbarRoutes.map((item) => (
+        <li key={item.url}>
           <Link
             href={item.url}
             className={cn(

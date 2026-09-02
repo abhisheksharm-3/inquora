@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { JSX } from "react";
-import { Button } from "@/ui/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import type { JSX } from "react";
+import { Button } from "@/ui/components/ui/button";
 
 /**
  * Error page displayed when OAuth authentication fails.

@@ -79,7 +79,8 @@ src/
   ui/                  components and hooks
 ```
 
-Dependency direction, enforced by `eslint-plugin-boundaries`:
+Dependency direction, enforced by Biome's `noRestrictedImports` (one override per layer in
+`biome.json`):
 
 ```
 app → server/modules → server/platform → core
@@ -108,7 +109,7 @@ The layout law, on every surface: **substance left, apparatus right.**
 
 ## Before calling anything done
 
-- `bun run typecheck && bunx eslint src && bun run test && bun run build`
+- `bun run typecheck && bun run lint && bun run test && bun run build`
 - `bun run db:test` for anything touching SQL. It needs `SUPABASE_DB_URL` and runs pgTAP through
   bun's Postgres client, so it needs no Docker — `supabase test db` pulls a pg_prove container.
 - **A policy chooses rows; a grant chooses columns.** RLS alone let a browser forge a document's

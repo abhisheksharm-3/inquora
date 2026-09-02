@@ -1,4 +1,4 @@
-import { TypeAuthErrorInfo, EnumAuthErrorType } from "@/ui/lib/auth.types";
+import { EnumAuthErrorType, type TypeAuthErrorInfo } from "@/ui/lib/auth.types";
 
 /**
  * A map that converts known error message substrings into structured, user-friendly error information.

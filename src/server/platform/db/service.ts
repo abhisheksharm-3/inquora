@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { Database } from "@/core/database.types";
 import { env } from "@/server/platform/env";
 
 /**

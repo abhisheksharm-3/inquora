@@ -1,4 +1,4 @@
-import { type NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { updateSession } from "./server/platform/db/middleware";
 
 export default async function proxy(request: NextRequest) {

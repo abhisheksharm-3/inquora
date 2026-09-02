@@ -1,6 +1,6 @@
+import { Home } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/ui/components/ui/button";
-import { Home } from "lucide-react";
 
 /**
  * Renders a custom 404 "Not Found" page for the application.

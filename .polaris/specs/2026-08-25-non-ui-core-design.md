@@ -102,7 +102,7 @@ src/
   ui/                     components and hooks
 ```
 
-Dependency rule, enforced by `eslint-plugin-boundaries`:
+Dependency rule, enforced by Biome's `noRestrictedImports`:
 
 ```
 app → server/modules → server/platform → core

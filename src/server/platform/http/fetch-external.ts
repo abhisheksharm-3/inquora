@@ -1,10 +1,10 @@
 import { lookup } from "node:dns/promises";
 import { AppError } from "@/core/errors";
-import { isPrivateAddress } from "@/core/untrusted/ip-range";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { CheckedUrl } from "./http.types";
+import { isPrivateAddress } from "@/core/untrusted/ip-range";
 import { FETCH_TIMEOUT_MS, MAX_FETCH_BYTES, MAX_REDIRECTS } from "./http.constants";
+import type { CheckedUrl } from "./http.types";
 
 /**
  * Fetches a URL that somebody else chose.

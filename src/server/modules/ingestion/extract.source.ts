@@ -1,15 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
+import { outlineFromSheets, outlineFromText } from "@/core/documents/outline";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { Database } from "@/core/database.types";
+import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 import { fetchExternal } from "@/server/platform/http/fetch-external";
-import { outlineFromSheets, outlineFromText } from "@/core/documents/outline";
 import { chunkSource } from "./extract";
 import { extractRepository, parseRepositoryUrl } from "./extract-github";
 import { extractSlides } from "./extract-slides";
 import type { ClaimedJob, DocumentRow, ExtractedDocument, Source } from "./ingestion.types";
-import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 
 /**
  * Reads one document's bytes and turns them into chunks.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SPECIALISTS, specialistsFor } from "./specialists";
 import type { KindSpecialist } from "./kinds.types";
+import { SPECIALISTS, specialistsFor } from "./specialists";
 
 describe("SPECIALISTS", () => {
   it("covers every kind the schema allows, so no document falls through to generic handling", () => {

@@ -1,6 +1,6 @@
-import type { TypeAuthLinkProps } from "@/ui/lib/auth.types";
 import Link from "next/link";
-import { JSX } from "react";
+import type { JSX } from "react";
+import type { TypeAuthLinkProps } from "@/ui/lib/auth.types";
 
 /**
  * Renders a themed navigational link for authentication pages, typically

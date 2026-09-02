@@ -29,7 +29,8 @@ src/
   ui/          components, hooks, providers, the browser client
 ```
 
-Enforced by `eslint-plugin-boundaries`: `app → modules → platform → core`, with
+Enforced by Biome's `noRestrictedImports`, one override per layer:
+`app → modules → platform → core`, with
 two named exceptions that are transport rather than leaks. HTTP framing
 (`problem+json`, SSE) is the transport edge's own vocabulary, and a server action
 is the transport edge for the interface, so `ui` may call one while the rest of
@@ -145,6 +146,49 @@ its declarations. Measured on supabase/supabase-js: 516 files, 3.6MB greppable,
 
 **Measured, live: a real PDF end to end in 3.0 seconds.** A real two-sheet xlsx
 answered a filter, a sum and a group-by exactly.
+
+## The toolchain, changed on 2026-09-02
+
+TypeScript 7, Next.js 16.3.4, React 19.2.8, Biome 2.5.11. ESLint and Prettier are
+gone, and not by preference: typescript-eslint throws at import time under
+TypeScript 7, so the native compiler forces a single tool for lint and format.
+
+Biome cannot load an ESLint plugin, so the layer rule was rewritten as four
+`noRestrictedImports` overrides, one per layer. It was then proved rather than
+assumed: a probe file in each of `core`, `server/platform`, `app` and `ui`
+importing across its boundary, and all four were rejected with the message the
+override carries. The probes were deleted.
+
+What the change bought, measured:
+
+| | before | after |
+| --- | --- | --- |
+| Typecheck | seconds | **1.0s** |
+| Lint and format | two tools, two passes | **one pass, 200ms over 177 files** |
+| Dev dependencies | eslint, eslint-config-next, @eslint/eslintrc, eslint-plugin-boundaries, prettier, prettier-plugin-tailwindcss, vite-tsconfig-paths | **@biomejs/biome** |
+
+Three real defects fell out of the migration, none of them formatting:
+
+- Six imports left dangling by the earlier types extraction, which ESLint had not
+  been configured to catch.
+- `src/app/api/auth/callback/route.ts` caught Next's prerender-bailout signal in
+  its own `try/catch` and turned it into an "authentication failed" redirect.
+  Next 16 signals redirect, `notFound` and bailout by throwing, so the catch now
+  calls `unstable_rethrow` first. The build logged the swallowed error twice per
+  run before the fix and logs nothing after it.
+- Two `<li>` and `<CarouselItem>` lists keyed by array index, now keyed by
+  `item.url` and `slide.src`.
+
+`vite-tsconfig-paths` went because Vitest 4 resolves tsconfig paths natively
+(`resolve.tsconfigPaths: true`).
+
+Seventeen warnings remain, all of them in the surviving old interface
+(`src/ui/components/**`) and `globals.css`: descending CSS specificity, two
+`!important` declarations, a backdrop `div` carrying a click handler, and
+shadcn's `role="group"` on a carousel slide, which Biome would replace with
+`<fieldset>` and which would be wrong. They are warnings rather than errors
+because the UI slice replaces those files. The `overrides` block in `biome.json`
+that downgrades them says so, and goes when the slice lands.
 
 ## Where the design was wrong
 

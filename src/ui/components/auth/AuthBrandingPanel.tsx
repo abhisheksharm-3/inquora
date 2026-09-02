@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Carousel,
+  type CarouselApi,
   CarouselContent,
   CarouselItem,
-  type CarouselApi,
 } from "@/ui/components/ui/carousel";
-import { TypeSlide } from "@/ui/lib/ui.types";
+import type { TypeSlide } from "@/ui/lib/ui.types";
 
 const slides: TypeSlide[] = [
   {
@@ -94,8 +95,8 @@ export const AuthBrandingPanel: React.FC = () => {
         >
           <BrowserFrame>
             <CarouselContent>
-              {slides.map((slide, index) => (
-                <CarouselItem key={index}>
+              {slides.map((slide) => (
+                <CarouselItem key={slide.src}>
                   <div className="aspect-video overflow-hidden bg-muted/50">
                     {slide.type === "image" ? (
                       <img

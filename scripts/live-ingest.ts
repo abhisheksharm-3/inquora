@@ -7,11 +7,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { SQL } from "bun";
 import type { Database } from "../src/core/database.types";
-import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
+import { contentHash } from "../src/core/documents/content-hash";
+import { extractDocument } from "../src/server/modules/ingestion/extract.source";
 import { createIngestionRepository } from "../src/server/modules/ingestion/ingestion.repository";
 import { createIngestionWorker } from "../src/server/modules/ingestion/ingestion.worker";
-import { extractDocument } from "../src/server/modules/ingestion/extract.source";
-import { contentHash } from "../src/core/documents/content-hash";
+import { createEmbeddingsClient } from "../src/server/platform/embeddings/client";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -85,6 +85,12 @@ const worker = createIngestionWorker({
     timeoutMs: 120_000,
   }),
 });
+
+// The queue holds a new job back, because in production the row is created before
+// the client uploads the bytes. This harness wrote the object first, so it brings
+// its own job forward rather than sleeping through a delay that exists for a race
+// it has already avoided.
+await sql`update public.ingestion_jobs set run_after = now() - interval '1 second' where document_id = ${documentId}`;
 
 console.log("4. running the worker");
 const started = Date.now();

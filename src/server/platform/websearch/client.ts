@@ -68,11 +68,13 @@ export const createWebSearchClient = ({
         .filter((result): result is { title?: string; url: string; content: string } =>
           Boolean(result.url && result.content),
         )
-        .map((result): WebResult => ({
-          title: result.title ?? result.url,
-          url: result.url,
-          extract: result.content.slice(0, 1200),
-        })),
+        .map(
+          (result): WebResult => ({
+            title: result.title ?? result.url,
+            url: result.url,
+            extract: result.content.slice(0, 1200),
+          }),
+        ),
     );
   },
 });

@@ -1,7 +1,7 @@
-import { buttonVariants } from "@/ui/components/ui/button";
-import { VariantProps } from "class-variance-authority";
+import type { VariantProps } from "class-variance-authority";
+import type { MotionProps } from "motion/react";
 import type { Database } from "@/core/database.types";
-import { MotionProps } from "motion/react";
+import type { buttonVariants } from "@/ui/components/ui/button";
 
 type TypeChat = Database["public"]["Tables"]["chats"]["Row"];
 

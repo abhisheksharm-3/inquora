@@ -1,8 +1,8 @@
-import { AuthLoginForm } from "@/ui/components/auth/AuthLoginForm";
+import type { JSX } from "react";
 import { AuthHeader } from "@/ui/components/auth/AuthHeader";
 import { AuthLink } from "@/ui/components/auth/AuthLink";
+import { AuthLoginForm } from "@/ui/components/auth/AuthLoginForm";
 import { AuthSocialLogins } from "@/ui/components/auth/AuthSocialLogins";
-import { JSX } from "react";
 
 /**
  * Renders the login page for the application.

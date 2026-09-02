@@ -1,8 +1,9 @@
 "use client";
 
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import type { JSX } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/ui/components/ui/button";
 import {
   Form,
@@ -13,11 +14,10 @@ import {
   FormMessage,
 } from "@/ui/components/ui/form";
 import { Input } from "@/ui/components/ui/input";
-import { signupSchema, TypeSignupFormValues } from "@/ui/lib/auth.schema";
+import { useAuth } from "@/ui/hooks/useAuth";
+import { signupSchema, type TypeSignupFormValues } from "@/ui/lib/auth.schema";
 import { AuthPasswordInput } from "./AuthPasswordInput";
 import { AuthStatusMessage } from "./AuthStatusMessage";
-import { useAuth } from "@/ui/hooks/useAuth";
-import { JSX } from "react";
 
 const inputClassName =
   "h-10 bg-transparent border-border/80 focus-visible:ring-offset-0 focus-visible:border-primary focus-visible:ring-primary";

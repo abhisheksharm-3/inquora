@@ -1,4 +1,4 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { strFromU8, unzipSync } from "fflate";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";

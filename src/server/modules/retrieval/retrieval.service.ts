@@ -1,12 +1,11 @@
 import { AppError } from "@/core/errors";
+import { err, ok } from "@/core/result";
 import { mmr } from "@/core/retrieval/mmr";
 import type { Candidate } from "@/core/retrieval/mmr.types";
-import { err, ok } from "@/core/result";
+import { MMR_LAMBDA } from "@/core/retrieval/retrieval.constants";
 import { embeddingKey } from "@/server/platform/cache/cache";
 import { EMBEDDING_TTL_SECONDS } from "@/server/platform/embeddings/embeddings.constants";
-import { MMR_LAMBDA } from "@/core/retrieval/retrieval.constants";
 import { withSpan } from "@/server/platform/telemetry/span";
-import type { RetrievalRequest } from "./retrieval.schema";
 import type { RetrievalDependencies, RetrievalService } from "./retrieval.types";
 
 /**

@@ -3,9 +3,9 @@ import { err } from "@/core/result";
 import type { Result } from "@/core/result.types";
 import { createServerDbClient } from "@/server/platform/db/client";
 import { rateLimiter } from "@/server/platform/ratelimit/redis";
+import type { UploadRequest } from "./documents.schema";
 import { createDocumentsService } from "./documents.service";
 import type { UploadTicket } from "./documents.types";
-import type { UploadRequest } from "./documents.schema";
 
 /**
  * One upload ticket, rate limited. The handler stays transport-only, so the

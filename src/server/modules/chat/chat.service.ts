@@ -1,13 +1,10 @@
-import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
 import { streamToSse } from "@/server/platform/http/sse";
 import { startSpan } from "@/server/platform/telemetry/span";
 import { createAnsweringAgent } from "./agent";
-import { resolveQuestion } from "./resolve-question";
-import type { SendMessageRequest } from "./chat.schema";
 import type { ChatService, ChatServiceDependencies } from "./chat.types";
+import { resolveQuestion } from "./resolve-question";
 
 export const createChatService = ({
   repository,

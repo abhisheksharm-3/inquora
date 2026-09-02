@@ -1,8 +1,8 @@
-import { AuthSignupForm } from "@/ui/components/auth/AuthSignupForm";
+import type { JSX } from "react";
 import { AuthHeader } from "@/ui/components/auth/AuthHeader";
 import { AuthLink } from "@/ui/components/auth/AuthLink";
+import { AuthSignupForm } from "@/ui/components/auth/AuthSignupForm";
 import { AuthSocialLogins } from "@/ui/components/auth/AuthSocialLogins";
-import { JSX } from "react";
 
 /**
  * Renders the user sign-up page.

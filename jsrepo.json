@@ -4,13 +4,13 @@
   "includeTests": false,
   "includeDocs": false,
   "watermark": true,
-  "formatter": "prettier",
+  "formatter": "biome",
   "configFiles": {},
   "paths": {
-    "*": "./src/components/ui",
-    "Animations": "./src/components/animations",
-    "Backgrounds": "./src/components/backgrounds",
-    "Components": "./src/components/ui",
-    "TextAnimations": "./src/components/text-animations"
+    "*": "./src/ui/components/ui",
+    "Animations": "./src/ui/components/animations",
+    "Backgrounds": "./src/ui/components/backgrounds",
+    "Components": "./src/ui/components/ui",
+    "TextAnimations": "./src/ui/components/text-animations"
   }
 }

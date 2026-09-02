@@ -1,7 +1,7 @@
-import React from "react";
-import Navbar from "@/ui/components/landing-page/Navbar";
+import type React from "react";
 import Footer from "@/ui/components/landing-page/Footer";
-import { LayoutProps } from "@/ui/lib/ui.types";
+import Navbar from "@/ui/components/landing-page/Navbar";
+import type { LayoutProps } from "@/ui/lib/ui.types";
 
 /**
  * Provides a standard page layout: a Navbar, the content area and a Footer.

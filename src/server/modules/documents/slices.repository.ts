@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Database } from "@/core/database.types";
 import { MAX_FILE_LINES, MAX_TRANSCRIPT_SECONDS } from "@/server/modules/chat/chat.constants";
 import type { FileSlice, SliceRepository, TranscriptSegment } from "./documents.types";
 
@@ -24,13 +24,15 @@ export const createSliceRepository = (db: SupabaseClient<Database>): SliceReposi
     if (error) return err(AppError.badGateway(`could not read that file: ${error.message}`));
 
     return ok(
-      (data ?? []).map((row): FileSlice => ({
-        path: row.path,
-        content: row.content ?? "",
-        fromLine: row.from_line,
-        toLine: row.to_line,
-        lineCount: row.line_count,
-      })),
+      (data ?? []).map(
+        (row): FileSlice => ({
+          path: row.path,
+          content: row.content ?? "",
+          fromLine: row.from_line,
+          toLine: row.to_line,
+          lineCount: row.line_count,
+        }),
+      ),
     );
   },
 
@@ -44,12 +46,14 @@ export const createSliceRepository = (db: SupabaseClient<Database>): SliceReposi
     if (error) return err(AppError.badGateway(`could not read that segment: ${error.message}`));
 
     return ok(
-      (data ?? []).map((row): TranscriptSegment => ({
-        chunkIndex: row.chunk_index,
-        content: row.content,
-        startSeconds: row.start_s,
-        endSeconds: row.end_s,
-      })),
+      (data ?? []).map(
+        (row): TranscriptSegment => ({
+          chunkIndex: row.chunk_index,
+          content: row.content,
+          startSeconds: row.start_s,
+          endSeconds: row.end_s,
+        }),
+      ),
     );
   },
 });

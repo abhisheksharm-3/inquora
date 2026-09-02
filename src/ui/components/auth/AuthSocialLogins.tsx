@@ -1,10 +1,10 @@
 "use client";
 
-import { JSX } from "react";
-import { useSearchParams } from "next/navigation";
-import { Button } from "@/ui/components/ui/button";
-import { signInWithGoogle } from "@/app/(auth)/actions";
 import { RiGoogleLine } from "@remixicon/react";
+import { useSearchParams } from "next/navigation";
+import type { JSX } from "react";
+import { signInWithGoogle } from "@/app/(auth)/actions";
+import { Button } from "@/ui/components/ui/button";
 
 export const AuthSocialLogins = (): JSX.Element => {
   const searchParams = useSearchParams();

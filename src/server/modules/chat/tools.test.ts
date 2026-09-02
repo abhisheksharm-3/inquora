@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { ok, err } from "@/core/result";
 import { AppError } from "@/core/errors";
+import { err, ok } from "@/core/result";
 import { createTools } from "./tools";
 
 const chunk = (id: string, index: number, content: string) => ({

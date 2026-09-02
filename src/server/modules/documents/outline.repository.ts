@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
+import type { Outline } from "@/core/documents/outline.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Outline } from "@/core/documents/outline.types";
-import type { Database } from "@/core/database.types";
 import type { GrepMatch, OutlineRepository } from "./documents.types";
 
 /**
@@ -38,11 +38,13 @@ export const createOutlineRepository = (db: SupabaseClient<Database>): OutlineRe
     if (error) return err(AppError.badRequest(error.message));
 
     return ok(
-      (data ?? []).map((row): GrepMatch => ({
-        path: row.path,
-        lineNumber: row.line_number,
-        line: row.line,
-      })),
+      (data ?? []).map(
+        (row): GrepMatch => ({
+          path: row.path,
+          lineNumber: row.line_number,
+          line: row.line,
+        }),
+      ),
     );
   },
 });

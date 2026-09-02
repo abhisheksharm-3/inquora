@@ -2,17 +2,17 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import {
-  TypeAuthAction,
-  TypeAuthError,
-  TypeAuthFormData,
-  TypeLoginFormData,
-  TypeSignupFormData,
-} from "@/ui/lib/auth.types";
 import { signIn, signUp } from "@/app/(auth)/actions";
-import { supabaseBrowserClient } from "@/ui/supabase/browser";
-import { EnumAuthErrorType } from "@/ui/lib/auth.types";
+import {
+  EnumAuthErrorType,
+  type TypeAuthAction,
+  type TypeAuthError,
+  type TypeAuthFormData,
+  type TypeLoginFormData,
+  type TypeSignupFormData,
+} from "@/ui/lib/auth.types";
 import { categorizeAuthError, handleAuthErrors } from "@/ui/lib/auth-errors";
+import { supabaseBrowserClient } from "@/ui/supabase/browser";
 
 /**
  * A custom hook to manage user authentication processes like login and signup.
@@ -73,7 +73,7 @@ export const useAuth = () => {
 
   const calculateRetryDelay = (attemptIndex: number, error?: TypeAuthError): number => {
     const baseDelay = 1000;
-    const delay = baseDelay * Math.pow(2, attemptIndex);
+    const delay = baseDelay * 2 ** attemptIndex;
 
     if (error?.type === EnumAuthErrorType.NETWORK_ERROR) {
       return delay + Math.random() * 1000;

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { Database } from "@/core/database.types";
+import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 import type { UploadRequest } from "./documents.schema";
 import type { DocumentsService, UploadTicket } from "./documents.types";
-import { STORAGE_BUCKET } from "@/server/modules/documents/documents.constants";
 
 /**
  * Creates the document row and a signed URL to upload its bytes to.

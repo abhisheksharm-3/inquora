@@ -1,6 +1,6 @@
 import type { Chunk } from "@/core/chunking/chunking.types";
-import type { AppError } from "@/core/errors";
 import type { Outline } from "@/core/documents/outline.types";
+import type { AppError } from "@/core/errors";
 import type { Result } from "@/core/result.types";
 
 /** The columns extraction reads off a document row. */

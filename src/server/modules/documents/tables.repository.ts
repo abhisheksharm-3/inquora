@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Database } from "@/core/database.types";
 import { MAX_TABLE_ROWS } from "@/server/modules/chat/chat.constants";
 import type { DocumentTable, TablesRepository } from "./documents.types";
 
@@ -24,11 +24,13 @@ export const createTablesRepository = (db: SupabaseClient<Database>): TablesRepo
     if (error) return err(AppError.badGateway(`could not list the sheets: ${error.message}`));
 
     return ok(
-      (data ?? []).map((row): DocumentTable => ({
-        name: row.name,
-        header: row.header,
-        rowCount: row.row_count,
-      })),
+      (data ?? []).map(
+        (row): DocumentTable => ({
+          name: row.name,
+          header: row.header,
+          rowCount: row.row_count,
+        }),
+      ),
     );
   },
 

@@ -1,10 +1,10 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { ModelConfig } from "./llm.types";
 import { DEFAULT_MODEL, DEFAULT_TEMPERATURE, MAX_RETRIES } from "./llm.constants";
+import type { ModelConfig } from "./llm.types";
 
 /**
  * The model layer, per ADR 0002: a provider string names the model, and nothing

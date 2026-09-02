@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
 import type { Result } from "@/core/result.types";
-import type { Database } from "@/core/database.types";
 import { FILE_BATCH } from "./github.constants";
 import type { ClaimedJob } from "./ingestion.types";
 

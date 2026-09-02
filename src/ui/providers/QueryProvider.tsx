@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { type ReactNode, useState } from "react";
 
 /**
  * A client-side provider that sets up the React Query context.

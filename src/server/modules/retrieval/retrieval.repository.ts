@@ -1,10 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Database } from "@/core/database.types";
-import type { RetrievedChunk } from "./retrieval.schema";
-import type { RetrievalRepository } from "./retrieval.types";
 import { CANDIDATE_MULTIPLIER } from "@/core/retrieval/retrieval.constants";
+import type { RetrievalRepository } from "./retrieval.types";
 
 /**
  * Postgres renders a vector as `[0.1,0.2,...]` text over the wire, so it arrives

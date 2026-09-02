@@ -1,6 +1,6 @@
-import { Metadata } from "next";
-import Layout from "@/ui/components/layout/Layout";
+import type { Metadata } from "next";
 import { AuthBrandingPanel } from "@/ui/components/auth/AuthBrandingPanel";
+import Layout from "@/ui/components/layout/Layout";
 
 export const metadata: Metadata = {
   title: "Authentication - Inquora",

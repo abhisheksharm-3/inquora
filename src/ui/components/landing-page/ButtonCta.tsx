@@ -1,8 +1,8 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/ui/components/ui/button";
 import { cn } from "@/ui/lib/cn";
-import { TypeButtonCta } from "@/ui/lib/ui.types";
-import { ArrowRight } from "lucide-react";
+import type { TypeButtonCta } from "@/ui/lib/ui.types";
 
 /**
  * Renders a reusable call-to-action (CTA) button wrapped in a Next.js Link.

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/core/database.types";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
-import type { Database } from "@/core/database.types";
 import type { MemoryRepository } from "./memory.types";
 
 /**

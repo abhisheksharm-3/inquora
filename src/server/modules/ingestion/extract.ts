@@ -1,15 +1,15 @@
-import { chunkProse, chunkSheet, chunkSlides, chunkTranscript } from "@/core/chunking/prose";
-import type { Chunk } from "@/core/chunking/chunking.types";
-import { AppError } from "@/core/errors";
-import { err, ok } from "@/core/result";
-import type { Result } from "@/core/result.types";
-import type { Source } from "./ingestion.types";
 import {
   PROSE_OVERLAP,
   PROSE_SIZE,
   SHEET_ROWS_PER_CHUNK,
   TRANSCRIPT_WINDOW_SECONDS,
 } from "@/core/chunking/chunking.constants";
+import type { Chunk } from "@/core/chunking/chunking.types";
+import { chunkProse, chunkSheet, chunkSlides, chunkTranscript } from "@/core/chunking/prose";
+import { AppError } from "@/core/errors";
+import { err, ok } from "@/core/result";
+import type { Result } from "@/core/result.types";
+import type { Source } from "./ingestion.types";
 
 /**
  * Turns extracted content into chunks, choosing the strategy by kind.

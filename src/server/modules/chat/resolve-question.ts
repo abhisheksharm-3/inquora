@@ -1,8 +1,8 @@
-import { z } from "zod";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import { z } from "zod";
 import { needsFollowUpResolution } from "@/core/retrieval/follow-up";
-import type { ChatContext } from "./chat.schema";
 import { HISTORY_TURNS } from "@/core/retrieval/retrieval.constants";
+import type { ChatContext } from "./chat.schema";
 
 /**
  * Rewrites a message that only makes sense in context into one that can be

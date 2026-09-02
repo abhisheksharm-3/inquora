@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { ok, err } from "@/core/result";
 import { AppError } from "@/core/errors";
-import { createRetrievalService } from "./retrieval.service";
+import { err, ok } from "@/core/result";
 import { createCache } from "@/server/platform/cache/cache";
+import { createRetrievalService } from "./retrieval.service";
 
 const vector = (fill: number) => Array.from({ length: 1024 }, () => fill);
 

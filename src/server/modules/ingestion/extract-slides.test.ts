@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
+import { describe, expect, it } from "vitest";
 import { extractSlides } from "./extract-slides";
 
 const presentation = async (slides: string[][]) => {

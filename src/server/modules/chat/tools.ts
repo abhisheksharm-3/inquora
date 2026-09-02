@@ -1,12 +1,10 @@
 import { tool } from "langchain";
-import { withSpan } from "@/server/platform/telemetry/span";
-import { DEFAULT_RETRIEVAL_LIMIT } from "@/core/retrieval/retrieval.constants";
-import { MAX_FILE_LINES } from "./chat.constants";
 import { z } from "zod";
-import type { AppError } from "@/core/errors";
+import { DEFAULT_RETRIEVAL_LIMIT } from "@/core/retrieval/retrieval.constants";
 import { evaluateArithmetic } from "@/core/untrusted/arithmetic";
-import type { Result } from "@/core/result.types";
 import type { RetrievedChunk } from "@/server/modules/retrieval/retrieval.schema";
+import { withSpan } from "@/server/platform/telemetry/span";
+import { MAX_FILE_LINES } from "./chat.constants";
 import type { ChatContext } from "./chat.schema";
 import type { ToolDependencies } from "./chat.types";
 

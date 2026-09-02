@@ -1,6 +1,0 @@
-.next
-node_modules
-bun.lock
-src/core/database.types.ts
-supabase/.temp
-public

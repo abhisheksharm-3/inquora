@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Input } from "@/ui/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
-import { TypePasswordInputProps } from "@/ui/lib/auth.types";
-import { Button } from "../ui/button";
+import { useCallback, useState } from "react";
+import { Input } from "@/ui/components/ui/input";
+import type { TypePasswordInputProps } from "@/ui/lib/auth.types";
 import { cn } from "@/ui/lib/cn";
+import { Button } from "../ui/button";
 
 /**
  * Renders a password input field with a toggle to show or hide the password text.

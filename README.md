@@ -34,6 +34,8 @@ including the places building it proved the design wrong, is in
 | A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
 | Database               | 33 migrations, **143 pgTAP assertions**                                                  |
 | Suite                  | 247 tests, typecheck clean, zero lint errors                                             |
+| Typecheck              | **1.0 second** on TypeScript 7's native compiler                                         |
+| Lint and format        | **200 milliseconds** over 177 files on Biome                                             |
 
 The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
 generation is checked against the deployment rather than locally.
@@ -135,7 +137,7 @@ embedded every function body.
 
 |                  |                                                       |
 | ---------------- | ----------------------------------------------------- |
-| Framework        | Next.js 16.3, React 19.2, TypeScript 5                |
+| Framework        | Next.js 16.3, React 19.2, TypeScript 7                |
 | Database         | Supabase Postgres with pgvector                       |
 | Model layer      | LangChain v1                                          |
 | Embeddings       | 1024-dimension, self-hosted                           |
@@ -146,6 +148,7 @@ embedded every function body.
 | Document parsers | `unpdf`, `exceljs`, `mammoth`, `fflate`               |
 | Observability    | OpenTelemetry, Sentry, Langfuse                       |
 | Tests            | Vitest, pgTAP                                         |
+| Lint and format  | Biome 2.5                                             |
 
 Pinecone is gone, along with thirty other dependencies that nothing imported — including six
 packages for two YouTube operations, which a running service does instead. tRPC was evaluated and
@@ -172,6 +175,9 @@ schema at boot, so a missing or malformed value fails immediately rather than at
 Schema work runs through the Supabase CLI, and the checks through bun:
 
 ```bash
+bun run typecheck          # TypeScript 7, about a second
+bun run lint               # Biome: lint, format and the layer boundaries
+bun run format             # write the formatting fixes
 bun run db:push            # apply migrations to the linked project
 bun run db:test            # 143 pgTAP assertions, no Docker required
 bun run db:types           # regenerate src/core/database.types.ts

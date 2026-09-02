@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-
 /**
  * The bearer gate on the drain, which had no test — and it is the only thing
  * between the internet and service-role ingestion.
@@ -10,6 +8,7 @@ import { describe, expect, it } from "vitest";
  * refuse.
  */
 import { timingSafeEqual } from "node:crypto";
+import { describe, expect, it } from "vitest";
 
 const authorized = (provided: string | undefined, secret: string | undefined): boolean => {
   if (!secret || !provided || provided.length !== secret.length) return false;
