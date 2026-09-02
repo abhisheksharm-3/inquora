@@ -32,12 +32,11 @@ export const AddSource = ({
 
   return (
     <div>
-      {/* Dropping is a pointer-only convenience, not the way in: the file
-          input's label beside it is a real control that the keyboard reaches,
-          and the link field is a text input. A role on this box would announce
-          an interactive element that a keyboard cannot operate, which is worse
-          than none. */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag target with a keyboard equivalent alongside it */}
+      {/* Two ways in, side by side, each one a target that says what it is.
+          It was a link field, a hairline, a small underlined "or choose a
+          file", and a long grey line of accepted types — four stacked rows,
+          three of them faint mono, and no obvious place to drop anything. */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: drag target with a keyboard equivalent inside it */}
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -49,50 +48,51 @@ export const AddSource = ({
           setOver(false);
           onAdd(Array.from(event.dataTransfer.files));
         }}
-        className={`border-rule border-y px-1 py-4 transition-colors duration-150 ease-out-quart ${
-          over ? "border-mark bg-wash" : ""
+        className={`grid grid-cols-1 gap-px border bg-rule transition-colors duration-150 ease-out-quart sm:grid-cols-2 ${
+          over ? "border-mark" : "border-rule"
         }`}
       >
-        <form action={submitLink}>
-          <label htmlFor="url" className="sr-only">
-            Paste a link to add
+        <label
+          htmlFor={fileId}
+          className={`flex flex-col justify-between gap-3 p-5 transition-colors duration-150 ease-out-quart ${
+            over ? "bg-wash" : "bg-ground hover:bg-panel"
+          }`}
+        >
+          <span className="font-light font-reading text-[1.1rem] text-ink">
+            Choose a file, or drop it here
+          </span>
+          <span className="font-record text-label text-faint leading-relaxed">
+            {ACCEPTED_DESCRIPTION} Up to 50MB.
+          </span>
+        </label>
+
+        <form action={submitLink} className="flex flex-col justify-between gap-3 bg-ground p-5">
+          <label htmlFor="url" className="font-light font-reading text-[1.1rem] text-ink">
+            Or paste a link
           </label>
 
-          {/* The input and its button on one row, the button bordered. It was
-              an underlined word sitting on the input's baseline, which is why
-              it read as floating: an underline is what a link wears, and this
-              is the control that does the thing. */}
           <div className="flex items-center gap-3">
             <input
               id="url"
               name="url"
               type="url"
               inputMode="url"
-              placeholder="A GitHub repository, a YouTube video, or any web page"
-              className="h-10 w-full border-0 border-rule border-b bg-transparent px-0 font-light font-reading text-[1.02rem] text-ink caret-mark placeholder:text-faint focus-visible:border-mark focus-visible:outline-none"
+              placeholder="https://"
+              className="h-9 w-full min-w-0 border-0 border-rule border-b bg-transparent px-0 font-light font-reading text-[1rem] text-ink caret-mark placeholder:text-faint focus-visible:border-mark focus-visible:outline-none"
             />
             <button
               type="submit"
-              className="flex h-10 shrink-0 items-center whitespace-nowrap rounded-hair border border-mark px-4 font-record text-label text-mark uppercase tracking-[0.12em] transition-colors duration-150 ease-out-quart hover:bg-wash"
+              className="flex h-9 shrink-0 items-center rounded-hair border border-mark px-4 font-record text-label text-mark uppercase tracking-[0.12em] transition-colors duration-150 ease-out-quart hover:bg-wash"
             >
               Add
             </button>
           </div>
-        </form>
 
-        <p className="mt-4 border-rule border-t pt-4 font-record text-label text-faint">
-          <label htmlFor={fileId} className="border-rule border-b pb-0.5 text-soft hover:text-ink">
-            Or choose a file
-          </label>
-          <span className="ml-3 hidden sm:inline">
-            — you can also drop one anywhere on this box.
+          <span className="font-record text-label text-faint leading-relaxed">
+            A GitHub repository, a YouTube video, or any web page.
           </span>
-        </p>
+        </form>
       </div>
-
-      <p className="mt-3 mb-6 font-record text-label text-faint">
-        {ACCEPTED_DESCRIPTION} Up to 50MB. Or a GitHub repository, a YouTube video, or a web page.
-      </p>
 
       <input
         id={fileId}

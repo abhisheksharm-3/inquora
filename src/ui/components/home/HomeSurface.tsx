@@ -144,6 +144,14 @@ export const HomeSurface = ({
                 <span>Your documents</span>
                 <span className="flex items-baseline gap-5">
                   {working.length > 0 ? <span>{working.length} still being read</span> : null}
+                  {documents.length > SHOWN ? (
+                    <Link
+                      href={DASHBOARD_ROUTES.SETTINGS}
+                      className="tracking-[0.13em] hover:text-ink"
+                    >
+                      all {documents.length}
+                    </Link>
+                  ) : null}
                   {ready.length > 0 ? (
                     <button
                       type="button"
@@ -167,7 +175,7 @@ export const HomeSurface = ({
 
               {documents.length > 0 ? (
                 <ul className="m-0 list-none p-0">
-                  {documents.map((document) => (
+                  {documents.slice(0, SHOWN).map((document) => (
                     <li
                       key={document.id}
                       className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-4 border-rule border-b py-3.5"
@@ -213,7 +221,7 @@ export const HomeSurface = ({
                 </h2>
 
                 <ul className="m-0 list-none p-0">
-                  {chats.slice(0, 6).map((chat) => (
+                  {chats.slice(0, SHOWN).map((chat) => (
                     <li key={chat.id} className="border-rule border-b">
                       <Link href={DASHBOARD_ROUTES.CHAT(chat.id)} className="block py-3">
                         <span className="line-clamp-2 font-light font-reading text-[1rem] text-ink">
@@ -234,6 +242,16 @@ export const HomeSurface = ({
     </div>
   );
 };
+
+/**
+ * How many rows either list shows.
+ *
+ * A cap rather than a scroll, so the lower half of the home screen is the same
+ * height for somebody with two documents and somebody with two hundred. What is
+ * past it lives on the surface built for it: documents in settings, where they
+ * can also be deleted, and questions in history, where they can be searched.
+ */
+const SHOWN = 3;
 
 /** `abhishek` from an email local part reads better with a capital. */
 const capitalise = (name: string) => name.charAt(0).toUpperCase() + name.slice(1);
