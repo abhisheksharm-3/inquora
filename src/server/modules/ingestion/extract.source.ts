@@ -154,10 +154,15 @@ const readSource = async (
  */
 const readPdf = async (bytes: Uint8Array): Promise<Result<Source, AppError>> => {
   try {
-    const { default: parse } = await import("pdf-parse");
-    const parsed = await parse(Buffer.from(bytes));
+    // unpdf rather than pdf-parse: pdf-parse 1.x is seven years old and reads a
+    // test PDF off the filesystem when module.parent is undefined, which is a
+    // bundled serverless function's normal state. unpdf carries a serverless
+    // build of pdf.js and touches no filesystem.
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    const pdf = await getDocumentProxy(bytes);
+    const { text } = await extractText(pdf, { mergePages: true });
 
-    return ok({ kind: "pdf", text: parsed.text });
+    return ok({ kind: "pdf", text: Array.isArray(text) ? text.join("\n\n") : text });
   } catch (cause) {
     return err(
       AppError.badRequest(

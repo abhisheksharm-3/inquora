@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest";
-import JSZip from "jszip";
+import { strToU8, zipSync } from "fflate";
 import { extractSlides } from "./extract-slides";
 
 const presentation = async (slides: string[][]) => {
-  const zip = new JSZip();
+  const files: Record<string, Uint8Array> = {};
 
   slides.forEach((texts, index) => {
     const body = texts.map((text) => `<a:p><a:r><a:t>${text}</a:t></a:r></a:p>`).join("");
-    zip.file(`ppt/slides/slide${index + 1}.xml`, `<p:sld><p:cSld>${body}</p:cSld></p:sld>`);
+    files[`ppt/slides/slide${index + 1}.xml`] = strToU8(`<p:sld><p:cSld>${body}</p:cSld></p:sld>`);
   });
 
-  return new Uint8Array(await zip.generateAsync({ type: "uint8array" }));
+  // A media part the reader must skip rather than inflate.
+  files["ppt/media/image1.png"] = new Uint8Array([137, 80, 78, 71]);
+
+  return zipSync(files);
 };
 
 describe("extractSlides", () => {

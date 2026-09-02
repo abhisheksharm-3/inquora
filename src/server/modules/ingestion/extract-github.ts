@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import { strFromU8, unzipSync } from "fflate";
 import { chunkCodeFile, languageOf } from "@/core/chunking/code";
 import { AppError } from "@/core/errors";
 import { err, ok } from "@/core/result";
@@ -16,8 +16,7 @@ import type { ExtractedFile, ExtractedRepository, Repository } from "./ingestion
  * A repository, read as one zipball rather than one request per file.
  *
  * The contents API needs a call per file, which against a rate limit of sixty an
- * hour rules out any repository worth reading. The zipball is one request, and
- * jszip was already a dependency.
+ * hour rules out any repository worth reading. The zipball is one request.
  *
  * What comes back is files, not chunks. Files answer the exact questions — where
  * is this called, what raises this error — through grep and read_file, with no
@@ -91,19 +90,40 @@ export const extractRepository = async (
 
   if (!response.ok) return err(AppError.badGateway(`GitHub returned ${response.status}`));
 
-  const zip = await JSZip.loadAsync(await response.arrayBuffer());
-
   // The zipball nests everything under `owner-name-sha/`, which is noise in every
   // path a citation would show.
-  const strip = (path: string) => path.slice(path.indexOf("/") + 1);
+  const strip = (name: string) => name.slice(name.indexOf("/") + 1);
 
-  const entries = Object.values(zip.files)
-    .filter((entry) => !entry.dir)
-    .map((entry) => ({ entry, path: strip(entry.name) }))
-    .filter(({ path }) => !SKIPPED_PATHS.test(path))
-    .filter(({ path }) =>
-      INDEXABLE_EXTENSIONS.has(path.slice(path.lastIndexOf(".") + 1).toLowerCase()),
-    )
+  const indexable = (name: string) => {
+    if (name.endsWith("/")) return false;
+
+    const path = strip(name);
+
+    return (
+      !SKIPPED_PATHS.test(path) &&
+      INDEXABLE_EXTENSIONS.has(path.slice(path.lastIndexOf(".") + 1).toLowerCase())
+    );
+  };
+
+  // Filtering during the unzip rather than after it: a repository zipball is
+  // mostly files this will never index, and inflating them to discard them is the
+  // expensive part.
+  let unzipped: Record<string, Uint8Array>;
+
+  try {
+    unzipped = unzipSync(new Uint8Array(await response.arrayBuffer()), {
+      filter: (file) => indexable(file.name),
+    });
+  } catch (cause) {
+    return err(
+      AppError.badGateway(
+        `that zipball could not be read: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ),
+    );
+  }
+
+  const entries = Object.keys(unzipped)
+    .map((name) => ({ name, path: strip(name) }))
     .sort((a, b) => a.path.localeCompare(b.path))
     .slice(0, MAX_FILES);
 
@@ -114,10 +134,12 @@ export const extractRepository = async (
   const files: ExtractedFile[] = [];
   const chunks = [];
 
-  for (const { entry, path } of entries) {
-    const content = await entry.async("string");
+  for (const { name, path } of entries) {
+    if (unzipped[name].byteLength > MAX_FILE_BYTES) continue;
 
-    if (content.length > MAX_FILE_BYTES || content.trim().length === 0) continue;
+    const content = strFromU8(unzipped[name]);
+
+    if (content.trim().length === 0) continue;
 
     const language = languageOf(path);
     const lineCount = content.split("\n").length;
