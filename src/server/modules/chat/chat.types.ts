@@ -12,6 +12,9 @@ export interface TurnUsage {
   model?: string;
   /** Time spent inside retrieval tools, which is separate from time spent thinking. */
   retrievalMs: number;
+  /** How often the speculative first search was used, and how often it was thrown away. */
+  warmHits: number;
+  warmMisses: number;
 }
 
 export interface AnsweringAgent {

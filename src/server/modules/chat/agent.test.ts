@@ -200,3 +200,75 @@ describe("createAnsweringAgent", () => {
     expect(agent.answerText().length).toBeGreaterThan(0);
   });
 });
+
+describe("the speculative first search", () => {
+  const chunk = {
+    chunkId: "33333333-3333-3333-3333-333333333333",
+    documentId: "11111111-1111-1111-1111-111111111111",
+    chunkIndex: 0,
+    content: "Q3 revenue closed at 4.12 million.",
+    metadata: {},
+    score: 0.9,
+    embedding: [0.1],
+  };
+
+  it("is reused when the model rewords the question rather than repeating it", async () => {
+    const retrieve = vi.fn(async () => ok([chunk]));
+    const model = new FakeToolCallingModel({
+      toolCalls: [
+        // What a model actually sends: the question with the grammar stripped.
+        // String equality threw this away and paid for the same search twice.
+        [{ name: "search_documents", args: { query: "Q3 revenue forecast miss" }, id: "c1" }],
+        [],
+      ],
+    });
+
+    const agent = createAnsweringAgent({
+      ...dependencies({ retrieval: { retrieve } }),
+      model,
+    });
+
+    agent.warm("why did Q3 revenue miss the forecast?");
+
+    for await (const _ of agent.stream("why did Q3 revenue miss the forecast?")) {
+      // drain
+    }
+
+    // One retrieval, not two: string equality would have thrown the first away.
+    expect(retrieve).toHaveBeenCalledOnce();
+    expect(agent.usage().warmHits).toBe(1);
+    expect(agent.usage().warmMisses).toBe(0);
+  });
+
+  it("is thrown away when the model searches for something else, and says so", async () => {
+    // A different subject must not be served the warmed passages: answering from
+    // the wrong chunks is worse than paying for a second search.
+    const retrieve = vi.fn(async () => ok([chunk]));
+    const model = new FakeToolCallingModel({
+      toolCalls: [
+        [
+          {
+            name: "search_documents",
+            args: { query: "engineering onboarding checklist" },
+            id: "c1",
+          },
+        ],
+        [],
+      ],
+    });
+
+    const agent = createAnsweringAgent({
+      ...dependencies({ retrieval: { retrieve } }),
+      model,
+    });
+
+    agent.warm("why did Q3 revenue miss the forecast?");
+
+    for await (const _ of agent.stream("why did Q3 revenue miss the forecast?")) {
+      // drain
+    }
+
+    expect(agent.usage().warmHits).toBe(0);
+    expect(agent.usage().warmMisses).toBe(1);
+  });
+});

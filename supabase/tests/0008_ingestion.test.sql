@@ -1,5 +1,5 @@
 begin;
-select plan(4);
+select plan(5);
 
 select has_table('public', 'ingestion_jobs', 'the job table exists');
 
@@ -24,6 +24,17 @@ select is(
 -- assertion is about the claim rather than about what happened to be queued.
 delete from public.ingestion_jobs
 where document_id <> 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+
+-- A fresh job waits, because the row is created before the client uploads the
+-- bytes and attempt one used to race the object into existence.
+select is(
+  (select count(*)::int from public.claim_ingestion_job()),
+  0,
+  'a job just enqueued is not claimable yet');
+
+update public.ingestion_jobs
+set run_after = now() - interval '1 second'
+where document_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 
 select is(
   (select document_id from public.claim_ingestion_job()),

@@ -123,6 +123,10 @@ export const createChatService = ({
             tokens_out: usage.tokensOut,
             model: usage.model,
             retrieval_ms: usage.retrievalMs,
+            // So the speculative dispatch is judged on its hit rate rather than
+            // on the reasoning that introduced it.
+            warm_hits: usage.warmHits,
+            warm_misses: usage.warmMisses,
             latency_ms: Date.now() - started,
             citations: agent.citedChunkIds().length,
           });

@@ -42,6 +42,16 @@ for (const file of files) {
     console.log(`\n${file}`);
     console.log(`  not ok - the file raised: ${error instanceof Error ? error.message : error}`);
     failures += 1;
+
+    // A raise inside a file leaves its transaction aborted, and every statement
+    // on that connection then fails with "current transaction is aborted" — so
+    // one broken file used to report itself and hide every file after it.
+    try {
+      await sql.unsafe("rollback").simple();
+    } catch {
+      // Already rolled back, which is the other half of the same situation.
+    }
+
     continue;
   }
 

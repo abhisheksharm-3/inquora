@@ -12,6 +12,35 @@ import type { DocumentKind } from "@/server/modules/documents/documents.schema";
 import type { AgentDependencies, AnsweringAgent, TurnUsage } from "./chat.types";
 import { MAX_TOOL_CALLS } from "./chat.constants";
 
+/**
+ * Whether two searches are close enough that the same passages come back.
+ *
+ * Not string equality, which is what made the speculative dispatch nearly always
+ * wasted: "why did Q3 revenue miss?" and "Q3 revenue shortfall reasons" are the
+ * same search. Compared on the words that carry meaning, so word order,
+ * punctuation and the small words do not decide it.
+ */
+const sameSearch = (a: string, b: string): boolean => {
+  const terms = (text: string) =>
+    new Set(
+      text
+        .toLowerCase()
+        .match(/[a-z0-9]+/g)
+        ?.filter((word) => word.length > 3) ?? [],
+    );
+
+  const first = terms(a);
+  const second = terms(b);
+
+  if (first.size === 0 || second.size === 0) return false;
+
+  let shared = 0;
+  for (const term of second) if (first.has(term)) shared += 1;
+
+  // Most of what the model asked for was in what was already fetched.
+  return shared / second.size >= 0.6;
+};
+
 const buildSystemPrompt = (context: ChatContext): string => {
   if (context.documents.length === 0) {
     return [
@@ -86,27 +115,37 @@ export const createAnsweringAgent = ({
   const citations: string[] = [];
   let answer = "";
   let retrievalMs = 0;
-  const usage: TurnUsage = { retrievalMs: 0 };
+  const usage: TurnUsage = { retrievalMs: 0, warmHits: 0, warmMisses: 0 };
 
   /**
-   * The speculative first search. Retrieval for the raw user query is dispatched
-   * in parallel with the first model call, so when the model does search — the
-   * common case — the result is already there. If it does not search, the cost is
-   * one embedding call, usually served from cache.
+   * The speculative first search: retrieval for the user's question, dispatched
+   * in parallel with the first model call so the common case does not wait for it.
+   *
+   * Reuse used to require the model's search string to equal the question
+   * character for character, and the model writes its own string — so a
+   * paraphrase discarded a whole embedding call and a whole search, unmeasured.
+   * It is reused whenever the model's query is close enough that the same
+   * passages would come back, and every decision is recorded so the hit rate is a
+   * number rather than a hope.
    */
   let warmed: Promise<Result<RetrievedChunk[], AppError>> | undefined;
   let warmedQuery: string | undefined;
+  let warmHits = 0;
+  let warmMisses = 0;
 
   const cachingRetrieval = {
     async retrieve(request: RetrievalRequest) {
       const startedAt = Date.now();
 
       try {
-        if (warmed && warmedQuery === request.query) {
+        if (warmed && warmedQuery && sameSearch(warmedQuery, request.query)) {
           const result = await warmed;
           warmed = undefined;
+          warmHits += 1;
           return result;
         }
+
+        if (warmed) warmMisses += 1;
 
         return await retrieval.retrieve(request);
       } finally {
@@ -220,7 +259,7 @@ export const createAnsweringAgent = ({
 
     citedChunkIds: () => [...citations],
     answerText: () => answer,
-    usage: () => ({ ...usage, retrievalMs }),
+    usage: () => ({ ...usage, retrievalMs, warmHits, warmMisses }),
     systemPrompt: () => systemPrompt,
   };
 };

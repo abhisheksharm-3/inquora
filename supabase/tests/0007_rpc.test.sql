@@ -28,6 +28,12 @@ select is(
   'a whole batch of chunks is written in one call'
 );
 
+-- create_chat_with_documents takes its owner from auth.uid() and nothing else, so
+-- the claim is set rather than relying on a fallback that read ownership out of a
+-- caller-supplied document id. That fallback existed for this test and for no
+-- production path, which is the wrong reason for a function to decide ownership.
+set local request.jwt.claims = '{"sub": "88888888-8888-8888-8888-888888888888", "role": "authenticated"}';
+
 -- Two statements, not one nested call: get_chat_context is stable, so it reads
 -- the snapshot taken when its query started and cannot see a chat that a
 -- volatile function inserted inside the same statement. Real callers make these
