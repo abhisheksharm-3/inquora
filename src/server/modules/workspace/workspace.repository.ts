@@ -35,6 +35,40 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
     return ok(data.map(toDocumentEntry));
   },
 
+  /**
+   * Searched in Postgres, not in the browser.
+   *
+   * The home screen shows three documents and somebody with forty needs the
+   * ninth, so the composer has to be able to find it. Sending the whole
+   * register to the client to filter it there would mean every visit downloads
+   * every document a person owns, and it stops working at exactly the point
+   * the feature becomes necessary.
+   *
+   * Ready only: a document still being read cannot be searched, so offering it
+   * would be offering a question that returns nothing.
+   */
+  async findDocuments(query, limit) {
+    const term = query.trim();
+    if (term.length === 0) return ok([]);
+
+    const { data, error } = await db
+      .from("documents")
+      .select(
+        "id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, indexed_at",
+      )
+      .eq("status", "ready")
+      // Escaped, because `%` and `_` are wildcards in `like` and an underscore
+      // is ordinary in a filename. Without this, "q3_forecast" matched
+      // everything with "q3" and any character after it.
+      .ilike("title", `%${term.replace(/[\\%_]/g, (match) => `\\${match}`)}%`)
+      .order("indexed_at", { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (error) return err(AppError.badGateway(`could not search documents: ${error.message}`));
+
+    return ok(data.map(toDocumentEntry));
+  },
+
   async listChats() {
     // One query with embedded rows rather than a query per chat: the old history
     // page issued one read per conversation to find out what it was about.

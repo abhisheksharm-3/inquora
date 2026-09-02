@@ -11,6 +11,8 @@ import type {
 export interface WorkspaceRepository {
   listChats(): Promise<Result<ChatEntry[], AppError>>;
   listDocuments(): Promise<Result<DocumentEntry[], AppError>>;
+  /** Ready documents whose title matches, for bringing one into a question. */
+  findDocuments(query: string, limit: number): Promise<Result<DocumentEntry[], AppError>>;
   chat(chatId: string): Promise<Result<ChatDetail | null, AppError>>;
   createChat(args: { title: string; documentIds: string[] }): Promise<Result<string, AppError>>;
   renameChat(chatId: string, title: string): Promise<Result<void, AppError>>;

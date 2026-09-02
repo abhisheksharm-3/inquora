@@ -1,8 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { DocumentEntry } from "@/core/workspace/workspace.types";
 import { Action } from "@/ui/components/form/Action";
+import { DocumentPicker } from "./DocumentPicker";
 
 /**
  * The question, on the home screen, with the documents it will read shown as
@@ -19,23 +20,24 @@ import { Action } from "@/ui/components/form/Action";
 export const HomeComposer = ({
   action,
   error,
-  documents,
-  excluded,
-  onToggle,
-  inScopeCount,
+  chosen,
+  onRemove,
+  onChoose,
   value,
   onChange,
 }: {
   action: (formData: FormData) => void;
   error?: string;
-  documents: DocumentEntry[];
-  excluded: ReadonlySet<string>;
-  onToggle: (id: string) => void;
-  inScopeCount: number;
+  /** The documents this question will read. */
+  chosen: DocumentEntry[];
+  onRemove: (id: string) => void;
+  onChoose: (document: DocumentEntry) => void;
   /** Lifted, so clicking a suggestion fills the box rather than sending blind. */
   value: string;
   onChange: (value: string) => void;
 }) => {
+  const [picking, setPicking] = useState(false);
+  const chosenIds = new Set(chosen.map((document) => document.id));
   const field = useRef<HTMLTextAreaElement>(null);
   const form = useRef<HTMLFormElement>(null);
 
@@ -70,10 +72,10 @@ export const HomeComposer = ({
             // writing surface has taught people to expect.
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
-              if (value.trim() && inScopeCount > 0) form.current?.requestSubmit();
+              if (value.trim() && chosen.length > 0) form.current?.requestSubmit();
             }
           }}
-          placeholder="Ask anything about what you have added"
+          placeholder="What does this conclude, and where does it say so?"
           className="max-h-64 min-h-[3.4rem] w-full resize-none border-0 bg-transparent p-0 font-light font-reading text-[1.3rem] text-ink leading-snug caret-mark placeholder:text-faint focus-visible:outline-none"
         />
       </div>
@@ -82,31 +84,41 @@ export const HomeComposer = ({
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="mr-1.5 font-record text-label text-faint">Reading</span>
 
-          {documents.map((document) => {
-            const on = !excluded.has(document.id);
+          {chosen.length === 0 ? (
+            <span className="font-record text-label text-faint italic">
+              nothing yet — add a document to ask about
+            </span>
+          ) : null}
 
-            return (
-              <span key={document.id}>
-                {/* A hidden input per document in scope, so the action receives
-                    exactly what the chips show. */}
-                {on ? <input type="hidden" name="document" value={document.id} /> : null}
+          {chosen.map((document) => (
+            <span key={document.id}>
+              <input type="hidden" name="document" value={document.id} />
 
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => onToggle(document.id)}
-                  title={on ? `Stop reading ${document.title}` : `Read ${document.title} too`}
-                  className={`inline-flex h-7 max-w-[26ch] items-center gap-1.5 rounded-full border px-3 font-record text-label transition-colors duration-150 ease-out-quart ${
-                    on
-                      ? "border-mark/40 bg-wash text-ink"
-                      : "border-rule text-faint line-through hover:text-soft"
-                  }`}
-                >
-                  <span className="truncate">{document.title}</span>
-                </button>
-              </span>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => onRemove(document.id)}
+                title={`Stop reading ${document.title}`}
+                className="inline-flex h-7 max-w-[26ch] items-center gap-2 rounded-full border border-mark/40 bg-wash px-3 font-record text-label text-ink transition-colors duration-150 ease-out-quart hover:border-mark"
+              >
+                <span className="truncate">{document.title}</span>
+                <span aria-hidden className="text-faint">
+                  ×
+                </span>
+                <span className="sr-only">Remove</span>
+              </button>
+            </span>
+          ))}
+
+          {/* The way to reach a document the home screen does not list. With
+              three shown and forty owned, the ninth was only reachable through
+              settings, which cannot ask anything. */}
+          <button
+            type="button"
+            onClick={() => setPicking((open) => !open)}
+            className="inline-flex h-7 items-center rounded-full border border-rule px-3 font-record text-label text-faint transition-colors duration-150 ease-out-quart hover:border-soft hover:text-ink"
+          >
+            {picking ? "Close" : "Add a document"}
+          </button>
         </div>
 
         <div className="flex shrink-0 items-center gap-4">
@@ -118,6 +130,10 @@ export const HomeComposer = ({
           </Action>
         </div>
       </div>
+
+      {picking ? (
+        <DocumentPicker chosen={chosenIds} onChoose={onChoose} onClose={() => setPicking(false)} />
+      ) : null}
 
       {error ? (
         <p

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { askFromHome } from "@/app/(app)/actions";
 import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import { DASHBOARD_ROUTES } from "@/core/routes";
@@ -50,22 +50,57 @@ export const HomeSurface = ({
     (document) => document.status !== "ready" && document.status !== "failed",
   );
 
-  // Everything ready, in scope, until somebody says otherwise. Defaulting to
-  // nothing selected made the first act of every visit a chore.
-  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
+  /**
+   * The documents this question will read, as an explicit set.
+   *
+   * It used to be "everything ready, minus what you excluded", which cannot
+   * express a document the screen does not list — and the screen lists three.
+   * Seeded with the most recent ones, so somebody with one document can type
+   * and press Enter, and the picker in the composer reaches any of the others.
+   */
+  const [chosen, setChosen] = useState<Map<string, DocumentEntry>>(
+    () =>
+      new Map(
+        seed
+          .filter((document) => document.status === "ready")
+          .slice(0, SHOWN)
+          .map((document) => [document.id, document]),
+      ),
+  );
+
+  // A document that finishes being read joins the question, because the only
+  // reason somebody is watching it arrive is that they want to ask about it.
+  const seen = useRef(new Set(seed.map((document) => document.id)));
+
+  useEffect(() => {
+    const arrived = documents.filter(
+      (document) => document.status === "ready" && !seen.current.has(document.id),
+    );
+
+    for (const document of documents) seen.current.add(document.id);
+    if (arrived.length === 0) return;
+
+    setChosen((current) => {
+      const next = new Map(current);
+      for (const document of arrived) next.set(document.id, document);
+      return next;
+    });
+  }, [documents]);
   const [question, setQuestion] = useState("");
   const [adding, setAdding] = useState(false);
   const [state, ask] = useActionState<ActionState, FormData>(askFromHome, emptyActionState);
 
-  const inScope = ready.filter((document) => !excluded.has(document.id));
+  const inScope = [...chosen.values()];
 
-  const toggle = (id: string) =>
-    setExcluded((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+  const remove = (id: string) =>
+    setChosen((current) => {
+      const next = new Map(current);
+      next.delete(id);
       return next;
     });
+
+  const choose = (document: DocumentEntry) =>
+    setChosen((current) => new Map(current).set(document.id, document));
 
   const firstName = (account?.displayName ?? account?.email ?? "").split(/[\s@.]/)[0];
   const openers = openersFor(inScope, 3);
@@ -99,10 +134,9 @@ export const HomeSurface = ({
               <HomeComposer
                 action={ask}
                 error={state.error}
-                documents={ready}
-                excluded={excluded}
-                onToggle={toggle}
-                inScopeCount={inScope.length}
+                chosen={inScope}
+                onRemove={remove}
+                onChoose={choose}
                 value={question}
                 onChange={setQuestion}
               />
@@ -195,9 +229,9 @@ export const HomeSurface = ({
                         }`}
                       >
                         {document.status === "ready"
-                          ? excluded.has(document.id)
-                            ? "not in this question"
-                            : "in this question"
+                          ? chosen.has(document.id)
+                            ? "in this question"
+                            : "not in this question"
                           : document.status === "failed"
                             ? "could not be read"
                             : "reading it"}

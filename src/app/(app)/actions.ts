@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sourceKindForUrl, titleForUrl } from "@/core/documents/kind";
 import { DASHBOARD_ROUTES } from "@/core/routes";
+import type { DocumentEntry } from "@/core/workspace/workspace.types";
 import { signOut } from "@/server/modules/auth/auth.service";
 import { addSourceByUrl, requestUploadTicket } from "@/server/modules/documents/documents.factory";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
@@ -20,6 +21,9 @@ import type { ActionState, PassageState, UploadRequestInput, UploadTicketState }
  */
 
 const uuid = z.string().uuid();
+
+/** Enough to choose from without becoming a page of results. */
+const DOCUMENT_SEARCH_LIMIT = 8;
 
 const startChat = z.object({
   documentIds: z.array(uuid).min(1, "Choose at least one document."),
@@ -300,4 +304,21 @@ export const addLink = async (_previous: ActionState, formData: FormData): Promi
       ? "You have already added that one."
       : "Reading it now. It appears in your files when it is ready.",
   };
+};
+
+/**
+ * Documents matching what somebody has typed, for the picker in the composer.
+ *
+ * Searched in Postgres. The home screen lists three documents and somebody with
+ * forty needs the ninth, and filtering in the browser would mean downloading
+ * every document they own on every visit — which stops working at the point the
+ * feature becomes necessary.
+ */
+export const findDocuments = async (query: string): Promise<DocumentEntry[]> => {
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return [];
+
+  const found = await bound.value.workspace.findDocuments(query, DOCUMENT_SEARCH_LIMIT);
+
+  return found.ok ? found.value : [];
 };
