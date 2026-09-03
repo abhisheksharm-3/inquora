@@ -71,48 +71,128 @@ const pipeline = [
 ];
 
 /**
- * Ten real questions, asked of the full text of Pride and Prejudice — 762
- * passages from one PDF — in one conversation. The counts and the timings are
- * from that run rather than from a benchmark written for this page.
+ * The benchmark, from one live run.
  *
- * They are grouped by what each one actually demands of the system, because
- * "it answers questions about documents" is four different problems and only
- * one of them is easy.
+ * Ten questions put to the full text of Pride and Prejudice — 762 passages from
+ * one PDF — in a single conversation on the deployment. The categories are the
+ * ones a retrieval test is normally graded against, and they matter because "it
+ * answers questions about documents" is eight different problems wearing one
+ * name: an exact lookup and a question whose evidence is scattered over four
+ * hundred pages are not the same task, and a system can be good at one and
+ * useless at the other.
+ *
+ * `cited` is the number of passages the answer stands on, `read` the number
+ * retrieval offered it. The gap between them is the interesting column: an
+ * answer resting on one passage out of twelve is precision, not waste, and
+ * reporting only the twelve is what made an outside reviewer read good
+ * retrieval as poor.
+ *
+ * Every figure is from the run. Nothing here is an average of anything.
  */
-const examples = [
+type Benchmark = {
+  category: string;
+  question: string;
+  cited: number;
+  read: number;
+  firstWord?: string;
+  total: string;
+  note: string;
+};
+
+const benchmark: Benchmark[] = [
   {
-    kind: "One fact, stated once",
+    category: "Entity relationship",
     question: "How are Lady Catherine de Bourgh, Lady Anne Darcy and Mr Darcy related?",
-    answer:
-      "Two sentences: they were sisters, so Lady Catherine is Darcy's aunt. Both carry the passage they came from.",
-    measured: "2 sources · 5.9s to the first word",
-    note: "The hard part is not answering at length. It is answering briefly and still showing the line.",
+    cited: 1,
+    read: 12,
+    firstWord: "5.9s",
+    total: "6.3s",
+    note: "Two sentences, one passage. The hard part is answering briefly and still showing the line.",
   },
   {
-    kind: "A claim that has to be checked",
-    question: "What in Darcy's letter caused Elizabeth to reconsider her judgment of Wickham?",
-    answer:
-      "It quotes the will — three thousand pounds in lieu of the living — and the phrase gross duplicity on one side or the other, and names the passage for each.",
-    measured: "12 sources · 8.8s in all",
-    note: "Every quotation is a passage you can open, so the answer can be checked rather than trusted.",
+    category: "Cross-chapter",
+    question:
+      "What was the eventual relationship between Georgiana Darcy and Elizabeth, and why did it matter to Darcy?",
+    cited: 1,
+    read: 12,
+    firstWord: "5.2s",
+    total: "6.1s",
+    note: "The evidence is in the last pages, which are the ones a retriever is least likely to reach for.",
   },
   {
-    kind: "A contrast across four hundred pages",
+    category: "Semantic retrieval",
+    question:
+      "What did Charlotte Lucas believe Jane should do to make Bingley more likely to fall in love with her?",
+    cited: 2,
+    read: 12,
+    firstWord: "5.2s",
+    total: "5.8s",
+    note: "Answered with the actual advice — show more affection than she feels — not a paraphrase of it.",
+  },
+  {
+    category: "Cross-character",
+    question: "Why did Elizabeth think Lydia should not be allowed to go to Brighton?",
+    cited: 2,
+    read: 12,
+    firstWord: "5.0s",
+    total: "5.7s",
+    note: "Her argument to her father, and separately her fear for the family's standing.",
+  },
+  {
+    category: "Distractor resistance",
+    question: "What did Elizabeth think was wrong with Charlotte's reasoning about marriage?",
+    cited: 3,
+    read: 12,
+    firstWord: "7.4s",
+    total: "8.5s",
+    note: "Two opposed views of the same subject, in adjacent passages. It kept them apart.",
+  },
+  {
+    category: "Temporal contrast",
     question:
       "What did Darcy first say about Elizabeth's appearance, and how does that contrast with his later description of her eyes?",
-    answer:
-      "Only just tolerable and she hardly had a good feature in her face, against uncommonly intelligent by the beautiful expression of her dark eyes — from passages a long way apart.",
-    measured: "12 sources · 6.1s in all",
-    note: "The two halves of the answer are in different chapters. Retrieval has to find both from one question.",
+    cited: 4,
+    read: 12,
+    total: "7.1s",
+    note: "Only just tolerable, against uncommonly intelligent by the beautiful expression of her dark eyes.",
   },
   {
-    kind: "Several steps, in order",
+    category: "Character development",
+    question:
+      "How does Elizabeth's perception of Darcy change after reading his letter, and which part has the strongest impact?",
+    cited: 5,
+    read: 12,
+    firstWord: "8.4s",
+    total: "10.8s",
+    note: "Indignation, then a second reading, then the passage that turns her judgment. In that order.",
+  },
+  {
+    category: "Multi-hop",
+    question: "What financial circumstances made Wickham motivated to keep the elopement secret?",
+    cited: 7,
+    read: 12,
+    firstWord: "6.3s",
+    total: "8.1s",
+    note: "Seven passages joined into one account of his debts, his intentions and Lydia's lack of fortune.",
+  },
+  {
+    category: "Exact retrieval",
+    question:
+      "Why did Elizabeth initially believe Wickham, and what in Darcy's letter made her reconsider?",
+    cited: 6,
+    read: 12,
+    total: "8.8s",
+    note: "Quotes the will — three thousand pounds in lieu of the living — and the phrase gross duplicity.",
+  },
+  {
+    category: "Distributed evidence",
     question:
       "Trace what changed Elizabeth's opinion of Darcy, from the Meryton assembly, through Wickham's story, to the letter.",
-    answer:
-      "Three sections, each with its own evidence: the assembly, the account Wickham gave her, and the two revelations in the letter that undid it.",
-    measured: "23 sources · 12.5s in all",
-    note: "It searched more than once, because one search cannot answer a question with three parts.",
+    cited: 5,
+    read: 23,
+    firstWord: "12.5s",
+    total: "16.0s",
+    note: "Three ordered parts, so it searched twice. The one question here that cannot be answered by one search.",
   },
 ];
 
@@ -203,45 +283,78 @@ const HowItWorks = () => (
 
       <section className="border-rule border-t px-7 py-12 wide:px-10">
         <h2 className="mb-1.5 font-light font-reading text-[1.7rem] text-ink leading-tight">
-          Four kinds of question, from one run.
+          Ten questions, one novel, one conversation.
         </h2>
-        <p className="mb-10 max-w-[58ch] font-record text-record text-soft leading-relaxed">
-          The full text of Pride and Prejudice, 762 passages from one PDF, ten questions in one
-          conversation. "It answers questions about documents" is four different problems, and only
-          the first is easy.
+        <p className="mb-3 max-w-[62ch] font-record text-record text-soft leading-relaxed">
+          The full text of <em>Pride and Prejudice</em> — 762 passages from one PDF — graded against
+          the categories a retrieval system is normally tested on. Every figure below is from that
+          run.
+        </p>
+        <p className="mb-10 max-w-[62ch] font-record text-label text-faint leading-relaxed">
+          <strong className="font-medium text-soft">Cited</strong> is how many passages the answer
+          stands on. <strong className="font-medium text-soft">Read</strong> is how many retrieval
+          offered it. The gap is precision: an answer resting on one passage out of twelve is doing
+          the right thing, and reporting only the twelve is how good retrieval gets mistaken for
+          careless retrieval.
         </p>
 
-        <ol className="m-0 grid list-none grid-cols-1 gap-0 p-0">
-          {examples.map((example, index) => (
-            <li
-              key={example.kind}
-              className="grid grid-cols-[2.6rem_minmax(0,1fr)] gap-4 border-rule border-t py-7"
-            >
-              <span className="pt-1.5 font-medium font-record text-label text-mark tabular">
-                {String(index + 1).padStart(2, "0")}
-              </span>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[52rem] border-collapse">
+            <thead>
+              <tr className="border-rule border-b">
+                {["Tests", "Question", "Cited", "Read", "First word", "In all"].map((heading) => (
+                  <th
+                    key={heading}
+                    scope="col"
+                    className="pb-2 pr-6 text-left font-normal font-record text-label text-faint uppercase tracking-[0.13em] last:pr-0"
+                  >
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-              <div className="grid gap-3">
-                <p className="m-0 font-medium font-record text-label text-faint uppercase tracking-[0.12em]">
-                  {example.kind}
-                </p>
+            <tbody>
+              {benchmark.map((row) => (
+                <tr key={row.question} className="border-rule border-b align-baseline">
+                  <td className="w-[11rem] py-4 pr-6 font-medium font-record text-label text-ink">
+                    {row.category}
+                  </td>
 
-                <p className="m-0 max-w-[54ch] font-normal font-reading text-[1.2rem] text-ink leading-snug">
-                  {example.question}
-                </p>
+                  <td className="py-4 pr-6">
+                    <p className="m-0 max-w-[46ch] font-light font-reading text-[1.02rem] text-ink leading-snug">
+                      {row.question}
+                    </p>
+                    <p className="m-0 mt-1.5 max-w-[56ch] font-record text-label text-faint leading-relaxed">
+                      {row.note}
+                    </p>
+                  </td>
 
-                <p className="m-0 max-w-[68ch] font-light font-reading text-[1.02rem] text-soft leading-[1.7]">
-                  {example.answer}
-                </p>
+                  <td className="w-[4.5rem] py-4 pr-6 font-record text-record text-mark tabular">
+                    {row.cited}
+                  </td>
+                  <td className="w-[4.5rem] py-4 pr-6 font-record text-record text-faint tabular">
+                    {row.read}
+                  </td>
+                  <td className="w-[6rem] py-4 pr-6 font-record text-record text-soft tabular">
+                    {row.firstWord ?? "—"}
+                  </td>
+                  <td className="w-[5rem] py-4 font-record text-record text-soft tabular">
+                    {row.total}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                <p className="m-0 flex flex-wrap items-baseline gap-x-4 font-record text-label text-faint">
-                  <span className="text-mark tabular">{example.measured}</span>
-                  <span className="max-w-[52ch]">{example.note}</span>
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
+        <p className="mt-6 max-w-[68ch] font-record text-label text-faint leading-relaxed">
+          The run also found three faults, all of them in the citation path this product argues for:
+          consecutive marks ran together so <code>[4, 6, 10]</code> rendered as 4610, bold arrived
+          as literal asterisks, and the model copied citation numbers out of earlier answers where
+          they name different passages. A green test suite reported none of the three. That is what
+          a live run is for.
+        </p>
       </section>
 
       <section className="border-rule border-t px-7 py-12 wide:px-10">

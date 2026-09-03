@@ -40,18 +40,33 @@ including the places building it proved the design wrong, is in
 The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
 generation is checked against the deployment rather than locally.
 
-### One real conversation
+### One real conversation, graded
 
-The full text of *Pride and Prejudice* — 762 passages from one PDF — asked ten questions in one
-conversation, on the deployment. Four of them, because "it answers questions about documents" is
-several different problems and only the first is easy:
+The full text of *Pride and Prejudice* — 762 passages from one PDF — asked ten questions in a single
+conversation on the deployment, against the categories a retrieval system is normally tested on.
+"It answers questions about documents" is eight different problems wearing one name, and a system
+can be good at an exact lookup and useless at a question whose evidence is scattered over four
+hundred pages.
 
-| Question | Demanded | Measured |
-| --- | --- | --- |
-| How are Lady Catherine, Lady Anne Darcy and Mr Darcy related? | one fact, answered briefly and still cited | 2 sources, first word in 5.9s |
-| What in Darcy's letter made Elizabeth reconsider her judgment of Wickham? | quotations from the will, each traceable | 12 sources, 8.8s in all |
-| What did Darcy first say about Elizabeth's appearance, and how does it contrast with his later description of her eyes? | two passages hundreds of pages apart, from one question | 12 sources, 6.1s in all |
-| Trace what changed Elizabeth's opinion of Darcy, from the assembly through Wickham's story to the letter | three ordered parts, so more than one search | 23 sources, 12.5s in all |
+**Cited** is how many passages the answer stands on. **Read** is how many retrieval offered it. The
+gap is precision.
+
+| Tests | Question | Cited | Read | First word | In all |
+| --- | --- | --- | --- | --- | --- |
+| Entity relationship | How are Lady Catherine, Lady Anne Darcy and Mr Darcy related? | 1 | 12 | 5.9s | 6.3s |
+| Cross-chapter | What became of Georgiana and Elizabeth's relationship, and why did it matter to Darcy? | 1 | 12 | 5.2s | 6.1s |
+| Semantic retrieval | What did Charlotte believe Jane should do to make Bingley fall in love with her? | 2 | 12 | 5.2s | 5.8s |
+| Cross-character | Why did Elizabeth think Lydia should not go to Brighton? | 2 | 12 | 5.0s | 5.7s |
+| Distractor resistance | What did Elizabeth think was wrong with Charlotte's reasoning about marriage? | 3 | 12 | 7.4s | 8.5s |
+| Temporal contrast | What did Darcy first say about Elizabeth's appearance, against his later description of her eyes? | 4 | 12 | — | 7.1s |
+| Character development | How does Elizabeth's view of Darcy change after the letter, and which part hits hardest? | 5 | 12 | 8.4s | 10.8s |
+| Multi-hop | What financial circumstances made Wickham keen to keep the elopement secret? | 7 | 12 | 6.3s | 8.1s |
+| Exact retrieval | Why did Elizabeth believe Wickham, and what in the letter made her reconsider? | 6 | 12 | — | 8.8s |
+| Distributed evidence | Trace what changed her opinion of Darcy, from the assembly through Wickham to the letter | 5 | 23 | 12.5s | 16.0s |
+
+The last one is the only question here that cannot be answered by a single search, and it searched
+twice. The two answers resting on one passage out of twelve are the retriever being right, not
+wasteful.
 
 The run also found three faults worth recording, all of them in the citation path this product
 argues for. Consecutive marks ran together, so `[4, 6, 10]` rendered as `4610`. Bold arrived as

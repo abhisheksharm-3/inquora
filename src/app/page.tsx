@@ -172,9 +172,10 @@ const Home = () => (
         <h2 className="mb-2 font-light font-reading text-[1.7rem] text-ink leading-tight">
           What an answer looks like.
         </h2>
-        <p className="mb-9 max-w-[56ch] font-light font-reading text-[1.02rem] text-soft leading-relaxed">
-          From a real run against the full text of Pride and Prejudice: 762 passages, one question,
-          an answer in six seconds with the lines it came from beside it.
+        <p className="mb-9 max-w-[60ch] font-light font-reading text-[1.02rem] text-soft leading-relaxed">
+          From a real run against the full text of <em>Pride and Prejudice</em>: 762 passages, ten
+          questions, every answer under seventeen seconds with the lines it came from beside it.{" "}
+          <Underlined href="/how-it-works">See all ten, graded</Underlined>
         </p>
 
         <div className="border border-rule">
