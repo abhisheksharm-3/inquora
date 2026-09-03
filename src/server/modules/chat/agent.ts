@@ -70,14 +70,39 @@ const buildSystemPrompt = (context: ChatContext): string => {
       ? ""
       : `\nWhat you know about them from earlier conversations:\n${context.memories.map((m) => `- ${m}`).join("\n")}\n`;
 
-  const name = context.profile.displayName
-    ? ` You are talking to ${context.profile.displayName}.`
-    : "";
+  /*
+   * Who is asking and what day it is.
+   *
+   * A model has neither unless it is told. Asked "what date is today" it
+   * answered "I don't have access to the current date", and asked "what is my
+   * name" it went and searched the documents for one — both reasonable, both
+   * avoidable, and both things the old system supplied. The date matters for
+   * more than pleasantries: a question like "how many months has he worked
+   * here" is unanswerable from a document that only holds a start date.
+   *
+   * Written as a long date rather than an ISO string, because that is how it
+   * will be repeated back.
+   */
+  const today = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date());
+
+  const reader = context.profile.displayName
+    ? `You are talking to ${context.profile.displayName}.`
+    : "You do not know the reader's name.";
 
   // Deliberately no adaptive prose beyond this. The old prompt-engineering module
   // generated several hundred lines per turn, and every system-prompt token is
   // billed on every turn of every conversation.
-  return `You answer questions about the user's documents.${name}
+  return `You answer questions about the user's documents.
+
+${reader} Today is ${today}. Those two facts are yours to use directly: a
+question about the reader, about today, or about how long ago something in a
+document was, is answered from here rather than by searching for it.
 
 Attached:
 ${documents}

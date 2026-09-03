@@ -40,23 +40,38 @@ export const formatWhen = (iso: string, now = Date.now()): string => {
 
   if (seconds < 60) return "just now";
 
+  /*
+   * How many of each unit make up the next one.
+   *
+   * The first version paired each unit with the wrong divisor — it divided
+   * minutes by 24 to get hours, and hours by 7 to get days — so every error
+   * compounded into the next step and one day came out as "2 weeks ago". Every
+   * timestamp in the product was wrong, and wrong in the direction that makes
+   * recent work look abandoned.
+   *
+   * Each entry now reads as "there are N of the previous unit in one of these",
+   * which is the sentence the arithmetic has to match.
+   */
   const scales: [number, Intl.RelativeTimeFormatUnit][] = [
-    [60, "minute"],
-    [24, "hour"],
-    [7, "day"],
-    [4.35, "week"],
-    [12, "month"],
+    [60, "minute"], // 60 seconds in a minute
+    [60, "hour"], // 60 minutes in an hour
+    [24, "day"], // 24 hours in a day
+    [7, "week"], // 7 days in a week
+    [4.348, "month"], // and about 4.35 weeks in a month
+    [12, "year"], // 12 months in a year
   ];
 
   let value = seconds;
   let unit: Intl.RelativeTimeFormatUnit = "second";
 
-  for (const [factor, next] of scales) {
-    if (value < factor) break;
-    value /= factor;
+  for (const [per, next] of scales) {
+    if (value < per) break;
+
+    value /= per;
     unit = next;
   }
 
+  // `numeric: "auto"` so one day is "yesterday" rather than "1 day ago".
   return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(-Math.round(value), unit);
 };
 
