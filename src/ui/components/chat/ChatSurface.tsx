@@ -5,11 +5,11 @@ import { useEffect, useRef } from "react";
 import type { ChatDetail, PassageInContext } from "@/core/workspace/workspace.types";
 import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
 import { useConversation } from "@/ui/hooks/useConversation";
-import { Answer } from "./Answer";
 import { Composer } from "./Composer";
 import { Openers } from "./Openers";
 import { PassageViewer } from "./PassageViewer";
 import { ScopeBar } from "./ScopeBar";
+import { Turn } from "./Turn";
 import { turnEntries } from "./turn-apparatus";
 
 /**
@@ -95,29 +95,7 @@ export const ChatSurface = ({
           ) : (
             <div className="flex-1 wide:min-h-0 wide:overflow-y-auto wide:pr-2">
               {turns.map((turn) => (
-                <article key={turn.id} className="mb-8">
-                  {turn.question ? (
-                    <h2 className="mb-7 max-w-[25ch] font-normal font-reading text-ask after:mt-5 after:block after:h-px after:w-[30px] after:bg-mark">
-                      {turn.question}
-                    </h2>
-                  ) : null}
-
-                  {turn.answer ? (
-                    <Answer text={turn.answer} specimens={turn.specimens} />
-                  ) : turn.status === "streaming" ? (
-                    <p className="font-record text-label text-faint" aria-live="polite">
-                      Searching
-                    </p>
-                  ) : null}
-
-                  {/* Beside the thing that failed, never written into the
-                    transcript as something the assistant said. */}
-                  {turn.status === "failed" ? (
-                    <p role="alert" className="mt-3 font-record text-label text-danger">
-                      {turn.error}
-                    </p>
-                  ) : null}
-                </article>
+                <Turn key={turn.id} turn={turn} />
               ))}
               <div ref={tail} />
             </div>
@@ -131,6 +109,7 @@ export const ChatSurface = ({
               onStop={stop}
               streaming={streaming}
               disabled={chat.documents.length === 0}
+              scope={<ScopeBar chat={chat} />}
               placeholder={
                 chat.documents.length === 0
                   ? "Add a document to this conversation first"

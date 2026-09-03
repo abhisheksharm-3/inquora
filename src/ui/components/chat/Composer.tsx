@@ -3,9 +3,17 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 /**
- * A line of writing with an oxide caret, not a bordered box. One hairline above
- * it, the serif at reading weight, and no send button until there is something
- * to send.
+ * The question box.
+ *
+ * It was a bare line above a hairline, with "Enter to send" floating in the
+ * middle of an empty row and the send control at the far right, so the thing
+ * you type into did not look like a thing you type into and nothing in the row
+ * belonged to anything else in it.
+ *
+ * It is the same object as the one on the home screen now: a bordered box, the
+ * text at reading size, and one footer row carrying what the question will read
+ * on the left and the send control on the right. Two screens that do the same
+ * thing should not have two shapes for it.
  *
  * A textarea rather than an input, because a question can be two sentences, and
  * it grows to fit rather than scrolling inside three lines. Enter sends;
@@ -24,23 +32,20 @@ export const Composer = ({
   onStop: () => void;
   streaming: boolean;
   disabled?: boolean;
-  /** What this question will read, shown on the same row as the send control. */
+  /** What this question will read, on the same row as the send control. */
   scope?: React.ReactNode;
   placeholder?: string;
 }) => {
   const [value, setValue] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
 
-  // Height set from the content rather than from a row count, in a layout
-  // effect so it is measured before paint and the line never jumps.
+  // Height from the content rather than a row count, in a layout effect so it
+  // is measured before paint and the line never jumps.
   useLayoutEffect(() => {
     const element = field.current;
     if (!element) return;
 
     element.style.height = "auto";
-    // An empty field is one row. Measuring scrollHeight on an empty textarea
-    // returns its padded minimum, which is taller than the line the design asks
-    // for.
     if (value) element.style.height = `${element.scrollHeight}px`;
   }, [value]);
 
@@ -52,54 +57,63 @@ export const Composer = ({
   };
 
   return (
-    <div className="sticky bottom-0 shrink-0 border-rule border-t bg-ground pt-4 pb-6 wide:static">
-      <div className="flex items-start gap-2.5">
-        <span aria-hidden className="mt-1.5 h-[19px] w-[1.5px] shrink-0 bg-mark" />
-        <label className="sr-only" htmlFor="question">
-          Your question
-        </label>
-        <textarea
-          id="question"
-          ref={field}
-          rows={1}
-          value={value}
-          disabled={disabled}
-          placeholder={placeholder}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              send();
-            }
-          }}
-          className="max-h-56 min-h-[26px] w-full resize-none border-0 bg-transparent p-0 font-light font-reading text-[1.05rem] text-ink caret-mark placeholder:text-faint focus-visible:outline-none"
-        />
-      </div>
+    <div className="sticky bottom-0 shrink-0 bg-ground pt-3 pb-5 wide:static">
+      <div className="border border-rule focus-within:border-soft">
+        <div className="px-5 pt-4 pb-3">
+          <label className="sr-only" htmlFor="question">
+            Your question
+          </label>
+          <textarea
+            id="question"
+            ref={field}
+            rows={1}
+            value={value}
+            disabled={disabled}
+            placeholder={placeholder}
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                send();
+              }
+            }}
+            className="max-h-52 min-h-[2.2rem] w-full resize-none border-0 bg-transparent p-0 font-light font-reading text-[1.15rem] text-ink leading-snug caret-mark placeholder:text-faint focus-visible:outline-none"
+          />
+        </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-5 gap-y-2.5 pl-5">
-        {scope ?? <span />}
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-3 border-rule border-t px-5 py-3">
+          {scope ?? <span />}
 
-        <p className="font-record text-label text-faint">
-          {streaming ? "Answering" : value.trim() ? "Enter to send" : ""}
-        </p>
+          <div className="flex shrink-0 items-center gap-4">
+            {value.trim() && !streaming ? (
+              <span className="hidden font-record text-label text-faint sm:inline">
+                Enter to ask
+              </span>
+            ) : null}
 
-        {streaming ? (
-          <button
-            type="button"
-            onClick={onStop}
-            className="min-h-11 font-record text-label text-faint uppercase tracking-[0.13em] hover:text-ink"
-          >
-            Stop
-          </button>
-        ) : value.trim() ? (
-          <button
-            type="button"
-            onClick={send}
-            className="inline-flex min-h-11 items-center rounded-hair border border-mark px-3.5 py-1.5 font-record text-label text-mark uppercase tracking-[0.13em] transition-colors duration-150 ease-out-quart hover:bg-wash"
-          >
-            Ask
-          </button>
-        ) : null}
+            {streaming ? (
+              <>
+                <span className="font-record text-label text-faint">Answering</span>
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="flex h-9 items-center rounded-hair border border-rule px-3.5 font-record text-label text-soft uppercase tracking-[0.12em] hover:border-soft hover:text-ink"
+                >
+                  Stop
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={send}
+                disabled={disabled || !value.trim()}
+                className="flex h-9 items-center rounded-hair border border-mark px-4 font-record text-label text-mark uppercase tracking-[0.12em] transition-colors duration-150 ease-out-quart hover:bg-wash disabled:border-rule disabled:text-faint"
+              >
+                Ask
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

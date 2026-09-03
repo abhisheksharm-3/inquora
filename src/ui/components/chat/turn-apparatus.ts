@@ -65,8 +65,11 @@ const failureOf = (turn: Turn): Entry[] => {
   return [];
 };
 
-/** The tool names, in the voice the apparatus uses: telegraphic, lower case. */
-const TOOL_LABEL: Record<string, string> = {
+/**
+ * The tool names, in the voice the apparatus uses: telegraphic, lower case.
+ * Exported, because a turn that is still working says the same words.
+ */
+export const TOOL_LABEL: Record<string, string> = {
   search_documents: "searched the documents",
   read_chunks: "read around a hit",
   list_documents: "listed what is attached",
