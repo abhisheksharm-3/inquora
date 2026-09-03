@@ -4,6 +4,7 @@ import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useTransition } from "react";
 import { signOutAction } from "@/app/(app)/actions";
 import { AUTH_ROUTES, DASHBOARD_ROUTES } from "@/core/routes";
 import type { Account } from "@/core/workspace/account.types";
@@ -23,6 +24,7 @@ import type { Account } from "@/core/workspace/account.types";
 export const AccountMenu = ({ account }: { account: Account }) => {
   const { email, displayName, avatarUrl } = account;
   const { theme, setTheme } = useTheme();
+  const [signingOut, startSignOut] = useTransition();
 
   return (
     <Dropdown.Root>
@@ -53,11 +55,15 @@ export const AccountMenu = ({ account }: { account: Account }) => {
         <Dropdown.Content
           align="end"
           sideOffset={8}
-          className="z-20 min-w-[15rem] rounded-hair border border-rule bg-panel py-2 shadow-[0_18px_44px_-30px_rgb(0_0_0/0.6)] data-[state=open]:animate-in"
+          className="z-20 min-w-[17rem] rounded-hair border border-rule bg-panel py-1.5 shadow-[0_20px_50px_-28px_rgb(0_0_0/0.55)]"
         >
-          <div className="border-rule border-b px-3.5 pb-3">
+          {/* Who you are, set as a name rather than as another menu row. Every
+              line in this menu used to be the same size and colour, so the
+              identity, the destinations, the preference and the way out all
+              read as five links. */}
+          <div className="mb-1.5 border-rule border-b px-3.5 pt-2 pb-3">
             {displayName ? (
-              <p className="m-0 truncate font-light font-reading text-[1rem] text-ink">
+              <p className="m-0 truncate font-light font-reading text-[1.05rem] text-ink">
                 {displayName}
               </p>
             ) : null}
@@ -93,18 +99,26 @@ export const AccountMenu = ({ account }: { account: Account }) => {
 
           <Dropdown.Separator className="my-2 h-px bg-rule" />
 
-          {/* A form, so signing out is a POST rather than a link somebody's
-            browser or a link-prefetcher can follow on its own. */}
-          <form action={signOutAction}>
-            <Dropdown.Item asChild>
-              <button
-                type="submit"
-                className="flex w-full items-center px-3.5 py-2 text-left font-record text-[0.78rem] text-soft outline-none hover:text-ink data-highlighted:bg-wash data-highlighted:text-ink"
-              >
-                Sign out
-              </button>
-            </Dropdown.Item>
-          </form>
+          {/*
+           * Called from `onSelect` rather than submitted from a form.
+           *
+           * It was a submit button inside a Radix item, and a menu closes on
+           * select: the form unmounted before the browser submitted it, so
+           * clicking Sign out did nothing at all. `preventDefault` keeps the
+           * menu open until the action's redirect takes the page.
+           */}
+          <Dropdown.Item
+            disabled={signingOut}
+            onSelect={(event) => {
+              event.preventDefault();
+              startSignOut(async () => {
+                await signOutAction();
+              });
+            }}
+            className="mx-1 flex cursor-pointer items-center justify-between rounded-hair px-2.5 py-2 font-record text-[0.78rem] text-soft outline-none data-highlighted:bg-wash data-highlighted:text-danger"
+          >
+            {signingOut ? "Signing out" : "Sign out"}
+          </Dropdown.Item>
         </Dropdown.Content>
       </Dropdown.Portal>
     </Dropdown.Root>
@@ -113,7 +127,7 @@ export const AccountMenu = ({ account }: { account: Account }) => {
 
 const THEMES = [
   { value: "light", label: "Light" },
-  { value: "system", label: "Match my system" },
+  { value: "system", label: "Auto" },
   { value: "dark", label: "Dark" },
 ] as const;
 

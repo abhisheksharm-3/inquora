@@ -2,6 +2,7 @@
 
 import type { Turn as TurnState } from "@/ui/hooks/conversation.types";
 import { Answer } from "./Answer";
+import { citedNumbers } from "./citations";
 import { TOOL_LABEL } from "./turn-apparatus";
 
 /**
@@ -17,64 +18,86 @@ import { TOOL_LABEL } from "./turn-apparatus";
  * what the answer used and how long it took — which is the apparatus idea
  * applied to the turn rather than to the column.
  */
-export const Turn = ({ turn }: { turn: TurnState }) => (
-  <article className="border-rule border-b py-9 first:pt-0">
-    {turn.question ? (
-      <header className="mb-6">
-        <p className="mb-2.5 font-record text-label text-faint uppercase tracking-[0.14em]">
-          You asked
+export const Turn = ({ turn }: { turn: TurnState }) => {
+  /*
+   * Cited, not retrieved.
+   *
+   * The footer used to report every passage a search returned, so an answer
+   * resting on one passage said "12 sources". A review of the retrieval read
+   * that as poor precision, and the retrieval was fine — the label was
+   * counting candidates. How many were read is worth saying too, but as the
+   * second number rather than the first.
+   */
+  const cited = citedNumbers(turn.answer);
+  const supporting = turn.specimens.filter((specimen) => cited.has(specimen.number)).length;
+
+  return (
+    <article className="border-rule border-b py-9 first:pt-0">
+      {turn.question ? (
+        <header className="mb-6">
+          <p className="mb-2.5 font-record text-label text-faint uppercase tracking-[0.14em]">
+            You asked
+          </p>
+          <h2 className="max-w-[38ch] font-normal font-reading text-[1.5rem] text-ink leading-snug">
+            {turn.question}
+          </h2>
+        </header>
+      ) : null}
+
+      {turn.answer ? (
+        <Answer text={turn.answer} specimens={turn.specimens} />
+      ) : turn.status === "streaming" ? (
+        <p aria-live="polite" className="font-record text-label text-faint">
+          {turn.operations.length > 0
+            ? (TOOL_LABEL[turn.operations.at(-1)?.name ?? ""] ?? "Working")
+            : "Searching your documents"}
         </p>
-        <h2 className="max-w-[38ch] font-normal font-reading text-[1.5rem] text-ink leading-snug">
-          {turn.question}
-        </h2>
-      </header>
-    ) : null}
+      ) : null}
 
-    {turn.answer ? (
-      <Answer text={turn.answer} specimens={turn.specimens} />
-    ) : turn.status === "streaming" ? (
-      <p aria-live="polite" className="font-record text-label text-faint">
-        {turn.operations.length > 0
-          ? (TOOL_LABEL[turn.operations.at(-1)?.name ?? ""] ?? "Working")
-          : "Searching your documents"}
-      </p>
-    ) : null}
-
-    {/* Beside the thing that failed, never written into the transcript as
+      {/* Beside the thing that failed, never written into the transcript as
         something the assistant said. The old system stored failures as
         assistant messages, so every outage became a permanent turn. */}
-    {turn.status === "failed" ? (
-      <p role="alert" className="mt-4 font-record text-record text-danger">
-        {turn.error}
-      </p>
-    ) : null}
+      {turn.status === "failed" ? (
+        <p role="alert" className="mt-4 font-record text-record text-danger">
+          {turn.error}
+        </p>
+      ) : null}
 
-    {turn.answer && turn.status !== "streaming" ? (
-      <footer className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-record text-label text-faint">
-        <span>
-          {turn.specimens.length === 0
-            ? "no sources"
-            : `${turn.specimens.length} source${turn.specimens.length === 1 ? "" : "s"}`}
-        </span>
-        {turn.firstTokenMs ? (
-          <>
-            <span aria-hidden>·</span>
-            <span className="tabular">{(turn.firstTokenMs / 1000).toFixed(1)}s to first word</span>
-          </>
-        ) : null}
-        {turn.totalMs ? (
-          <>
-            <span aria-hidden>·</span>
-            <span className="tabular">{(turn.totalMs / 1000).toFixed(1)}s in all</span>
-          </>
-        ) : null}
-        {turn.status === "aborted" ? (
-          <>
-            <span aria-hidden>·</span>
-            <span>stopped early, what was written was kept</span>
-          </>
-        ) : null}
-      </footer>
-    ) : null}
-  </article>
-);
+      {turn.answer && turn.status !== "streaming" ? (
+        <footer className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 font-record text-label text-faint">
+          <span>
+            {supporting === 0
+              ? "nothing cited"
+              : `${supporting} source${supporting === 1 ? "" : "s"} cited`}
+          </span>
+          {turn.specimens.length > supporting ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>{turn.specimens.length} read</span>
+            </>
+          ) : null}
+          {turn.firstTokenMs ? (
+            <>
+              <span aria-hidden>·</span>
+              <span className="tabular">
+                {(turn.firstTokenMs / 1000).toFixed(1)}s to first word
+              </span>
+            </>
+          ) : null}
+          {turn.totalMs ? (
+            <>
+              <span aria-hidden>·</span>
+              <span className="tabular">{(turn.totalMs / 1000).toFixed(1)}s in all</span>
+            </>
+          ) : null}
+          {turn.status === "aborted" ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>stopped early, what was written was kept</span>
+            </>
+          ) : null}
+        </footer>
+      ) : null}
+    </article>
+  );
+};

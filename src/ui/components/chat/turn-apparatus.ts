@@ -1,5 +1,6 @@
 import type { Entry } from "@/ui/components/apparatus/apparatus.types";
 import type { Turn } from "@/ui/hooks/conversation.types";
+import { citedNumbers } from "./citations";
 
 /**
  * One turn's apparatus: operations and specimens, interleaved in the order they
@@ -11,30 +12,42 @@ import type { Turn } from "@/ui/hooks/conversation.types";
  * timing rather than collapsing into a spinner.
  */
 export const turnEntries = (turns: Turn[]): Entry[] =>
-  turns.flatMap((turn) => [
-    ...turn.operations.map(
-      (operation): Entry => ({
-        kind: "operation",
-        // Scoped to the turn, because the same tool runs in several of them.
-        id: `${turn.id}:${operation.name}:${operation.startedAt}`,
-        tick: operation.durationMs === undefined ? "·" : "✓",
-        title: TOOL_LABEL[operation.name] ?? operation.name,
-        detail: operation.argument,
-        durationMs: operation.durationMs,
-      }),
-    ),
-    ...turn.specimens.map(
-      (specimen): Entry => ({
-        kind: "specimen",
-        id: `${turn.id}:${specimen.number}`,
-        number: specimen.number,
-        source: [specimen.documentTitle, `passage ${specimen.chunkIndex + 1}`],
-        passage: specimen.content,
-        href: passageHref(specimen.chunkId, specimen.number),
-      }),
-    ),
-    ...failureOf(turn),
-  ]);
+  turns.flatMap((turn) => {
+    const cited = citedNumbers(turn.answer);
+
+    // Cited first, then the rest. A reader scanning for the evidence behind a
+    // claim should not have to pick it out of the candidates that were read and
+    // not used.
+    const specimens = [...turn.specimens].sort(
+      (a, b) => Number(cited.has(b.number)) - Number(cited.has(a.number)) || a.number - b.number,
+    );
+
+    return [
+      ...turn.operations.map(
+        (operation): Entry => ({
+          kind: "operation",
+          // Scoped to the turn, because the same tool runs in several of them.
+          id: `${turn.id}:${operation.name}:${operation.startedAt}`,
+          tick: operation.durationMs === undefined ? "·" : "✓",
+          title: TOOL_LABEL[operation.name] ?? operation.name,
+          detail: operation.argument,
+          durationMs: operation.durationMs,
+        }),
+      ),
+      ...specimens.map(
+        (specimen): Entry => ({
+          kind: "specimen",
+          id: `${turn.id}:${specimen.number}`,
+          number: specimen.number,
+          source: [specimen.documentTitle, `passage ${specimen.chunkIndex + 1}`],
+          passage: specimen.content,
+          href: passageHref(specimen.chunkId, specimen.number),
+          cited: cited.has(specimen.number),
+        }),
+      ),
+      ...failureOf(turn),
+    ];
+  });
 
 /**
  * Where following a citation goes. A URL rather than a click handler: the back

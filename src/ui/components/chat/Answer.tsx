@@ -1,29 +1,8 @@
 import Link from "next/link";
 import type { Specimen } from "@/core/workspace/workspace.types";
+import { MARK } from "./citations";
 import { passageHref } from "./turn-apparatus";
 
-/**
- * A citation, which the model writes as `[3]` and sometimes as `[1, 2, 3]`.
- *
- * The second form was rendered as literal text — an answer citing nine
- * passages printed "[1, 2, 3, 4, 5, 6, 7, 8, 9]" in the middle of a sentence.
- * A group becomes one mark per number.
- */
-const MARK = /\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]/g;
-
-/**
- * The answer, in the reading column: Newsreader at 300, 58 characters, generous
- * leading, no bubble and nothing placed behind it.
- *
- * `[3]` in the text becomes a superscript mark that reaches its specimen, and
- * the specimen's number reaches back. That pair is the only connective tissue
- * between an assertion and the thing that backs it, which is the whole thesis
- * of the product rendered as two anchors.
- *
- * A mark whose specimen has not arrived yet is left as plain text rather than
- * linked to nothing: specimens stream in, so for a few hundred milliseconds the
- * text can be ahead of the apparatus.
- */
 export const Answer = ({ text, specimens }: { text: string; specimens: Specimen[] }) => {
   const known = new Map(specimens.map((specimen) => [specimen.number, specimen]));
 

@@ -38,6 +38,14 @@ export type Specimen = {
   marked?: string;
   /** Where following this specimen leads. Omitted while a viewer does not exist. */
   href?: string;
+  /**
+   * Whether the answer actually cites it.
+   *
+   * A search returns candidates and an answer stands on a few of them. Showing
+   * all twelve as evidence, identically, claims support the answer never
+   * claimed — and it is what made a one-passage answer report "12 sources".
+   */
+  cited?: boolean;
 };
 
 export type Entry = Operation | Specimen;
