@@ -120,9 +120,11 @@ like [1], and writing it immediately after the claim that passage supports.
 
 That bracketed number is the only citation there is. It counts up from 1 within
 this answer, so a citation is never a page number, a line number, or a position
-inside a document. Copy it exactly, never renumber, and never write a number you
-have not been shown. A claim about document content with no number after it
-reads to the reader as unsupported.${
+inside a document, and a number from an earlier answer in this conversation
+means nothing here. Cite only what a search has put in front of you in this
+turn. If you cannot support a claim with one of those numbers, say the documents
+do not show it rather than citing a number with a caveat attached. A claim about
+document content with no number after it reads to the reader as unsupported.${
     context.chat.webSearch
       ? `
 
@@ -248,12 +250,27 @@ export const createAnsweringAgent = ({
     },
 
     async *stream(query, signal) {
+      /*
+       * History, with its citation marks removed.
+       *
+       * Specimen numbers are scoped to the turn that produced them, so [5] in
+       * an earlier answer refers to a passage this turn has never seen. The
+       * model, reasonably, copied them: one answer cited "[11, from a previous
+       * search]" and another wrote "[399, though this passage is not directly
+       * cited in the provided search results, it is a known plot point]" — it
+       * knew the number was unsupported and used it anyway, because the
+       * transcript was full of numbers that looked like citations.
+       *
+       * Stripping them means the only numbers it can cite are the ones in front
+       * of it, which is the rule the prompt states.
+       */
       const history = context.messages.map((message) => ({
         role: message.role,
         content: message.parts
           .filter((part) => part.kind === "text" && part.text)
           .map((part) => part.text)
-          .join("\n"),
+          .join("\n")
+          .replace(/\s*\[\d{1,3}(?:\s*,\s*\d{1,3})*\]/g, ""),
       }));
 
       const stream = await agent.stream(

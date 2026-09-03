@@ -129,7 +129,7 @@ const withMarks = (paragraph: string, known: Map<number, Specimen>): React.React
     const numbers = match[1].split(",").map((part) => Number(part.trim()));
     const at = match.index;
 
-    out.push(paragraph.slice(last, at));
+    out.push(...emphasised(paragraph.slice(last, at), `${at}-lead`));
     last = at + match[0].length;
 
     // Every number in the group that has arrived, each its own mark. A group
@@ -141,9 +141,23 @@ const withMarks = (paragraph: string, known: Map<number, Specimen>): React.React
       continue;
     }
 
-    for (const specimen of found) {
-      if (!specimen) continue;
+    found.forEach((specimen, position) => {
+      if (!specimen) return;
       const number = specimen.number;
+
+      // A comma between marks. Three of them in a row rendered as "4610",
+      // which reads as one four-digit number and is unclickable nonsense.
+      if (position > 0) {
+        out.push(
+          <sup
+            key={`${at}-sep-${number}`}
+            aria-hidden
+            className="align-[0.42em] font-record text-[0.58rem] text-faint"
+          >
+            ,
+          </sup>,
+        );
+      }
 
       out.push(
         <Link
@@ -161,10 +175,44 @@ const withMarks = (paragraph: string, known: Map<number, Specimen>): React.React
           </sup>
         </Link>,
       );
-    }
+    });
   }
 
-  out.push(paragraph.slice(last));
+  out.push(...emphasised(paragraph.slice(last), "tail"));
+
+  return out;
+};
+
+const BOLD = /\*\*(.+?)\*\*/g;
+
+/**
+ * `**like this**`, which the model uses to head the sections of a long answer.
+ *
+ * It came through as literal asterisks — "**Darcy's Behavior at the Meryton
+ * Assembly:**" — which is the one piece of markdown that shows up in almost
+ * every multi-part answer. Weight rather than a heading element, because these
+ * are emphasised runs inside a paragraph and turning them into headings would
+ * break the document outline.
+ */
+const emphasised = (text: string, key: string): React.ReactNode[] => {
+  if (!text.includes("**")) return [text];
+
+  const out: React.ReactNode[] = [];
+  let last = 0;
+
+  for (const match of text.matchAll(BOLD)) {
+    const at = match.index;
+
+    out.push(text.slice(last, at));
+    out.push(
+      <strong key={`${key}-${at}`} className="font-medium text-ink">
+        {match[1]}
+      </strong>,
+    );
+    last = at + match[0].length;
+  }
+
+  out.push(text.slice(last));
 
   return out;
 };
