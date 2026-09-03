@@ -15,8 +15,12 @@ Inquora is being rebuilt in two slices.
   Plans: `.polaris/plans/2026-08-25-non-ui-core.md` (phases 0 and 1),
   `.polaris/plans/2026-08-27-non-ui-core-phases-2-5.md`,
   `.polaris/plans/2026-08-27-non-ui-core-phases-6-9.md`
-- **Slice two, the UI. Not started.** What survives of the old interface is the landing page,
-  sign-in and sign-up. Everything else was deleted rather than reworked.
+- **Slice two, the UI: built on 2026-09-03.** Landing, how it works, sign-in and sign-up, `/ask`,
+  `/chat/[id]`, `/history` and `/settings`. Thirty-five migrations, 253 vitest tests, 149 pgTAP
+  assertions. The transcript is `@assistant-ui/react` over `useExternalStoreRuntime`, whose store
+  is `useConversation` — the one owner of the SSE stream. Server state reaches the client through
+  route handlers and server actions only, cached with TanStack Query on `/ask`.
+  Not wired: switching between branches, because the chat query returns rows rather than a path.
   Scope: `.polaris/specs/2026-08-25-ui-scope.md`
   Brief: `.polaris/specs/2026-08-25-ui-shape-brief.md`
   Mockups: `docs/design/`

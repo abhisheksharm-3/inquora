@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
-import type { ChatDetail, Specimen } from "@/core/workspace/workspace.types";
+import type { ChatDetail, Message, Specimen } from "@/core/workspace/workspace.types";
 import type { Operation, Turn } from "./conversation.types";
 
 /**
@@ -26,8 +26,18 @@ export const useConversation = (chat: ChatDetail) => {
     setTurns((current) => current.map((turn) => (turn.id === id ? next(turn) : turn)));
   }, []);
 
-  const send = useCallback(
-    (question: string) => {
+  /**
+   * Ask a question at a position in the conversation.
+   *
+   * `at` is where the turn lands: the end for a new question, an existing index
+   * for an edit or a regeneration, in which case everything from there on is
+   * replaced. The server is told the parent message, so a replacement is a
+   * sibling branch in `messages.parent_id` rather than an overwrite — nothing
+   * that was said is lost, and the column that was added for branching in
+   * migration 0004 finally carries something.
+   */
+  const run = useCallback(
+    (question: string, at: number) => {
       const trimmed = question.trim();
       if (!trimmed || abort.current) return;
 
@@ -39,18 +49,26 @@ export const useConversation = (chat: ChatDetail) => {
        * — leaves nothing in flight, so a second Enter created a second turn
        * with the same words and its own client id, which the server treats as
        * a genuinely new message. Two identical empty turns is what that looks
-       * like.
+       * like. A regeneration asks the same question on purpose, so the guard
+       * applies only to a question typed at the end.
        */
-      if (turns.at(-1)?.question === trimmed && turns.at(-1)?.status !== "failed") return;
+      if (
+        at >= turns.length &&
+        turns.at(-1)?.question === trimmed &&
+        turns.at(-1)?.status !== "failed"
+      ) {
+        return;
+      }
 
       // The client's own id, which is what makes the send idempotent: a
       // double-click or a retrying proxy reaches the same row rather than
       // paying for a second agent run.
       const id = crypto.randomUUID();
       const startedAt = performance.now();
+      const parentId = turns[at - 1]?.answerMessageId ?? null;
 
       setTurns((current) => [
-        ...current,
+        ...current.slice(0, at),
         {
           id,
           question: trimmed,
@@ -69,7 +87,7 @@ export const useConversation = (chat: ChatDetail) => {
           const response = await fetch(`/api/chats/${chat.id}/messages`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ content: trimmed, clientMessageId: id, parentId: null }),
+            body: JSON.stringify({ content: trimmed, clientMessageId: id, parentId }),
             signal: controller.signal,
           });
 
@@ -106,16 +124,40 @@ export const useConversation = (chat: ChatDetail) => {
     [chat.id, patch, turns],
   );
 
+  const send = useCallback((question: string) => run(question, turns.length), [run, turns.length]);
+
+  /** Ask this turn again, from the same question and the same parent. */
+  const regenerate = useCallback(
+    (turnId: string) => {
+      const at = turns.findIndex((turn) => turn.id === turnId);
+      if (at === -1) return;
+
+      run(turns[at].question, at);
+    },
+    [run, turns],
+  );
+
+  /** Ask something else in this turn's place. */
+  const edit = useCallback(
+    (turnId: string, question: string) => {
+      const at = turns.findIndex((turn) => turn.id === turnId);
+      if (at === -1) return;
+
+      run(question, at);
+    },
+    [run, turns],
+  );
+
   const stop = useCallback(() => abort.current?.abort(), []);
 
-  return { turns, send, stop, streaming: pending || abort.current !== null };
+  return { turns, send, regenerate, edit, stop, streaming: pending || abort.current !== null };
 };
 
 /** What the server has already stored, as turns. */
 const toTurns = (chat: ChatDetail): Turn[] => {
   const turns: Turn[] = [];
 
-  for (const message of chat.messages) {
+  for (const message of visiblePath(chat.messages)) {
     const text = message.parts
       .filter((part) => part.kind === "text" && part.text)
       .map((part) => part.text)
@@ -166,6 +208,43 @@ const toTurns = (chat: ChatDetail): Turn[] => {
   }
 
   return turns;
+};
+
+/**
+ * The branch to show, from a tree stored flat.
+ *
+ * Editing a question stores a sibling rather than replacing a row, so a chat
+ * that has been edited holds more than one path and reading the rows in
+ * creation order would show every version of the conversation at once. This
+ * follows parent pointers from the root and takes the newest child at each
+ * step, which is the branch somebody last chose.
+ *
+ * Legacy rows are the wrinkle: every question sent before branching existed
+ * has `parent_id` null, so they are all roots and a plain walk would keep only
+ * the last one. A root question that is not the first message is therefore
+ * attached to the message before it, which makes those conversations the
+ * straight line they always were.
+ */
+const visiblePath = (messages: Message[]): Message[] => {
+  const children = new Map<string | null, Message[]>();
+
+  messages.forEach((message, index) => {
+    const parent =
+      message.parentId ?? (message.role === "user" && index > 0 ? messages[index - 1].id : null);
+
+    children.set(parent, [...(children.get(parent) ?? []), message]);
+  });
+
+  const path: Message[] = [];
+  let cursor: string | null = null;
+
+  for (;;) {
+    const next: Message | undefined = children.get(cursor)?.at(-1);
+    if (!next) return path;
+
+    path.push(next);
+    cursor = next.id;
+  }
 };
 
 type StreamEvent = { event: string; data: unknown };

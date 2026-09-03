@@ -2,54 +2,49 @@
 
 Ask a question of your documents and get an answer you can verify without leaving the page.
 
-Verification is the point. Every claim traces to the passage it came from, and reaching that
-passage takes one action. An answer with no traceable source is a worse outcome than no answer.
-
 **Live:** [inquora.vercel.app](https://inquora.vercel.app)
+
+Every claim in an answer carries a small number. Clicking it opens the passage the claim came from,
+marked in place, in the same column you were reading. An answer with no traceable source is a worse
+outcome than no answer, so the product is built around the trace rather than around the chat.
 
 ---
 
-## Status: the backend is built, the interface is not
+## What it does
 
-The link above serves one page saying the product is offline, because it is. Everything below the
-interface has been rebuilt and runs; nothing above it exists yet.
+Add a PDF, a spreadsheet, a slide deck, a GitHub repository, a YouTube video or a web page. Put
+several of them in one conversation and switch any of them in or out of what a question reads. Ask
+in your own words. The answer streams, the passages behind it appear beside it as they are found,
+and following one takes a single action.
 
-| Slice                                                   | State                       | Documents                                                                                                                       |
-| ------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Non-UI core** — data, retrieval, transport, ingestion | **built and verified live** | [as built](.polaris/specs/2026-09-02-non-ui-core-as-built.md) · [design](.polaris/specs/2026-08-25-non-ui-core-design.md)       |
-| **UI** — every surface, rebuilt from nothing            | scoped, shaped, not started | [scope](.polaris/specs/2026-08-25-ui-scope.md) · [brief](.polaris/specs/2026-08-25-ui-shape-brief.md) · [mockups](docs/design/) |
+**Each kind is answered by a specialist**, because "it answers questions about documents" is eight
+different problems wearing one name.
 
-Decisions that are expensive to reverse live in [`docs/adr/`](docs/adr/). What was actually built,
-including the places building it proved the design wrong, is in
-[the as-built spec](.polaris/specs/2026-09-02-non-ui-core-as-built.md).
+| Kind | How it is read |
+| --- | --- |
+| PDFs, Word, slides, images | Parsed to text, chunked, embedded, and cited by page |
+| Spreadsheets | Loaded as rows and queried with SQL, so a figure comes from a cell rather than from a sentence describing the cell |
+| Repositories | Files stored and greppable, embeddings spent on documentation and a per-file summary of declarations, answers cited as `path:line` |
+| Videos | Transcript with a timestamp on every claim, and told plainly that it cannot see the picture |
+| Web pages | Fetched, cleaned and cited by section |
 
-### Measured, live rather than mocked
+A repository is indexed by what answers questions about it rather than by everything in it. On
+`supabase/supabase-js` that is 516 files and 711 chunks, against 2,664 for a first version that
+embedded every function body. Grep is kept because it finds identifiers exactly, which is what a
+dense vector flattens.
 
-|                        |                                                                                          |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| Retrieval quality      | **recall@4 93.8%, MRR 0.967** over the fixture corpus — `bun run eval`                   |
-| A deployed answer      | **200 SSE, first event 3.6s, 6.3s total**, citations persisted — `bun run live:deployed` |
-| A real PDF, end to end | **3 seconds** — `bun run scripts/live-ingest.ts <file>`                                  |
-| A 516-file repository  | **1.3 seconds** to read and chunk                                                        |
-| A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
-| Database               | 35 migrations, **149 pgTAP assertions**                                                  |
-| Suite                  | 253 tests, typecheck clean, zero lint errors                                             |
-| Typecheck              | **0.27s** on TypeScript 7, against 1.75s on 5.9 over the same files                       |
-| Lint and format        | **200 milliseconds** over 177 files on Biome                                             |
+Each specialist also states what it cannot see, so the model can be honest about a gap rather than
+discovering it mid-answer.
 
-The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
-generation is checked against the deployment rather than locally.
+---
 
-### One real conversation, graded
+## One real conversation, graded
 
 The full text of *Pride and Prejudice* — 762 passages from one PDF — asked ten questions in a single
-conversation on the deployment, against the categories a retrieval system is normally tested on.
-"It answers questions about documents" is eight different problems wearing one name, and a system
-can be good at an exact lookup and useless at a question whose evidence is scattered over four
-hundred pages.
+conversation on the deployment, across the categories a retrieval system is normally tested on.
 
 **Cited** is how many passages the answer stands on. **Read** is how many retrieval offered it. The
-gap is precision.
+gap between them is precision.
 
 | Tests | Question | Cited | Read | First word | In all |
 | --- | --- | --- | --- | --- | --- |
@@ -64,67 +59,97 @@ gap is precision.
 | Exact retrieval | Why did Elizabeth believe Wickham, and what in the letter made her reconsider? | 6 | 12 | — | 8.8s |
 | Distributed evidence | Trace what changed her opinion of Darcy, from the assembly through Wickham to the letter | 5 | 23 | 12.5s | 16.0s |
 
-The last one is the only question here that cannot be answered by a single search, and it searched
+The last question is the only one here that cannot be answered by a single search, and it searched
 twice. The two answers resting on one passage out of twelve are the retriever being right, not
 wasteful.
 
-The run also found three faults worth recording, all of them in the citation path this product
-argues for. Consecutive marks ran together, so `[4, 6, 10]` rendered as `4610`. Bold arrived as
-literal asterisks. And the model copied citation numbers out of earlier answers, where they name
-different passages — one of them wrote *"[399, though this passage is not directly cited in the
-provided search results, it is a known plot point]"*, which is a citation that traces to nothing
-with an apology attached. A green suite would have reported none of the three.
+---
 
-### Why
+## Measured
 
-The current system works, and it is expensive and slow in ways that are structural rather than
-incidental. Measured on 2026-08-25 against the live project:
+Live rather than mocked, on 2026-09-03.
 
-- **Five to eight LLM calls run before a single token of the answer.** Query analysis, expansion,
-  decomposition, step-back generation and a separate agentic reasoning pass, all before the call
-  that writes the reply.
-- **Hybrid search is not hybrid.** All four retrieval "strategies" send dense embedding queries to
-  the same model. There is no lexical arm.
-- **Nothing streams.** The answer arrives complete or not at all.
-- **213 of 241 documents sit at `idle`** because a status write-back in application code rarely
-  fires, so opening a chat re-derives from the vector store what a column should have held.
-- **Ingestion sleeps.** Five chunks, then a five-second pause. A 500-chunk PDF spends roughly eight
-  minutes deliberately idle.
-- **Seven packages implement two YouTube operations**, and the audio path spawns a binary that
-  cannot exist on serverless.
+|                        |                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| Retrieval quality      | **recall@4 93.8%, MRR 0.967** over the fixture corpus — `bun run eval`                   |
+| A deployed answer      | **200 SSE, first event 3.6s, 6.3s total**, citations persisted — `bun run live:deployed` |
+| A real PDF, end to end | **3 seconds** — `bun run scripts/live-ingest.ts <file>`                                  |
+| A 516-file repository  | **1.3 seconds** to read and chunk                                                        |
+| A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
+| Database               | 35 migrations, **149 pgTAP assertions** — `bun run db:test`                              |
+| Suite                  | 253 tests, typecheck clean, zero lint findings                                            |
+| Typecheck              | **0.27s** on TypeScript 7, against 1.75s on 5.9 over the same files                      |
+| Lint and format        | **200 milliseconds** over 215 files on Biome                                             |
 
-### What replaces it
+The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
+generation is checked against the deployment rather than locally.
 
-- **Retrieval moves into Postgres.** pgvector HNSW and full-text search fused with reciprocal rank
-  fusion in one SQL function, so hybrid search is real and multi-document chat is an array
-  parameter rather than a rewrite. ([ADR 0001](docs/adr/0001-retrieval-on-supabase-pgvector.md))
-- **LangChain v1 for the model layer.** Provider as a config string, Zod structured output, native
-  streaming. ([ADR 0002](docs/adr/0002-langchain-v1-model-layer.md))
-- **Integrity and aggregation move into the database.** Triggers maintain what application code kept
-  getting wrong; one RPC replaces six sequential roundtrips.
-  ([ADR 0003](docs/adr/0003-database-first-logic.md))
-- **OpenTelemetry, exported to Sentry and Langfuse.** Instrument once against the standard, choose
-  the backend as config. ([ADR 0004](docs/adr/0004-opentelemetry-sentry-langfuse.md))
-- **Retrieval becomes a tool**, with the first search dispatched speculatively so the common path
-  keeps its fast first token.
-  ([ADR 0005](docs/adr/0005-tool-calling-with-a-speculative-first-search.md))
+---
 
-Target for a single message: **one embedding call, one vector query, two Supabase roundtrips before
-generation, and a streamed first token.** Reality, honestly: one search when the speculative
-dispatch is reused and two when the model rewords the question far enough that serving the warmed
-passages would answer from the wrong ones. Both outcomes are recorded on the trace, so the hit rate
-is a number rather than a hope.
+## How a question is answered
 
-### What seven reviews found
+One message costs one embedding call, one vector query and two Supabase roundtrips before
+generation, and the first token streams.
 
-The backend was reviewed across correctness, security, performance, database, transport,
-maintainability and over-engineering. It was worth doing: they found a live authorization hole
-(four `security definer` queue functions callable by anyone holding the publishable key), an answer
-persisted as its last stream delta rather than the whole thing, a document marked `ready` after its
-first chunk of five hundred, and a browser able to forge a document's status because a policy chooses
-rows while a **grant** chooses columns. Every RLS test passed throughout that last one, which is why
-the suite now proves cross-tenant isolation behaviourally rather than asserting that RLS is switched
-on.
+1. The question reaches `POST /api/chats/[chatId]/messages`, which validates it and hands back an
+   SSE stream. A route handler rather than a server action: actions cannot stream, cannot be
+   cleanly aborted, and serialize through the RSC protocol.
+2. A first search is dispatched speculatively while the model is still reading the question, so the
+   common path keeps its fast first token.
+3. Retrieval is a single SQL function: pgvector HNSW and Postgres full-text search, fused with
+   reciprocal rank fusion. Hybrid search is actually hybrid, and asking across five documents is an
+   array parameter rather than five queries.
+4. The model answers with retrieval as a tool. Each passage it cites is numbered for that turn and
+   pushed to the client as its own event, so a source appears the moment it is used.
+5. `onFinish` persists the answer, its parts and its citations. Closing the tab mid-answer keeps
+   what was written.
+
+When the model rewords the question far enough that the warmed passages would answer the wrong one,
+it searches again. Both outcomes are on the trace, so the reuse rate is a number rather than a hope.
+
+Ingestion runs the same way round: an upload writes a job row, a drain endpoint claims work with
+`for update skip locked`, and a trigger keeps `documents.status` correct rather than an application
+write that might not fire. Progress reaches the browser over Supabase Realtime broadcast on a
+private per-user topic, so a document being read updates in place without polling.
+
+---
+
+## Architecture
+
+```
+src/
+  app/                 transport edge only: route handlers, pages, actions
+  server/
+    modules/           vertical slices: chat, documents, retrieval, ingestion, memory
+    platform/          db, cache, llm, embeddings, ratelimit, telemetry, env
+  core/                pure domain. No I/O. Imports nothing but core.
+  ui/                  components and hooks
+```
+
+Dependencies run one way, `app → server/modules → server/platform → core`, and Biome's
+`noRestrictedImports` fails the build on a reversed or sideways import. A component importing a
+repository is a lint error, not a review comment.
+
+Data flows the same way in both directions: server actions and route handlers, then hooks, then
+components. Nothing in `ui/` touches the database, and nothing in `server/` renders.
+
+**Integrity, aggregation and retrieval live in Postgres. Orchestration and anything that calls a
+model lives in TypeScript.** Triggers maintain derived columns, one RPC replaces six sequential
+roundtrips, and row-level security decides who can read a row. Every `security definer` function
+sets `search_path = ''`, and every policy wraps `auth.uid()` as `(select auth.uid())` so it is
+evaluated once per query rather than once per row.
+
+A policy chooses rows; a **grant** chooses columns. Getting that wrong let a browser forge a
+document's status while every RLS test passed, so the suite proves isolation behaviourally — running
+as `authenticated` with a real claim — and asserts privileges with `has_column_privilege`.
+
+Decisions that are expensive to reverse are recorded as ADRs:
+
+- [Retrieval on Supabase pgvector](docs/adr/0001-retrieval-on-supabase-pgvector.md)
+- [LangChain v1 for the model layer](docs/adr/0002-langchain-v1-model-layer.md)
+- [Database-first logic](docs/adr/0003-database-first-logic.md)
+- [OpenTelemetry, exported to Sentry and Langfuse](docs/adr/0004-opentelemetry-sentry-langfuse.md)
+- [Tool calling with a speculative first search](docs/adr/0005-tool-calling-with-a-speculative-first-search.md)
 
 ---
 
@@ -141,30 +166,29 @@ chronologically. Following a citation swaps the reading column for the document,
 while the apparatus stays put. Below 1150px the apparatus becomes footnotes, which is what an
 apparatus has always done on a narrow page.
 
-Open [`docs/design/03-all-surfaces.html`](docs/design/03-all-surfaces.html) in a browser to see all
-ten surfaces. [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md) are binding.
+Sign in breaks that rule on purpose: the worked example is on the left and the form on the right,
+because everywhere else the reading column is what you came for, and there what you came for is a
+way in. The home screen has no apparatus at all, because it is a single act — type a question.
 
----
+| Surface | What it does |
+| --- | --- |
+| Landing | The claim, three sources backing it, a real answer with its passages, and how a question goes |
+| `/how-it-works` | The engineering, and the ten-question benchmark above |
+| Sign in and sign up | Password or Google, with a password reset flow, beside an example of what you are signing in to |
+| `/ask` | Your name, one box to type into, the documents it will read as chips, and suggestions generated from what you added |
+| `/chat/[id]` | The transcript, closed by what each answer cited and how long it took; sources and tool calls in the right column; a citation opens the passage in place |
+| `/history` | Every question by month, searched in Postgres, with the documents each one read |
+| `/settings` | Who you are, what the account holds, and every document with retry and delete |
 
-## What it reads
+The transcript is `@assistant-ui/react`, driven by `useExternalStoreRuntime` over the one hook that
+owns the SSE stream. Its primitives ship no styles, so the design is ours and the behaviour is
+theirs: a viewport that follows the answer until you scroll up, copy, editing a question in place,
+and asking again. Editing writes a sibling into `messages.parent_id` rather than overwriting a row,
+and the reader is shown the newest branch.
 
-PDFs, Word documents, spreadsheets, slides, images, GitHub repositories, YouTube videos, and web
-pages. Several of them in one conversation, each switchable in and out of retrieval scope.
-
-Spreadsheets are queried as tables rather than embedded as prose about tables, which is why figures
-come from cells instead of from a paragraph describing them.
-
-**Each kind is answered by a specialist.** A repository starts at its file tree, greps for
-identifiers because that is exactly what a dense vector flattens, reads around a match to see the
-whole function, and cites `path:line`. A video is told it has the transcript and not the picture,
-and to carry a timestamp with every claim. A spreadsheet is told to query rather than read, and to
-cast before it compares. Each also states what it cannot see, so the model can be honest about the
-gap rather than discovering it mid-answer.
-
-A repository is indexed by what answers questions about it: files are stored and greppable, and
-embeddings are spent on documentation and on a per-file summary of its declarations. Measured on
-`supabase/supabase-js`, that is 516 files and 711 chunks, against 2,664 for a first version that
-embedded every function body.
+Open [`docs/design/03-all-surfaces.html`](docs/design/03-all-surfaces.html) for the mockups every
+surface was built from. [`PRODUCT.md`](PRODUCT.md) owns who and why, [`DESIGN.md`](DESIGN.md) owns
+how it looks, and both are binding, including the accessibility floor.
 
 ---
 
@@ -185,16 +209,16 @@ embedded every function body.
 | Tests            | Vitest, pgTAP                                         |
 | Lint and format  | Biome 2.5                                             |
 
-Pinecone is gone, along with thirty other dependencies that nothing imported — including six
-packages for two YouTube operations, which a running service does instead. tRPC was evaluated and
-rejected: route handlers, generated database types and a shared Zod schema already solve the
-contract problem it exists for.
+tRPC was evaluated and rejected: route handlers, generated database types and a shared Zod schema
+already solve the contract problem it exists for. Pinecone is gone, along with thirty other
+dependencies nothing imported — including six packages for two YouTube operations, which a running
+service does instead.
 
 ---
 
 ## Running it
 
-Requires **bun**. There is one lockfile and `npm install` will produce a different tree.
+Requires **bun**. There is one lockfile, and `npm install` will produce a different tree.
 
 ```bash
 git clone https://github.com/abhisheksharm-3/inquora.git
@@ -204,17 +228,21 @@ cp .env.example .env.local   # then fill it in
 bun dev
 ```
 
-Environment variables are documented in [`.env.example`](.env.example) and validated by a Zod
-schema at boot, so a missing or malformed value fails immediately rather than at first use.
+Environment variables are documented in [`.env.example`](.env.example) and validated by a Zod schema
+at boot, so a missing or malformed value fails immediately rather than at first use.
 
-Schema work runs through the Supabase CLI, and the checks through bun:
+Supabase needs two things beyond the keys: the migrations applied, and
+`<your site>/api/auth/callback` in the project's redirect allow list. Without that entry, Supabase
+drops the `redirect_to` on a recovery mail and sends the link to the site root instead.
 
 ```bash
-bun run typecheck          # TypeScript 7, about a second
+bun run typecheck          # TypeScript 7, about a quarter of a second
 bun run lint               # Biome: lint, format and the layer boundaries
 bun run format             # write the formatting fixes
+bun run test               # 253 Vitest tests
+bun run build              # Turbopack production build
 bun run db:push            # apply migrations to the linked project
-bun run db:test            # 143 pgTAP assertions, no Docker required
+bun run db:test            # 149 pgTAP assertions, no Docker required
 bun run db:types           # regenerate src/core/database.types.ts
 bun run eval               # recall@k and MRR against real embeddings
 bun run live:deployed      # one real question through the deployment
@@ -224,8 +252,29 @@ bun run live:deployed      # one real question through the deployment
 `pg_prove` container, which is what lets CI run the SQL suite beside the TypeScript one. It needs
 `SUPABASE_DB_URL`.
 
-Never hand-edit the generated types file. Drift between it and the database is how the current
-system ended up reading a `full_text` column that does not exist.
+Never hand-edit the generated types file. Drift between it and the database is how an earlier
+version came to read a `full_text` column that does not exist.
+
+---
+
+## Known limits
+
+Recorded here rather than left for somebody to discover.
+
+- **Token accounting is unverified.** `tokens_in` and `tokens_out` were null on every message while
+  latency recorded correctly. Both provider metadata shapes are read now and `streamUsage` is
+  requested explicitly, but the development network blocks POST to the provider, so this can only
+  be confirmed on the deployment.
+- **What the assistant remembers is not visible.** There is a `memories` table, a `remember` tool,
+  and a system prompt that feeds those facts back every turn. There is no way to read or delete
+  them, which is the wrong answer for personal data the product holds about somebody.
+- **Branch switching is not wired.** Editing a question stores a branch and the newest one is
+  shown, but the chat query returns rows rather than a path, so there is nothing for a branch
+  picker to walk yet.
+- **The 700 to 1150px range is untested.** A tablet currently gets the phone layout.
+- **Old answers carry stale citation marks.** Answers generated before the citation numbering was
+  fixed cite passage indexes matching no source, so those marks render as plain text and will stay
+  that way. Stored data, not a rendering fault.
 
 ---
 
@@ -234,12 +283,12 @@ system ended up reading a `full_text` column that does not exist.
 [`CLAUDE.md`](CLAUDE.md) carries the working rules: the laziness ladder, the layer boundaries, the
 naming standard, and where logic belongs. Read it before changing anything.
 
-Two that catch people out: commits carry no `Co-Authored-By` trailer, and a green test suite is not
-evidence that an AI pipeline works. One live end-to-end run against the real provider, or it is not
-working.
+Two that catch people out. Commits carry no `Co-Authored-By` trailer or AI attribution of any kind.
+And a green test suite is not evidence that an AI pipeline works — one live end-to-end run against
+the real provider, or it is not working.
 
-That second rule earned itself here. Three failures in this rebuild passed every local test and
-only appeared after deploy — a provider package a bundler could not trace, an externalised copy of a
-library beside a bundled one, and a model alias answering 503 under load. Two more appeared only
-when the thing was run rather than read: a cited document could never be deleted, and two versions
-of one database function were live at once.
+That second rule earned itself here. Three failures passed every local test and appeared only after
+deploy: a provider package a bundler could not trace, an externalised copy of a library beside a
+bundled one, and a model alias answering 503 under load. Two more appeared only when the product was
+used rather than read: a cited document could never be deleted, and two versions of one database
+function were live at once.

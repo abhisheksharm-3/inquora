@@ -1,15 +1,16 @@
 "use client";
 
+import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import type { ChatDetail, PassageInContext } from "@/core/workspace/workspace.types";
 import { ApparatusColumn } from "@/ui/components/apparatus/Apparatus";
-import { useConversation } from "@/ui/hooks/useConversation";
+import { useChatRuntime } from "@/ui/hooks/useChatRuntime";
 import { Composer } from "./Composer";
 import { Openers } from "./Openers";
 import { PassageViewer } from "./PassageViewer";
 import { ScopeBar } from "./ScopeBar";
-import { Turn } from "./Turn";
+import { Thread } from "./Thread";
 import { turnEntries } from "./turn-apparatus";
 
 /**
@@ -19,6 +20,12 @@ import { turnEntries } from "./turn-apparatus";
  *
  * Substance left, apparatus right. The question is set large in the serif, the
  * answer under it at reading weight, and nothing is a bubble.
+ *
+ * The thread itself is assistant-ui, driven by an external store whose one
+ * writer is `useConversation`. Everything the library renders is unstyled, so
+ * the design is unchanged; what it brings is the behaviour a transcript needs
+ * and did not have — a viewport that follows the answer and lets go when you
+ * scroll up, copy, editing a question, and asking again.
  */
 export const ChatSurface = ({
   chrome,
@@ -33,17 +40,8 @@ export const ChatSurface = ({
   /** Asked on the home screen, and sent as soon as this opens. */
   initialQuestion?: string;
 }) => {
-  const { turns, send, stop, streaming } = useConversation(chat);
-  const tail = useRef<HTMLDivElement>(null);
+  const { runtime, turns, send, streaming, stop } = useChatRuntime(chat);
   const router = useRouter();
-
-  // Scrolled by the growing content rather than on a timer. `block: "end"`
-  // keeps the newest line just above the composer instead of centring it.
-  useEffect(() => {
-    if (turns.length === 0 || following) return;
-
-    tail.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [turns, following]);
 
   // Sent once. A ref rather than a state flag, because a second render must not
   // be able to ask the same question twice, and the request is idempotent on the
@@ -83,41 +81,33 @@ export const ChatSurface = ({
             the wider of the two measures rather than being centred in a lane of
             its own — a centred lane put a gutter on both sides of a page that
             already has a panel down one edge. */}
-        <div className="flex w-full min-w-0 flex-1 flex-col wide:min-h-0">
-          {following ? (
+        {following ? (
+          <div className="flex w-full min-w-0 flex-1 flex-col wide:min-h-0">
             <PassageViewer
               passage={following.passage}
               specimenNumber={following.specimenNumber}
               onClose={() => router.back()}
             />
-          ) : turns.length === 0 ? (
-            <Openers documents={chat.documents} onPick={send} />
-          ) : (
-            <div className="flex-1 wide:min-h-0 wide:overflow-y-auto wide:pr-2">
-              {turns.map((turn) => (
-                <Turn key={turn.id} turn={turn} />
-              ))}
-              <div ref={tail} />
-            </div>
-          )}
-
-          {/* No composer while a document is open: the reading column is the
-            document, and asking belongs to the answer you came from. */}
-          {following ? null : (
-            <Composer
-              onSend={send}
-              onStop={stop}
-              streaming={streaming}
-              disabled={chat.documents.length === 0}
-              scope={<ScopeBar chat={chat} />}
-              placeholder={
-                chat.documents.length === 0
-                  ? "Add a document to this conversation first"
-                  : "Ask something about what is attached"
+          </div>
+        ) : (
+          <AssistantRuntimeProvider runtime={runtime}>
+            <Thread
+              empty={<Openers documents={chat.documents} onPick={send} />}
+              composer={
+                <Composer
+                  onStop={stop}
+                  streaming={streaming}
+                  scope={<ScopeBar chat={chat} />}
+                  placeholder={
+                    chat.documents.length === 0
+                      ? "Add a document to this conversation first"
+                      : "Ask something about what is attached"
+                  }
+                />
               }
             />
-          )}
-        </div>
+          </AssistantRuntimeProvider>
+        )}
       </main>
 
       <aside className="border-rule border-t px-6 py-7 wide:min-h-0 wide:overflow-y-auto wide:border-t-0 wide:border-l wide:bg-panel">

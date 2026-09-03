@@ -33,14 +33,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     if (!code) {
       console.error("No authorization code provided in callback");
-      return createRedirectResponse(await signedInDestination("/auth/auth-code-error"));
+      return createRedirectResponse(await signedInDestination("/auth-code-error"));
     }
 
     const exchanged = await completeOAuthSignIn(code);
 
     if (!exchanged.ok) {
       console.error("Auth code exchange failed:", exchanged.error.detail);
-      return createRedirectResponse(await signedInDestination("/auth/auth-code-error"));
+      return createRedirectResponse(await signedInDestination("/auth-code-error"));
     }
 
     // The profile row is created by the on_auth_user_created trigger, so an
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // those turns a framework control flow into a bogus "auth failed" redirect.
     unstable_rethrow(error);
     console.error("Unexpected error during auth callback:", error);
-    return createRedirectResponse(await signedInDestination("/auth/auth-code-error"));
+    return createRedirectResponse(await signedInDestination("/auth-code-error"));
   }
 }
 

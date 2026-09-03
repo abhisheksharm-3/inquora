@@ -20,7 +20,7 @@
   },
   "description": "Inquora – Chat with documents, videos, and more using AI.",
   "dependencies": {
-    "@assistant-ui/react": "^0.15.17",
+    "@assistant-ui/react": "^0.15.18",
     "@langchain/core": "^1.1.5",
     "@langchain/google-genai": "^2.1.0",
     "@radix-ui/react-dropdown-menu": "^2.1.24",

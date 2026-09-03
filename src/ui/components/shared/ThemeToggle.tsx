@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 /**
  * One button that cycles the three theme states, showing the one in force.
@@ -23,11 +24,20 @@ const CYCLE = [
 export const ThemeToggle = ({ className }: { className?: string }) => {
   const { theme, setTheme } = useTheme();
 
-  // `theme` is undefined until next-themes has read the stored choice, and
-  // "system" is the default, so an unresolved value reads as System.
+  /*
+   * The stored choice exists only in the browser, so the server cannot render
+   * it. Rendering it anyway is a hydration mismatch — React reported the label
+   * and the icon both differing on every page load for somebody whose theme is
+   * not the default — and the tree gets thrown away and rebuilt. So the first
+   * client render matches the server, and the real state arrives after it.
+   */
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => setReady(true), []);
+
   const at = Math.max(
     0,
-    CYCLE.findIndex((choice) => choice.value === (theme ?? "system")),
+    CYCLE.findIndex((choice) => choice.value === (ready ? (theme ?? "system") : "system")),
   );
   const current = CYCLE[at];
   const next = CYCLE[(at + 1) % CYCLE.length];

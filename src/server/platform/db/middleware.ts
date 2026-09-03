@@ -48,6 +48,27 @@ export const updateSession = async (request: NextRequest) => {
     return response;
   }
 
+  /*
+   * A recovery code that arrived at the wrong door.
+   *
+   * `startPasswordReset` asks Supabase to send people to
+   * `/api/auth/callback?next=/reset-password`, and Supabase only honours a
+   * `redirect_to` that is in the project's allow list. When it is not, the mail
+   * falls back to the site URL, so the link opens the landing page with the
+   * code still in the query and nothing exchanges it: the reset flow dead-ends
+   * on marketing copy. Whatever page it lands on, the code goes to the one
+   * endpoint that can spend it.
+   */
+  const code = request.nextUrl.searchParams.get("code");
+
+  if (code && pathname !== AUTH_ROUTES.RESET) {
+    const callback = new URL("/api/auth/callback", request.url);
+    callback.searchParams.set("code", code);
+    callback.searchParams.set("next", AUTH_ROUTES.RESET);
+
+    return NextResponse.redirect(callback);
+  }
+
   const isAuthRoute = isAuthOnlyRoute(pathname);
   const dashboardUrl = new URL(DASHBOARD_ROUTES.HOME, request.url);
 
