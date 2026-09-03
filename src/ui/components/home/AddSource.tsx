@@ -2,7 +2,7 @@
 
 import { useActionState, useId, useRef, useState } from "react";
 import { addLink } from "@/app/(app)/actions";
-import { type ActionState, emptyActionState, type UploadProgress } from "@/app/(app)/app.types";
+import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import { ACCEPTED_DESCRIPTION, ACCEPTED_EXTENSIONS } from "@/core/documents/kind";
 
 /**
@@ -16,15 +16,7 @@ import { ACCEPTED_DESCRIPTION, ACCEPTED_EXTENSIONS } from "@/core/documents/kind
  * video as file types, which would have been accepted by the picker and then
  * failed in the worker, because a video needs a URL rather than bytes.
  */
-export const AddSource = ({
-  uploads,
-  onAdd,
-  onDismiss,
-}: {
-  uploads: UploadProgress[];
-  onAdd: (files: File[]) => void;
-  onDismiss: (filename: string) => void;
-}) => {
+export const AddSource = ({ onAdd }: { onAdd: (files: File[]) => void }) => {
   const fileInput = useRef<HTMLInputElement>(null);
   const fileId = useId();
   const [over, setOver] = useState(false);
@@ -118,70 +110,6 @@ export const AddSource = ({
           {state.message}
         </p>
       ) : null}
-
-      {uploads.length > 0 ? (
-        <ul className="m-0 mt-4 list-none p-0">
-          {uploads.map((upload) => (
-            <li
-              key={upload.filename}
-              className="grid grid-cols-[minmax(0,1fr)_84px_64px] items-center gap-3.5 border-rule border-b py-2.5"
-            >
-              <span className="min-w-0 font-light font-reading text-[0.98rem] text-ink">
-                <span className="block truncate">{upload.filename}</span>
-                <span
-                  className={`mt-0.5 block font-record text-label ${
-                    upload.phase === "failed" ? "text-danger" : "text-faint"
-                  }`}
-                >
-                  {upload.error ?? PHASE_LABEL[upload.phase]}
-                </span>
-              </span>
-
-              <span
-                role="progressbar"
-                aria-label={`${upload.filename} progress`}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={
-                  upload.fraction === undefined ? undefined : Math.round(upload.fraction * 100)
-                }
-                className="relative block h-[3px] bg-rule"
-              >
-                <span
-                  className={`absolute inset-y-0 left-0 ${
-                    upload.phase === "failed" ? "bg-faint" : "bg-mark"
-                  }`}
-                  style={{ width: `${(upload.fraction ?? 1) * 100}%` }}
-                />
-              </span>
-
-              {upload.phase === "failed" || upload.phase === "duplicate" ? (
-                <button
-                  type="button"
-                  onClick={() => onDismiss(upload.filename)}
-                  className="text-right font-record text-label text-faint hover:text-ink"
-                >
-                  Dismiss
-                </button>
-              ) : (
-                <span className="text-right font-record text-label text-soft tabular">
-                  {upload.fraction === undefined ? "" : `${Math.round(upload.fraction * 100)}%`}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
-};
-
-const PHASE_LABEL: Record<UploadProgress["phase"], string> = {
-  hashing: "reading the file",
-  uploading: "uploading",
-  queued: "queued for reading",
-  indexing: "reading it",
-  ready: "ready",
-  failed: "could not be added",
-  duplicate: "already added, nothing to upload",
 };

@@ -27,6 +27,8 @@ export type DocumentEntry = {
   expectedChunks: number | null;
   error: string | null;
   createdAt: string;
+  /** Bumped on every write, so a stalled document is one that stopped moving. */
+  updatedAt: string;
   indexedAt: string | null;
 };
 

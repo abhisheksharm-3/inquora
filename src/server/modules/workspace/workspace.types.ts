@@ -29,6 +29,8 @@ export interface WorkspaceRepository {
     documentIds: string[];
   }): Promise<Result<void, AppError>>;
   removeDocument(documentId: string): Promise<Result<void, AppError>>;
+  /** Send a failed or stalled document back to the queue. */
+  retryDocument(documentId: string): Promise<Result<void, AppError>>;
   setWebSearch(chatId: string, enabled: boolean): Promise<Result<void, AppError>>;
   usage(): Promise<Result<AccountUsage, AppError>>;
   passage(chunkId: string): Promise<Result<PassageInContext | null, AppError>>;

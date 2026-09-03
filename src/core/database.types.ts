@@ -567,38 +567,22 @@ export type Database = {
       }
     }
     Functions: {
-      append_message:
-        | {
-            Args: {
-              p_chat_id: string
-              p_citation_chunk_ids?: string[]
-              p_content: string
-              p_latency_ms?: number
-              p_model?: string
-              p_parent_id?: string
-              p_retrieval_ms?: number
-              p_role: Database["public"]["Enums"]["message_role"]
-              p_tokens_in?: number
-              p_tokens_out?: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_chat_id: string
-              p_citation_chunk_ids?: string[]
-              p_client_message_id?: string
-              p_content: string
-              p_latency_ms?: number
-              p_model?: string
-              p_parent_id?: string
-              p_retrieval_ms?: number
-              p_role: Database["public"]["Enums"]["message_role"]
-              p_tokens_in?: number
-              p_tokens_out?: number
-            }
-            Returns: string
-          }
+      append_message: {
+        Args: {
+          p_chat_id: string
+          p_citation_chunk_ids?: string[]
+          p_client_message_id?: string
+          p_content: string
+          p_latency_ms?: number
+          p_model?: string
+          p_parent_id?: string
+          p_retrieval_ms?: number
+          p_role: Database["public"]["Enums"]["message_role"]
+          p_tokens_in?: number
+          p_tokens_out?: number
+        }
+        Returns: string
+      }
       claim_ingestion_job: {
         Args: never
         Returns: {
@@ -679,6 +663,7 @@ export type Database = {
           start_s: number
         }[]
       }
+      retry_ingestion: { Args: { p_document_id: string }; Returns: undefined }
       search_chunks: {
         Args: {
           p_document_ids: string[]

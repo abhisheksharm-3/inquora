@@ -7,11 +7,12 @@ import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import type { Account } from "@/core/workspace/account.types";
 import type { ChatEntry, DocumentEntry } from "@/core/workspace/workspace.types";
-import { describeDocument, formatWhen, kindLabel } from "@/ui/components/documents/document.format";
+import { formatWhen } from "@/ui/components/documents/document.format";
 import { openersFor } from "@/ui/components/documents/openers";
 import { useDocumentProgress } from "@/ui/hooks/useDocumentProgress";
 import { useUpload } from "@/ui/hooks/useUpload";
 import { AddSource } from "./AddSource";
+import { DocumentRow } from "./DocumentRow";
 import { HomeComposer } from "./HomeComposer";
 
 /**
@@ -43,7 +44,7 @@ export const HomeSurface = ({
   userId: string;
 }) => {
   const documents = useDocumentProgress(seed, userId);
-  const { uploads, add, dismiss } = useUpload();
+  const { uploads, add } = useUpload();
 
   const ready = documents.filter((document) => document.status === "ready");
   const working = documents.filter(
@@ -91,6 +92,13 @@ export const HomeSurface = ({
   const [state, ask] = useActionState<ActionState, FormData>(askFromHome, emptyActionState);
 
   const inScope = [...chosen.values()];
+
+  // An upload the server has not turned into a document row yet. Once it has,
+  // the row itself reports progress from the database, so showing both would
+  // show the same file twice.
+  const pending = uploads.filter(
+    (upload) => !upload.documentId || !documents.some((d) => d.id === upload.documentId),
+  );
 
   const remove = (id: string) =>
     setChosen((current) => {
@@ -203,40 +211,24 @@ export const HomeSurface = ({
                   on the page once there is something to ask. */}
               {ready.length === 0 || adding ? (
                 <div className="mb-7">
-                  <AddSource uploads={uploads} onAdd={add} onDismiss={dismiss} />
+                  <AddSource onAdd={add} />
                 </div>
               ) : null}
 
-              {documents.length > 0 ? (
-                <ul className="m-0 list-none p-0">
-                  {documents.slice(0, SHOWN).map((document) => (
-                    <li
+              {/* One list. A file still being uploaded is a dimmed row in it,
+                  rather than a second list of files beside the list of files
+                  with its own progress bar and its own words. */}
+              {documents.length > 0 || pending.length > 0 ? (
+                <ul className="m-0 list-none border-rule border-t p-0">
+                  {pending.map((upload) => (
+                    <DocumentRow key={upload.filename} upload={upload} />
+                  ))}
+                  {documents.map((document) => (
+                    <DocumentRow
                       key={document.id}
-                      className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-baseline gap-x-4 border-rule border-b py-3.5"
-                    >
-                      <span className="font-record text-label text-faint uppercase tracking-[0.1em]">
-                        {kindLabel[document.kind]}
-                      </span>
-                      <span className="min-w-0 font-light font-reading text-[1.05rem] text-ink">
-                        <span className="block truncate">{document.title}</span>
-                        <span className="mt-1 block font-record text-label text-faint">
-                          {describeDocument(document)}
-                        </span>
-                      </span>
-                      <span
-                        className={`text-right font-record text-label ${
-                          document.status === "failed" ? "text-danger" : "text-faint"
-                        }`}
-                      >
-                        {document.status === "ready"
-                          ? chosen.has(document.id)
-                            ? "in this question"
-                            : "not in this question"
-                          : document.status === "failed"
-                            ? "could not be read"
-                            : "reading it"}
-                      </span>
-                    </li>
+                      document={document}
+                      inQuestion={chosen.has(document.id)}
+                    />
                   ))}
                 </ul>
               ) : null}

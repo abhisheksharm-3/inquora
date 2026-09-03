@@ -322,3 +322,20 @@ export const findDocuments = async (query: string): Promise<DocumentEntry[]> => 
 
   return found.ok ? found.value : [];
 };
+
+/** Read a document again, after it failed or stalled. */
+export const retryDocument = async (
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> => {
+  const parsed = uuid.safeParse(formData.get("documentId"));
+  if (!parsed.success) return failed("No such document.");
+
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return failed(bound.error.detail ?? "Sign in first.");
+
+  const retried = await bound.value.workspace.retryDocument(parsed.data);
+  if (!retried.ok) return failed(retried.error.detail ?? "Could not retry it.");
+
+  return { message: "Reading it again." };
+};

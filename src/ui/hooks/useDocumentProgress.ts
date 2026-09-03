@@ -10,12 +10,25 @@ import { useSupabase } from "@/ui/providers/SupabaseProvider";
  * Broadcast rather than `postgres_changes`: postgres_changes evaluates every
  * subscriber's row-level security against every change, so its cost is
  * subscribers times changes, and its payload is a raw row rather than the
- * fraction this needs. The topic is private and authorized by a policy on
+ * fields this needs. The topic is private and authorized by a policy on
  * `realtime.messages`, so a crafted `user:<someone else>` topic is refused by
  * the database rather than filtered here.
  *
- * There is no polling fallback. If the socket drops, the surface still shows
- * what the server rendered, and the next navigation re-reads it.
+ * Two bugs made this look broken, and both were silent.
+ *
+ * The socket has to authenticate before it joins. A private topic is authorized
+ * `to authenticated`, so a socket presenting no token joined as `anon`, the
+ * policy refused the read, and no event arrived — which is indistinguishable
+ * from a subscription with nothing to report.
+ *
+ * And the payload is the row itself, not a wrapper around it. Migration 0025
+ * shapes it deliberately, in camelCase, because broadcasting the whole row
+ * shipped the document's entire text twice per event. This read
+ * `payload.record` with snake_case keys, a shape that never existed, so
+ * anything that did arrive was discarded.
+ *
+ * Both were found by connecting a real client to the real project and watching
+ * one document change, rather than by reasoning about it.
  */
 export const useDocumentProgress = (seed: DocumentEntry[], userId: string): DocumentEntry[] => {
   const supabase = useSupabase();
@@ -26,70 +39,78 @@ export const useDocumentProgress = (seed: DocumentEntry[], userId: string): Docu
   useEffect(() => setDocuments(seed), [seed]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`user:${userId}`, { config: { private: true } })
-      .on("broadcast", { event: "document_progress" }, ({ payload }) => {
-        const record = (payload as { record?: Record<string, unknown> }).record;
-        if (!record || typeof record.id !== "string") return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
 
-        setDocuments((current) => merge(current, record));
-      })
-      .subscribe();
+    const listen = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      await supabase.realtime.setAuth(data.session?.access_token);
+      if (cancelled) return;
+
+      channel = supabase
+        .channel(`user:${userId}`, { config: { private: true } })
+        .on("broadcast", { event: "document_progress" }, ({ payload }) => {
+          const event = payload as Partial<Broadcast> | undefined;
+          if (!event || typeof event.id !== "string") return;
+
+          setDocuments((current) => merge(current, event as Broadcast));
+        })
+        .subscribe();
+    };
+
+    void listen();
 
     return () => {
-      void supabase.removeChannel(channel);
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
     };
   }, [supabase, userId]);
 
   return documents;
 };
 
+/** Exactly what `broadcast_document_progress` sends. */
+type Broadcast = {
+  id: string;
+  status: DocumentEntry["status"];
+  chunkCount: number;
+  expectedChunks: number | null;
+  title: string;
+  kind: DocumentEntry["kind"];
+  error: string | null;
+  byteSize: number | null;
+  createdAt: string;
+  updatedAt: string;
+  indexedAt: string | null;
+};
+
 /**
  * An insert arrives as a document not in the list, so it is prepended; every
- * other event patches the entry in place. Only the five fields the trigger
- * fires on are read, because the rest of the row is not what changed.
+ * other event replaces the entry in place.
  */
-const merge = (current: DocumentEntry[], record: Record<string, unknown>): DocumentEntry[] => {
-  const id = record.id as string;
-  const patch = {
-    title: typeof record.title === "string" ? record.title : undefined,
-    status: record.status as DocumentEntry["status"] | undefined,
-    chunkCount: typeof record.chunk_count === "number" ? record.chunk_count : undefined,
-    expectedChunks: typeof record.expected_chunks === "number" ? record.expected_chunks : null,
-    error: typeof record.error === "string" ? record.error : null,
+const merge = (current: DocumentEntry[], event: Broadcast): DocumentEntry[] => {
+  const existing = current.find((document) => document.id === event.id);
+
+  const entry: DocumentEntry = {
+    id: event.id,
+    title: event.title,
+    kind: event.kind,
+    status: event.status,
+    byteSize: event.byteSize ?? existing?.byteSize ?? null,
+    chunkCount: event.chunkCount,
+    expectedChunks: event.expectedChunks,
+    error: event.error,
+    createdAt: event.createdAt ?? existing?.createdAt ?? new Date().toISOString(),
+    // Falls back to now rather than to the previous value: hearing from a
+    // document is itself evidence that it moved, and this is what tells a
+    // working document apart from a stalled one.
+    updatedAt: event.updatedAt ?? new Date().toISOString(),
+    indexedAt: event.indexedAt ?? existing?.indexedAt ?? null,
   };
 
-  const existing = current.find((document) => document.id === id);
-
-  if (!existing) {
-    const created: DocumentEntry = {
-      id,
-      title: patch.title ?? "Untitled",
-      kind: (record.kind as DocumentEntry["kind"]) ?? "doc",
-      status: patch.status ?? "pending",
-      byteSize: typeof record.byte_size === "number" ? record.byte_size : null,
-      chunkCount: patch.chunkCount ?? 0,
-      expectedChunks: patch.expectedChunks,
-      error: patch.error,
-      createdAt:
-        typeof record.created_at === "string" ? record.created_at : new Date().toISOString(),
-      indexedAt: typeof record.indexed_at === "string" ? record.indexed_at : null,
-    };
-
-    return [created, ...current];
-  }
-
-  return current.map((document) =>
-    document.id === id
-      ? {
-          ...document,
-          title: patch.title ?? document.title,
-          status: patch.status ?? document.status,
-          chunkCount: patch.chunkCount ?? document.chunkCount,
-          expectedChunks: patch.expectedChunks,
-          error: patch.error,
-          indexedAt: typeof record.indexed_at === "string" ? record.indexed_at : document.indexedAt,
-        }
-      : document,
-  );
+  return existing
+    ? current.map((document) => (document.id === event.id ? entry : document))
+    : [entry, ...current];
 };

@@ -82,6 +82,21 @@ export const describeDocument = (document: DocumentEntry, now?: number): string 
 };
 
 /**
+ * Whether a document has stopped moving.
+ *
+ * `updated_at` is bumped by every write the worker makes, so a document that is
+ * not ready and has not been touched for a while is stuck rather than slow.
+ * Without this, retry was offered on a document that was visibly making
+ * progress — the offer read as "this is broken" while it was working.
+ */
+export const STALLED_AFTER_MS = 90_000;
+
+export const hasStalled = (document: DocumentEntry, now = Date.now()): boolean =>
+  document.status !== "ready" &&
+  document.status !== "failed" &&
+  now - Date.parse(document.updatedAt) > STALLED_AFTER_MS;
+
+/**
  * A true fraction, or null where none exists yet. The extractor records an
  * expected chunk count before embedding starts precisely so this is possible,
  * and a bar that invents a number is worse than no bar.

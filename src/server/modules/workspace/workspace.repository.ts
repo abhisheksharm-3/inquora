@@ -26,7 +26,7 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
     const { data, error } = await db
       .from("documents")
       .select(
-        "id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, indexed_at",
+        "id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, updated_at, indexed_at",
       )
       .order("created_at", { ascending: false });
 
@@ -54,7 +54,7 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
     const { data, error } = await db
       .from("documents")
       .select(
-        "id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, indexed_at",
+        "id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, updated_at, indexed_at",
       )
       .eq("status", "ready")
       // Escaped, because `%` and `_` are wildcards in `like` and an underscore
@@ -122,7 +122,7 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
       .from("chats")
       .select(
         `id, title, web_search,
-         chat_documents(enabled, position, documents(id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, indexed_at)),
+         chat_documents(enabled, position, documents(id, title, kind, status, byte_size, chunk_count, expected_chunks, error, created_at, updated_at, indexed_at)),
          messages(id, role, parent_id, created_at, latency_ms, retrieval_ms, model,
                   message_parts(id, kind, text, chunk_id, tool_name, tool_args, tool_result, position,
                                 document_chunks(id, document_id, chunk_index, content, documents(title))))`,
@@ -268,6 +268,24 @@ export const createWorkspaceRepository = (db: SupabaseClient<Database>): Workspa
     return ok(undefined);
   },
 
+  /**
+   * A document that failed, or one that stalled part-way through being read.
+   *
+   * Through an RPC because `documents.status` is not a client-writable column:
+   * migration 0030 revoked table-level update after a browser was found able to
+   * forge a status. The function is security definer, decides ownership from
+   * auth.uid(), refuses a document that is already ready, and writes the queue
+   * job itself — the requeue trigger only fires when the status *changes* to
+   * pending, and a document stuck at pending is the case retry exists for.
+   */
+  async retryDocument(documentId) {
+    const { error } = await db.rpc("retry_ingestion", { p_document_id: documentId });
+
+    if (error) return err(AppError.badRequest(`could not retry it: ${error.message}`));
+
+    return ok(undefined);
+  },
+
   async setWebSearch(chatId, enabled) {
     const { error } = await db.from("chats").update({ web_search: enabled }).eq("id", chatId);
 
@@ -392,6 +410,7 @@ type DocumentRow = {
   expected_chunks: number | null;
   error: string | null;
   created_at: string;
+  updated_at: string;
   indexed_at: string | null;
 };
 
@@ -405,5 +424,6 @@ const toDocumentEntry = (row: DocumentRow): DocumentEntry => ({
   expectedChunks: row.expected_chunks,
   error: row.error,
   createdAt: row.created_at,
+  updatedAt: row.updated_at,
   indexedAt: row.indexed_at,
 });
