@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sourceKindForUrl, titleForUrl } from "@/core/documents/kind";
 import { DASHBOARD_ROUTES } from "@/core/routes";
-import type { DocumentEntry } from "@/core/workspace/workspace.types";
+import type { ChatEntry, DocumentEntry } from "@/core/workspace/workspace.types";
 import { signOut } from "@/server/modules/auth/auth.service";
 import { addSourceByUrl, requestUploadTicket } from "@/server/modules/documents/documents.factory";
 import { workspaceForRequest } from "@/server/modules/workspace/workspace.factory";
@@ -338,4 +338,29 @@ export const retryDocument = async (
   if (!retried.ok) return failed(retried.error.detail ?? "Could not retry it.");
 
   return { message: "Reading it again." };
+};
+
+/**
+ * The document and conversation lists, as actions.
+ *
+ * These exist so the cached client hooks have a fetcher. They run as the
+ * signed-in person against row-level security, exactly as the server component
+ * read does, so caching them in the browser moves nothing about authorization.
+ */
+export const listDocumentsAction = async (): Promise<DocumentEntry[]> => {
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return [];
+
+  const documents = await bound.value.workspace.listDocuments();
+
+  return documents.ok ? documents.value : [];
+};
+
+export const listChatsAction = async (): Promise<ChatEntry[]> => {
+  const bound = await workspaceForRequest();
+  if (!bound.ok) return [];
+
+  const chats = await bound.value.workspace.listChats();
+
+  return chats.ok ? chats.value : [];
 };

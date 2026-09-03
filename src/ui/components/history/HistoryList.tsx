@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import type { ChatEntry } from "@/core/workspace/workspace.types";
-import { formatWhen } from "@/ui/components/documents/document.format";
+import { Ago } from "@/ui/components/shared/Ago";
 import { DeleteChat } from "./DeleteChat";
 
 /**
@@ -40,7 +40,7 @@ export const HistoryList = ({ chats }: { chats: ChatEntry[] }) => (
                   the thing it deletes, and before that it only appeared on
                   hover, which is a control nobody can see. */}
               <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-record text-label text-faint">
-                <time dateTime={chat.updatedAt}>{formatWhen(chat.updatedAt)}</time>
+                <Ago iso={chat.updatedAt} />
 
                 {chat.documents.length > 0 ? (
                   <>

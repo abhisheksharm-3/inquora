@@ -65,10 +65,10 @@ export const ChatSurface = ({
   const entries = turnEntries(turns);
 
   return (
-    <div className="grid min-h-dvh grid-cols-1 content-start wide:h-dvh wide:grid-cols-[minmax(0,1fr)_var(--apparatus)] wide:grid-rows-[auto_minmax(0,1fr)]">
+    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)] wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
       {chrome}
 
-      <main className="flex min-w-0 flex-col px-6 pt-6 pb-2 wide:overflow-y-auto wide:px-9">
+      <main className="flex min-h-0 min-w-0 flex-col px-6 pt-6 wide:px-10">
         <ScopeBar chat={chat} />
 
         {following ? (
@@ -80,7 +80,7 @@ export const ChatSurface = ({
         ) : turns.length === 0 ? (
           <Openers documents={chat.documents} onPick={send} />
         ) : (
-          <div className="flex-1">
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {turns.map((turn) => (
               <article key={turn.id} className="mb-8">
                 {turn.question ? (
@@ -127,7 +127,7 @@ export const ChatSurface = ({
         )}
       </main>
 
-      <aside className="border-rule border-t px-6 py-7 wide:overflow-y-auto wide:border-t-0 wide:border-l wide:bg-panel">
+      <aside className="min-h-0 overflow-y-auto border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
         <ApparatusColumn entries={entries} label="Sources and steps" />
       </aside>
     </div>

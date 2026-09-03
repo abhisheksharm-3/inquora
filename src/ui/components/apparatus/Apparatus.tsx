@@ -91,11 +91,57 @@ const SpecimenEntry = ({ entry }: { entry: Specimen }) => {
             </span>
           ))}
         </p>
-        <p className="m-0 font-light font-reading text-[0.87rem] text-ink italic leading-relaxed">
-          {renderMarked(entry.passage, entry.marked)}
-        </p>
+        <Passage passage={entry.passage} marked={entry.marked} />
       </div>
     </div>
+  );
+};
+
+/** How much of a passage is shown before it has to be asked for. */
+const SHOWN_CHARACTERS = 260;
+
+/**
+ * A passage, trimmed to something readable, expandable in place.
+ *
+ * A cited chunk is a thousand characters of raw extracted text, and the column
+ * printed all of it for every source. Eighteen sources became a wall of italic
+ * that buried the answer beside it. `<details>` rather than state: it is one
+ * disclosure, the browser already has one, and it keeps working before any
+ * JavaScript arrives.
+ */
+const Passage = ({ passage, marked }: { passage: string; marked?: string }) => {
+  const collapsed = passage.trim().replace(/\s+/g, " ");
+
+  if (collapsed.length <= SHOWN_CHARACTERS) {
+    return (
+      <p className="m-0 font-light font-reading text-[0.87rem] text-ink italic leading-relaxed">
+        {renderMarked(collapsed, marked)}
+      </p>
+    );
+  }
+
+  // Cut at a word rather than mid-word.
+  const cut = collapsed.lastIndexOf(" ", SHOWN_CHARACTERS);
+  const head = collapsed.slice(0, cut > 0 ? cut : SHOWN_CHARACTERS);
+
+  return (
+    <details className="group m-0">
+      <summary className="list-none font-light font-reading text-[0.87rem] text-ink italic leading-relaxed marker:hidden">
+        <span className="group-open:hidden">
+          {renderMarked(head, marked)}
+          <span aria-hidden>… </span>
+          <span className="whitespace-nowrap font-record text-label text-mark not-italic">
+            more
+          </span>
+        </span>
+        <span className="hidden group-open:inline">
+          {renderMarked(collapsed, marked)}
+          <span className="ml-2 whitespace-nowrap font-record text-label text-faint not-italic">
+            less
+          </span>
+        </span>
+      </summary>
+    </details>
   );
 };
 

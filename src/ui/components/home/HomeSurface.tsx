@@ -7,10 +7,11 @@ import { type ActionState, emptyActionState } from "@/app/(app)/app.types";
 import { DASHBOARD_ROUTES } from "@/core/routes";
 import type { Account } from "@/core/workspace/account.types";
 import type { ChatEntry, DocumentEntry } from "@/core/workspace/workspace.types";
-import { formatWhen } from "@/ui/components/documents/document.format";
 import { openersFor } from "@/ui/components/documents/openers";
+import { Ago } from "@/ui/components/shared/Ago";
 import { useDocumentProgress } from "@/ui/hooks/useDocumentProgress";
 import { useUpload } from "@/ui/hooks/useUpload";
+import { useChats, useDocuments } from "@/ui/hooks/useWorkspace";
 import { AddSource } from "./AddSource";
 import { DocumentRow } from "./DocumentRow";
 import { HomeComposer } from "./HomeComposer";
@@ -34,7 +35,7 @@ export const HomeSurface = ({
   chrome,
   account,
   documents: seed,
-  chats,
+  chats: seededChats,
   userId,
 }: {
   chrome: React.ReactNode;
@@ -43,7 +44,17 @@ export const HomeSurface = ({
   chats: ChatEntry[];
   userId: string;
 }) => {
-  const documents = useDocumentProgress(seed, userId);
+  /*
+   * Cached across navigations, then kept live by broadcast.
+   *
+   * The server render seeds the cache, so the first paint has no waterfall and
+   * no spinner; moving to History and back reads the cache rather than querying
+   * Postgres for the same list again, which is what it did for every
+   * navigation. Broadcast then layers the live state on top.
+   */
+  const { data: cached } = useDocuments(seed);
+  const { data: chats } = useChats(seededChats);
+  const documents = useDocumentProgress(cached, userId);
   const { uploads, add } = useUpload();
 
   const ready = documents.filter((document) => document.status === "ready");
@@ -254,7 +265,7 @@ export const HomeSurface = ({
                           {chat.title ?? "Untitled"}
                         </span>
                         <span className="mt-1 block font-record text-label text-faint">
-                          <time dateTime={chat.updatedAt}>{formatWhen(chat.updatedAt)}</time>
+                          <Ago iso={chat.updatedAt} />
                         </span>
                       </Link>
                     </li>
