@@ -9,10 +9,21 @@ import type { ProblemDetails } from "./http.types";
  * A 4xx detail is actionable — which field, which limit, which document — and is
  * sent. A 5xx detail is ours: constraint names, column names, provider messages
  * and configuration state, none of which a client can act on and all of which
- * describe the schema to whoever asked. It goes to the trace instead.
+ * describe the schema to whoever asked. In production it goes to the trace
+ * instead; in development it is sent, because there the reader is the person
+ * who can fix it.
  */
 export const toProblemDetails = (error: AppError, instance: string): ProblemDetails => {
-  const shareable = error.status < 500;
+  /*
+   * A 5xx detail is shared in development and withheld in production.
+   *
+   * Withholding it is right: constraint names, column names, provider messages
+   * and configuration state describe the schema to whoever asked. But locally
+   * it makes the application undiagnosable from the browser — "GEMINI_API_KEY
+   * is not set" arrives as "something on our side failed", and the person
+   * reading it is the person who can fix it.
+   */
+  const shareable = error.status < 500 || process.env.NODE_ENV !== "production";
 
   return {
     type: error.type,

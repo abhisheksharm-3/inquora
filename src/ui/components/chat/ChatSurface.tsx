@@ -65,69 +65,85 @@ export const ChatSurface = ({
   const entries = turnEntries(turns);
 
   return (
-    <div className="grid h-dvh grid-cols-1 grid-rows-[auto_minmax(0,1fr)] wide:grid-cols-[minmax(0,1fr)_var(--apparatus)]">
+    /*
+     * A fixed frame on a wide screen, an ordinary page on a phone.
+     *
+     * Explicit rows were declared at every width, and there are three children,
+     * so on one column the sources landed in an implicit third row that the
+     * `h-dvh` container had no height for: the page could not scroll and the
+     * panel was unreachable. The frame is now `wide:` only, and below that the
+     * page scrolls the way a page does, with the composer sticky at the bottom
+     * so it stays in reach.
+     */
+    <div className="grid grid-cols-1 wide:h-dvh wide:grid-cols-[minmax(0,1fr)_var(--apparatus)] wide:grid-rows-[auto_minmax(0,1fr)]">
       {chrome}
 
-      <main className="flex min-h-0 min-w-0 flex-col px-6 pt-6 wide:px-10">
-        <ScopeBar chat={chat} />
+      <main className="flex min-w-0 flex-col px-6 pt-6 wide:min-h-0 wide:px-10">
+        {/* The reading column is where the text lives; 74 characters is how
+            wide the text is. Left to fill the column, an answer at its measure
+            hugged the left edge of 1500px with the rest empty, which is what
+            made a wide screen look broken. */}
+        <div className="mx-auto flex w-full max-w-[74ch] min-w-0 flex-1 flex-col wide:min-h-0">
+          <ScopeBar chat={chat} />
 
-        {following ? (
-          <PassageViewer
-            passage={following.passage}
-            specimenNumber={following.specimenNumber}
-            onClose={() => router.back()}
-          />
-        ) : turns.length === 0 ? (
-          <Openers documents={chat.documents} onPick={send} />
-        ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-            {turns.map((turn) => (
-              <article key={turn.id} className="mb-8">
-                {turn.question ? (
-                  <h2 className="mb-7 max-w-[25ch] font-normal font-reading text-ask after:mt-5 after:block after:h-px after:w-[30px] after:bg-mark">
-                    {turn.question}
-                  </h2>
-                ) : null}
+          {following ? (
+            <PassageViewer
+              passage={following.passage}
+              specimenNumber={following.specimenNumber}
+              onClose={() => router.back()}
+            />
+          ) : turns.length === 0 ? (
+            <Openers documents={chat.documents} onPick={send} />
+          ) : (
+            <div className="flex-1 wide:min-h-0 wide:overflow-y-auto wide:pr-2">
+              {turns.map((turn) => (
+                <article key={turn.id} className="mb-8">
+                  {turn.question ? (
+                    <h2 className="mb-7 max-w-[25ch] font-normal font-reading text-ask after:mt-5 after:block after:h-px after:w-[30px] after:bg-mark">
+                      {turn.question}
+                    </h2>
+                  ) : null}
 
-                {turn.answer ? (
-                  <Answer text={turn.answer} specimens={turn.specimens} />
-                ) : turn.status === "streaming" ? (
-                  <p className="font-record text-label text-faint" aria-live="polite">
-                    Searching
-                  </p>
-                ) : null}
+                  {turn.answer ? (
+                    <Answer text={turn.answer} specimens={turn.specimens} />
+                  ) : turn.status === "streaming" ? (
+                    <p className="font-record text-label text-faint" aria-live="polite">
+                      Searching
+                    </p>
+                  ) : null}
 
-                {/* Beside the thing that failed, never written into the
+                  {/* Beside the thing that failed, never written into the
                     transcript as something the assistant said. */}
-                {turn.status === "failed" ? (
-                  <p role="alert" className="mt-3 font-record text-label text-danger">
-                    {turn.error}
-                  </p>
-                ) : null}
-              </article>
-            ))}
-            <div ref={tail} />
-          </div>
-        )}
+                  {turn.status === "failed" ? (
+                    <p role="alert" className="mt-3 font-record text-label text-danger">
+                      {turn.error}
+                    </p>
+                  ) : null}
+                </article>
+              ))}
+              <div ref={tail} />
+            </div>
+          )}
 
-        {/* No composer while a document is open: the reading column is the
+          {/* No composer while a document is open: the reading column is the
             document, and asking belongs to the answer you came from. */}
-        {following ? null : (
-          <Composer
-            onSend={send}
-            onStop={stop}
-            streaming={streaming}
-            disabled={chat.documents.length === 0}
-            placeholder={
-              chat.documents.length === 0
-                ? "Add a document to this conversation first"
-                : "Ask something about what is attached"
-            }
-          />
-        )}
+          {following ? null : (
+            <Composer
+              onSend={send}
+              onStop={stop}
+              streaming={streaming}
+              disabled={chat.documents.length === 0}
+              placeholder={
+                chat.documents.length === 0
+                  ? "Add a document to this conversation first"
+                  : "Ask something about what is attached"
+              }
+            />
+          )}
+        </div>
       </main>
 
-      <aside className="min-h-0 overflow-y-auto border-rule border-t px-6 py-7 wide:border-t-0 wide:border-l wide:bg-panel">
+      <aside className="border-rule border-t px-6 py-7 wide:min-h-0 wide:overflow-y-auto wide:border-t-0 wide:border-l wide:bg-panel">
         <ApparatusColumn entries={entries} label="Sources and steps" />
       </aside>
     </div>

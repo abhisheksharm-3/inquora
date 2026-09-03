@@ -49,7 +49,7 @@ export const Composer = ({
   };
 
   return (
-    <div className="shrink-0 border-rule border-t pt-4 pb-6">
+    <div className="sticky bottom-0 shrink-0 border-rule border-t bg-ground pt-4 pb-6 wide:static">
       <div className="flex items-start gap-2.5">
         <span aria-hidden className="mt-1.5 h-[19px] w-[1.5px] shrink-0 bg-mark" />
         <label className="sr-only" htmlFor="question">

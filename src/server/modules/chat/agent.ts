@@ -115,11 +115,14 @@ Always: search before answering anything about document content, and when the
 answer is not in these documents say so plainly rather than answering from
 general knowledge.
 
-Cite by writing the passage's number in square brackets, like [1], immediately
-after the claim it supports. Every passage a search returns is headed by its
-number. Use those numbers exactly as given, never renumber them, and never cite
-a number you have not been shown. A claim about document content with no number
-after it reads to the user as unsupported.${
+Cite by copying the number in the square brackets at the start of a passage,
+like [1], and writing it immediately after the claim that passage supports.
+
+That bracketed number is the only citation there is. It counts up from 1 within
+this answer, so a citation is never a page number, a line number, or a position
+inside a document. Copy it exactly, never renumber, and never write a number you
+have not been shown. A claim about document content with no number after it
+reads to the reader as unsupported.${
     context.chat.webSearch
       ? `
 
@@ -276,7 +279,9 @@ export const createAnsweringAgent = ({
             content?: unknown;
             tool_calls?: unknown[];
             usage_metadata?: { input_tokens?: number; output_tokens?: number };
-            response_metadata?: { model_name?: unknown; model?: unknown };
+            response_metadata?: {
+              usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+            };
           },
           { langgraph_node?: string },
         ];
@@ -290,17 +295,26 @@ export const createAnsweringAgent = ({
         // same deltas below, so the stored text is exactly what was displayed.
         if (text && isFromModel) answer += text;
 
-        // Usage arrives on the final chunk of each model turn, and a tool-calling
-        // turn produces several, so they accumulate rather than overwrite.
+        /*
+         * Usage arrives on the final chunk of each model turn, and a
+         * tool-calling turn produces several, so they accumulate rather than
+         * overwrite.
+         *
+         * Two shapes are read because only one of them turned up. LangChain
+         * normalises usage to `usage_metadata.input_tokens`, and Gemini's own
+         * field is `usageMetadata.promptTokenCount` under response metadata.
+         * Reading only the normalised one left every message in the database
+         * with null tokens while recording a real latency, so what an answer
+         * cost was unknowable.
+         */
         const meta = message?.usage_metadata;
+        const raw = message?.response_metadata?.usageMetadata;
 
-        if (meta) {
-          usage.tokensIn = (usage.tokensIn ?? 0) + (meta.input_tokens ?? 0);
-          usage.tokensOut = (usage.tokensOut ?? 0) + (meta.output_tokens ?? 0);
-        }
+        const tokensIn = meta?.input_tokens ?? raw?.promptTokenCount;
+        const tokensOut = meta?.output_tokens ?? raw?.candidatesTokenCount;
 
-        const named = message?.response_metadata?.model_name ?? message?.response_metadata?.model;
-        if (typeof named === "string") usage.model = named;
+        if (typeof tokensIn === "number") usage.tokensIn = (usage.tokensIn ?? 0) + tokensIn;
+        if (typeof tokensOut === "number") usage.tokensOut = (usage.tokensOut ?? 0) + tokensOut;
 
         yield {
           event: "messages/partial",

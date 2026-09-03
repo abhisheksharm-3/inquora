@@ -25,7 +25,14 @@ const renderChunks = (
   chunks
     .map((chunk, index) => {
       const document = context.documents.find((d) => d.id === chunk.documentId);
-      return `[${specimens[index]}] ${document?.title ?? chunk.documentId}, passage ${chunk.chunkIndex}\n${chunk.content}`;
+
+      // Only the specimen number. It used to read
+      // `[12] the-book.pdf, passage 552`, and the model cited 552 — which is a
+      // passage number, so it was reading the instruction correctly and the
+      // instruction was wrong. There is now exactly one number in front of a
+      // passage, and the reader's own position in the document is shown by the
+      // interface rather than offered to the model as an alternative.
+      return `[${specimens[index]}] ${document?.title ?? chunk.documentId}\n${chunk.content}`;
     })
     .join("\n\n");
 
@@ -78,7 +85,7 @@ export const createTools = ({
       name: "search_documents",
       description:
         "Search the documents attached to this conversation. Returns the passages that matched, " +
-        "each numbered by its position in its document. Use this before answering anything about " +
+        "each headed by the number to cite it with. Use this before answering anything about " +
         "document content.",
       schema: z.object({
         query: z.string().describe("What to look for, in the user's own terms."),

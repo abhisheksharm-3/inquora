@@ -28,6 +28,12 @@ const PROVIDERS = {
       apiKey,
       temperature,
       maxRetries: MAX_RETRIES,
+      // Asked for explicitly rather than left to the default. Every assistant
+      // message in the database had null tokens_in and tokens_out while
+      // recording a real latency, so what it cost to answer was unknowable —
+      // and cost is the number the settings page and the telemetry both exist
+      // to report.
+      streamUsage: true,
     }) as unknown as BaseChatModel,
 } as const;
 
