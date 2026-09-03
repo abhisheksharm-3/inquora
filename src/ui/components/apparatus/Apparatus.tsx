@@ -16,9 +16,9 @@ export const ApparatusColumn = ({
     <ApparatusHead label={label} count={countEntries(entries)} />
     {entries.map((entry) =>
       entry.kind === "operation" ? (
-        <OperationEntry key={`${entry.tick}-${entry.title}`} entry={entry} />
+        <OperationEntry key={entry.id} entry={entry} />
       ) : (
-        <SpecimenEntry key={entry.number} entry={entry} />
+        <SpecimenEntry key={entry.id} entry={entry} />
       ),
     )}
   </div>
@@ -71,7 +71,7 @@ const SpecimenEntry = ({ entry }: { entry: Specimen }) => {
   );
 
   return (
-    <div id={`specimen-${entry.number}`} className="mb-5 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
+    <div id={`specimen-${entry.id}`} className="mb-5 grid grid-cols-[26px_minmax(0,1fr)] gap-3">
       {entry.href ? (
         <Link
           href={entry.href}

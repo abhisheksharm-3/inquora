@@ -3,9 +3,17 @@
  * the column reads as what happened as well as what backs it.
  */
 
-/** Something that ran: timestamped, with a duration. */
+/**
+ * Something that ran: timestamped, with a duration.
+ *
+ * `id` is unique across the whole column, not within a turn. Specimens are
+ * numbered from one per turn, so a conversation with three answers has three
+ * sources numbered 1 — which React reported as duplicate keys, and which made
+ * `#specimen-1` an ambiguous anchor pointing at whichever came first.
+ */
 export type Operation = {
   kind: "operation";
+  id: string;
   /** The gutter mark. A tick for an op, so `01` or `14:22`. */
   tick: string;
   /** What ran, in telegraphic voice: `searched 2 documents`. */
@@ -19,6 +27,7 @@ export type Operation = {
 /** Something cited: numbered, with a source line and the passage itself. */
 export type Specimen = {
   kind: "specimen";
+  id: string;
   /** The specimen number. The only connective tissue to the text. */
   number: number;
   /** Where it came from: title, page, line range. */

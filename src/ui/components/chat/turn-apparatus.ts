@@ -15,6 +15,8 @@ export const turnEntries = (turns: Turn[]): Entry[] =>
     ...turn.operations.map(
       (operation): Entry => ({
         kind: "operation",
+        // Scoped to the turn, because the same tool runs in several of them.
+        id: `${turn.id}:${operation.name}:${operation.startedAt}`,
         tick: operation.durationMs === undefined ? "·" : "✓",
         title: TOOL_LABEL[operation.name] ?? operation.name,
         detail: operation.argument,
@@ -24,6 +26,7 @@ export const turnEntries = (turns: Turn[]): Entry[] =>
     ...turn.specimens.map(
       (specimen): Entry => ({
         kind: "specimen",
+        id: `${turn.id}:${specimen.number}`,
         number: specimen.number,
         source: [specimen.documentTitle, `passage ${specimen.chunkIndex + 1}`],
         passage: specimen.content,
@@ -48,13 +51,22 @@ export const passageHref = (chunkId: string, number: number) =>
  */
 const failureOf = (turn: Turn): Entry[] => {
   if (turn.status === "failed") {
-    return [{ kind: "operation", tick: "!", title: "The answer failed", detail: turn.error }];
+    return [
+      {
+        kind: "operation",
+        id: `${turn.id}:failed`,
+        tick: "!",
+        title: "The answer failed",
+        detail: turn.error,
+      },
+    ];
   }
 
   if (turn.status === "aborted") {
     return [
       {
         kind: "operation",
+        id: `${turn.id}:stopped`,
         tick: "·",
         title: "Stopped",
         detail: "What had been written was kept.",
