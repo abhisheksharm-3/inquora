@@ -347,14 +347,6 @@ const HowItWorks = () => (
             </tbody>
           </table>
         </div>
-
-        <p className="mt-6 max-w-[68ch] font-record text-label text-faint leading-relaxed">
-          The run also found three faults, all of them in the citation path this product argues for:
-          consecutive marks ran together so <code>[4, 6, 10]</code> rendered as 4610, bold arrived
-          as literal asterisks, and the model copied citation numbers out of earlier answers where
-          they name different passages. A green test suite reported none of the three. That is what
-          a live run is for.
-        </p>
       </section>
 
       <section className="border-rule border-t px-7 py-12 wide:px-10">

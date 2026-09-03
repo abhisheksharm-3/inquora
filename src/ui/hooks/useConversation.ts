@@ -31,6 +31,18 @@ export const useConversation = (chat: ChatDetail) => {
       const trimmed = question.trim();
       if (!trimmed || abort.current) return;
 
+      /*
+       * The same question, twice in a row, is a repeat rather than a question.
+       *
+       * `abort.current` only guards a send still in flight. A send that
+       * finished — including one that finished with nothing, in under a second
+       * — leaves nothing in flight, so a second Enter created a second turn
+       * with the same words and its own client id, which the server treats as
+       * a genuinely new message. Two identical empty turns is what that looks
+       * like.
+       */
+      if (turns.at(-1)?.question === trimmed && turns.at(-1)?.status !== "failed") return;
+
       // The client's own id, which is what makes the send idempotent: a
       // double-click or a retrying proxy reaches the same row rather than
       // paying for a second agent run.
@@ -91,7 +103,7 @@ export const useConversation = (chat: ChatDetail) => {
         }
       });
     },
-    [chat.id, patch],
+    [chat.id, patch, turns],
   );
 
   const stop = useCallback(() => abort.current?.abort(), []);

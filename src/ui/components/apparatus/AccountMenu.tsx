@@ -79,20 +79,27 @@ export const AccountMenu = ({ account }: { account: Account }) => {
               permanent widget beside the navigation — three words, then a
               bordered segmented control, then a lone icon button — and each one
               competed for attention with the primary action. */}
-          <Dropdown.Label className="px-3.5 pb-1.5 font-record text-label text-faint uppercase tracking-[0.12em]">
+          <Dropdown.Label className="px-3.5 pb-2 font-record text-label text-faint uppercase tracking-[0.12em]">
             Theme
           </Dropdown.Label>
-          <Dropdown.RadioGroup value={theme ?? "system"} onValueChange={setTheme}>
+
+          {/* One row of three, not three rows. A preference with three values is
+              a choice between them; stacked, the current one was a dot floating
+              at the far right of a line and the other two were menu commands.
+              `preventDefault` keeps the menu open, so all three can be tried. */}
+          <Dropdown.RadioGroup
+            value={theme ?? "system"}
+            onValueChange={setTheme}
+            className="mx-3.5 mb-1 flex rounded-hair border border-rule p-0.5"
+          >
             {THEMES.map((choice) => (
               <Dropdown.RadioItem
                 key={choice.value}
                 value={choice.value}
-                className="flex items-center justify-between gap-6 px-3.5 py-2 font-record text-[0.78rem] text-soft outline-none data-highlighted:bg-wash data-highlighted:text-ink data-[state=checked]:text-ink"
+                onSelect={(event) => event.preventDefault()}
+                className="flex flex-1 items-center justify-center rounded-[1px] py-1.5 font-record text-label text-soft outline-none data-highlighted:text-ink data-[state=checked]:bg-wash data-[state=checked]:text-ink"
               >
                 {choice.label}
-                <Dropdown.ItemIndicator>
-                  <span aria-hidden className="block size-1.5 rounded-full bg-mark" />
-                </Dropdown.ItemIndicator>
               </Dropdown.RadioItem>
             ))}
           </Dropdown.RadioGroup>
