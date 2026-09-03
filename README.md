@@ -32,13 +32,33 @@ including the places building it proved the design wrong, is in
 | A real PDF, end to end | **3 seconds** — `bun run scripts/live-ingest.ts <file>`                                  |
 | A 516-file repository  | **1.3 seconds** to read and chunk                                                        |
 | A spreadsheet          | filter, sum and group-by, all exact, from SQL over its rows                              |
-| Database               | 33 migrations, **143 pgTAP assertions**                                                  |
-| Suite                  | 247 tests, typecheck clean, zero lint errors                                             |
+| Database               | 35 migrations, **149 pgTAP assertions**                                                  |
+| Suite                  | 253 tests, typecheck clean, zero lint errors                                             |
 | Typecheck              | **0.27s** on TypeScript 7, against 1.75s on 5.9 over the same files                       |
 | Lint and format        | **200 milliseconds** over 177 files on Biome                                             |
 
 The development network blocks POST to `generativelanguage.googleapis.com`, so anything touching
 generation is checked against the deployment rather than locally.
+
+### One real conversation
+
+The full text of *Pride and Prejudice* — 762 passages from one PDF — asked ten questions in one
+conversation, on the deployment. Four of them, because "it answers questions about documents" is
+several different problems and only the first is easy:
+
+| Question | Demanded | Measured |
+| --- | --- | --- |
+| How are Lady Catherine, Lady Anne Darcy and Mr Darcy related? | one fact, answered briefly and still cited | 2 sources, first word in 5.9s |
+| What in Darcy's letter made Elizabeth reconsider her judgment of Wickham? | quotations from the will, each traceable | 12 sources, 8.8s in all |
+| What did Darcy first say about Elizabeth's appearance, and how does it contrast with his later description of her eyes? | two passages hundreds of pages apart, from one question | 12 sources, 6.1s in all |
+| Trace what changed Elizabeth's opinion of Darcy, from the assembly through Wickham's story to the letter | three ordered parts, so more than one search | 23 sources, 12.5s in all |
+
+The run also found three faults worth recording, all of them in the citation path this product
+argues for. Consecutive marks ran together, so `[4, 6, 10]` rendered as `4610`. Bold arrived as
+literal asterisks. And the model copied citation numbers out of earlier answers, where they name
+different passages — one of them wrote *"[399, though this passage is not directly cited in the
+provided search results, it is a known plot point]"*, which is a citation that traces to nothing
+with an apology attached. A green suite would have reported none of the three.
 
 ### Why
 

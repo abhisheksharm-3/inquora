@@ -70,6 +70,52 @@ const pipeline = [
   },
 ];
 
+/**
+ * Ten real questions, asked of the full text of Pride and Prejudice — 762
+ * passages from one PDF — in one conversation. The counts and the timings are
+ * from that run rather than from a benchmark written for this page.
+ *
+ * They are grouped by what each one actually demands of the system, because
+ * "it answers questions about documents" is four different problems and only
+ * one of them is easy.
+ */
+const examples = [
+  {
+    kind: "One fact, stated once",
+    question: "How are Lady Catherine de Bourgh, Lady Anne Darcy and Mr Darcy related?",
+    answer:
+      "Two sentences: they were sisters, so Lady Catherine is Darcy's aunt. Both carry the passage they came from.",
+    measured: "2 sources · 5.9s to the first word",
+    note: "The hard part is not answering at length. It is answering briefly and still showing the line.",
+  },
+  {
+    kind: "A claim that has to be checked",
+    question: "What in Darcy's letter caused Elizabeth to reconsider her judgment of Wickham?",
+    answer:
+      "It quotes the will — three thousand pounds in lieu of the living — and the phrase gross duplicity on one side or the other, and names the passage for each.",
+    measured: "12 sources · 8.8s in all",
+    note: "Every quotation is a passage you can open, so the answer can be checked rather than trusted.",
+  },
+  {
+    kind: "A contrast across four hundred pages",
+    question:
+      "What did Darcy first say about Elizabeth's appearance, and how does that contrast with his later description of her eyes?",
+    answer:
+      "Only just tolerable and she hardly had a good feature in her face, against uncommonly intelligent by the beautiful expression of her dark eyes — from passages a long way apart.",
+    measured: "12 sources · 6.1s in all",
+    note: "The two halves of the answer are in different chapters. Retrieval has to find both from one question.",
+  },
+  {
+    kind: "Several steps, in order",
+    question:
+      "Trace what changed Elizabeth's opinion of Darcy, from the Meryton assembly, through Wickham's story, to the letter.",
+    answer:
+      "Three sections, each with its own evidence: the assembly, the account Wickham gave her, and the two revelations in the letter that undid it.",
+    measured: "23 sources · 12.5s in all",
+    note: "It searched more than once, because one search cannot answer a question with three parts.",
+  },
+];
+
 const stack = [
   ["Database", "Postgres on Supabase, with pgvector for embeddings and pgTAP for its tests"],
   ["Search", "One SQL function: HNSW vector index plus full-text, fused by rank"],
@@ -148,6 +194,49 @@ const HowItWorks = () => (
                 </h3>
                 <p className="max-w-[68ch] font-light font-reading text-[1.02rem] text-soft leading-[1.7]">
                   {entry.body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="border-rule border-t px-7 py-12 wide:px-10">
+        <h2 className="mb-1.5 font-light font-reading text-[1.7rem] text-ink leading-tight">
+          Four kinds of question, from one run.
+        </h2>
+        <p className="mb-10 max-w-[58ch] font-record text-record text-soft leading-relaxed">
+          The full text of Pride and Prejudice, 762 passages from one PDF, ten questions in one
+          conversation. "It answers questions about documents" is four different problems, and only
+          the first is easy.
+        </p>
+
+        <ol className="m-0 grid list-none grid-cols-1 gap-0 p-0">
+          {examples.map((example, index) => (
+            <li
+              key={example.kind}
+              className="grid grid-cols-[2.6rem_minmax(0,1fr)] gap-4 border-rule border-t py-7"
+            >
+              <span className="pt-1.5 font-medium font-record text-label text-mark tabular">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <div className="grid gap-3">
+                <p className="m-0 font-medium font-record text-label text-faint uppercase tracking-[0.12em]">
+                  {example.kind}
+                </p>
+
+                <p className="m-0 max-w-[54ch] font-normal font-reading text-[1.2rem] text-ink leading-snug">
+                  {example.question}
+                </p>
+
+                <p className="m-0 max-w-[68ch] font-light font-reading text-[1.02rem] text-soft leading-[1.7]">
+                  {example.answer}
+                </p>
+
+                <p className="m-0 flex flex-wrap items-baseline gap-x-4 font-record text-label text-faint">
+                  <span className="text-mark tabular">{example.measured}</span>
+                  <span className="max-w-[52ch]">{example.note}</span>
                 </p>
               </div>
             </li>

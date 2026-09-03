@@ -8,19 +8,29 @@
  * `stacked` puts the sources under the answer instead of beside it, for a
  * column too narrow to hold two.
  */
+/**
+ * A real exchange, from a real run.
+ *
+ * It used to be an invented question about invented quarterly revenue, which is
+ * the kind of example a product writes about itself. This one is from a
+ * ten-turn test against the full text of Pride and Prejudice — 762 passages —
+ * and the quotations are the ones the model was actually given. A page arguing
+ * that every claim traces to a passage should not open with a claim that
+ * traces to nothing.
+ */
 const answerSources = [
   {
     number: 1,
-    document: "revenue-review-q3.pdf",
-    where: "page 4",
+    document: "pride-and-prejudice.pdf",
+    where: "passage 399",
     quote:
-      "Q3 revenue of $4.12M fell 12% short of the $4.68M forecast, with the shortfall concentrated in the northern region.",
+      "the particulars immediately following of Wickham's resigning all pretensions to the living, of his receiving in lieu so considerable a sum as three thousand pounds",
   },
   {
     number: 2,
-    document: "q3-forecast.xlsx",
-    where: "Deals, rows 12 to 48",
-    quote: "Average contract value: 41,500 actual against 48,000 forecast.",
+    document: "pride-and-prejudice.pdf",
+    where: "passage 398",
+    quote: "it was impossible not to feel that there was gross duplicity on one side or the other",
   },
 ];
 
@@ -32,21 +42,19 @@ export const WorkedExample = ({ stacked = false }: { stacked?: boolean }) => (
       <p className="mb-3 font-record text-label text-faint uppercase tracking-[0.14em]">
         The question
       </p>
-      <p className="mb-6 max-w-[30ch] font-normal font-reading text-[1.12rem] text-ink leading-snug after:mt-3.5 after:block after:h-px after:w-[26px] after:bg-mark">
-        Why did Q3 revenue miss the forecast?
+      <p className="mb-6 max-w-[40ch] font-normal font-reading text-[1.12rem] text-ink leading-snug after:mt-3.5 after:block after:h-px after:w-[26px] after:bg-mark">
+        What in Darcy's letter made Elizabeth reconsider her judgment of Wickham?
       </p>
 
       <div className="max-w-[58ch] font-light font-reading text-[0.98rem] text-soft leading-[1.7]">
         <p className="mb-4">
-          Revenue closed at 4.12 million against a forecast of 4.68 million, a miss of twelve per
-          cent
-          <Mark number={1} />
+          The letter revealed that Wickham had resigned all claim to the living in exchange for
+          three thousand pounds
+          <Mark number={1} />, which contradicted the account he had given her.
         </p>
         <p className="mb-0">
-          Most of the gap is average contract value, which fell from 48,000 to 41,500
-          <Mark number={2} />. Three deals slipped past the quarter end in the northern region, and
-          two of those closed in the first week of October
-          <Mark number={1} />.
+          That discrepancy forced her to accept there was gross duplicity on one side or the other
+          <Mark number={2} />.
         </p>
       </div>
     </div>
