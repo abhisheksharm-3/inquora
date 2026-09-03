@@ -40,7 +40,7 @@ export const PassageViewer = ({
       Source <span className="text-mark tabular">{specimenNumber}</span> is marked below.
     </p>
 
-    <div className="max-w-measure font-light font-reading text-ink text-read">
+    <div className="max-w-[var(--measure-wide)] font-light font-reading text-ink text-read">
       {passage.passages.map((entry) => (
         <p
           key={entry.chunkIndex}

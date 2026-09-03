@@ -79,13 +79,11 @@ export const ChatSurface = ({
       {chrome}
 
       <main className="flex min-w-0 flex-col px-6 pt-6 wide:min-h-0 wide:px-10">
-        {/* The reading column is where the text lives; 74 characters is how
-            wide the text is. Left to fill the column, an answer at its measure
-            hugged the left edge of 1500px with the rest empty, which is what
-            made a wide screen look broken. */}
-        <div className="mx-auto flex w-full max-w-[74ch] min-w-0 flex-1 flex-col wide:min-h-0">
-          <ScopeBar chat={chat} />
-
+        {/* Full bleed. The column is the column, and the text inside it takes
+            the wider of the two measures rather than being centred in a lane of
+            its own — a centred lane put a gutter on both sides of a page that
+            already has a panel down one edge. */}
+        <div className="flex w-full min-w-0 flex-1 flex-col wide:min-h-0">
           {following ? (
             <PassageViewer
               passage={following.passage}

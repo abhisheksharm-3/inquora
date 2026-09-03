@@ -17,12 +17,15 @@ export const Composer = ({
   onStop,
   streaming,
   disabled,
+  scope,
   placeholder = "Ask something about what is attached",
 }: {
   onSend: (question: string) => void;
   onStop: () => void;
   streaming: boolean;
   disabled?: boolean;
+  /** What this question will read, shown on the same row as the send control. */
+  scope?: React.ReactNode;
   placeholder?: string;
 }) => {
   const [value, setValue] = useState("");
@@ -73,7 +76,9 @@ export const Composer = ({
         />
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-4 pl-5">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-5 gap-y-2.5 pl-5">
+        {scope ?? <span />}
+
         <p className="font-record text-label text-faint">
           {streaming ? "Answering" : value.trim() ? "Enter to send" : ""}
         </p>

@@ -28,7 +28,7 @@ export const Answer = ({ text, specimens }: { text: string; specimens: Specimen[
   const known = new Map(specimens.map((specimen) => [specimen.number, specimen]));
 
   return (
-    <div className="max-w-measure font-light font-reading text-ink text-read">
+    <div className="max-w-[var(--measure-wide)] font-light font-reading text-ink text-read">
       {blocks(text).map((block, index) =>
         // A block has no id of its own and the text is append-only while
         // streaming, so its position is a stable key.
